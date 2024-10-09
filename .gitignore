@@ -26,6 +26,7 @@
 # BACKEND
 
 /backend_app/venv
+*__pycache__
 
 
 # GENERAL
