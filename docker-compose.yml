@@ -1,0 +1,69 @@
+services:
+  backend_api_zoho_sentiron:
+    build:
+      context: ./backend_app
+    container_name: backend_api_zoho_sentiron
+    cap_add:
+      - SYS_TIME
+    volumes:
+      - ./backend_app:/app
+      - ./backend_app/nginx_gunicorn/gunicorn.conf.py:/etc/nginx/gunicorn.conf.py
+      - ./backend_app/local_backup:/app/backup
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend_app/.env
+    networks:
+      - api_zoho_senitron_network
+
+  # frontend_app:
+  #   build:
+  #     context: ./frontend_app
+  #   container_name: frontend_app
+  #   volumes:
+  #     - ./frontend_app/build:/app/build 
+  #   env_file:
+  #     - ./frontend_app/.env
+  #   networks:
+  #     - api_zoho_senitron_network
+
+  postgres_api_zoho_sentiron:
+    image: postgres:16.0
+    container_name: postgres_api_zoho_sentiron
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/scripts_db:/docker-entrypoint-initdb.d
+    environment:
+      - POSTGRES_DB=api_zoho_senitron_qa_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5442:5432"
+    networks:
+      - api_zoho_senitron_network
+
+  nginx_api_zoho_sentiron:
+    build:
+      context: ./nginx
+    container_name: nginx_api_zoho_sentiron
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certificates:/etc/nginx/certificates:ro
+      - ./frontend_app/build:/usr/share/nginx/html 
+    depends_on:
+      - backend_api_zoho_sentiron
+      # - frontend_app
+    networks:
+      - api_zoho_senitron_network
+
+volumes:
+  postgres_data:
+
+networks:
+  api_zoho_senitron_network:
+    driver: bridge

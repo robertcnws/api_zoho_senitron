@@ -32,5 +32,6 @@
 # GENERAL
 
 /.vscode
+*.env
 
 
