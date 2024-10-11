@@ -202,34 +202,30 @@ def config_headers(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def load_inventory_items(request):
-    # username = request.data.get('username', '')
     app_config = AppConfig.objects.first()
     logger.debug(app_config)
     try:
-        headers = config_headers(request)  # Asegúrate de que esto esté configurado correctamente
+        headers = config_headers(request)
     except Exception as e:
         logger.error(f"Error connecting to Zoho API: {str(e)}")
         return JsonResponse({'error': f"Error connecting to Zoho API (Load Items): {str(e)}"}, status=500)
-        
-    items_saved = list(ZohoInventoryItem.objects.all())
-        
+    
     params = {
         'organization_id': app_config.zoho_org_id,
         'page': 1,       
         'per_page': 200,  
     }
-        
+
     url = f'{settings.ZOHO_INVENTORY_ITEMS_URL}'
-    items_to_save = []
     items_to_get = []
-        
+    
     while True:
         try:
             response = requests.get(url, headers=headers, params=params)
-            if response.status_code == 401:  
+            if response.status_code == 401:
                 new_token = refresh_zoho_access_token()
                 headers['Authorization'] = f'Zoho-oauthtoken {new_token}'
-                response = requests.get(url, headers=headers, params=params)  
+                response = requests.get(url, headers=headers, params=params)
             elif response.status_code != 200:
                 logger.error(f"Error fetching items: {response.text}")
                 return JsonResponse({'error': response.text}, status=response.status_code)
@@ -239,20 +235,59 @@ def load_inventory_items(request):
                 if items.get('items', []):
                     items_to_get.extend(items['items'])
                 if 'page_context' in items and 'has_more_page' in items['page_context'] and items['page_context']['has_more_page']:
-                    params['page'] += 1  
+                    params['page'] += 1
                 else:
-                    break  
+                    break
         except requests.exceptions.RequestException as e:
             logger.error(f"Error fetching items: {e}")
             return JsonResponse({'error': 'Failed to fetch items'}, status=500)
-        
-    existing_item_ids = ZohoInventoryItem.objects.filter(item_id__in=[item['item_id'] for item in items_to_get]).values_list('item_id', flat=True)
     
-    new_items = [create_inventory_item_instance(data) for data in items_to_get if data['item_id'] not in existing_item_ids]
-
     with transaction.atomic():
-        ZohoInventoryItem.objects.bulk_create(new_items)
-                
+        for data in items_to_get:
+            new_item = create_inventory_item_instance(data)
+            ZohoInventoryItem.objects.update_or_create(
+                item_id=new_item.item_id,  
+                defaults={
+                    'group_id': new_item.group_id,
+                    'group_name': new_item.group_name,
+                    'name': new_item.name,
+                    'status': new_item.status,
+                    'source': new_item.source,
+                    'is_linked_with_zohocrm': new_item.is_linked_with_zohocrm,
+                    'item_type': new_item.item_type,
+                    'description': new_item.description,
+                    'rate': new_item.rate,
+                    'is_taxable': new_item.is_taxable,
+                    'tax_id': new_item.tax_id,
+                    'tax_name': new_item.tax_name,
+                    'tax_percentage': new_item.tax_percentage,
+                    'purchase_description': new_item.purchase_description,
+                    'purchase_rate': new_item.purchase_rate,
+                    'is_combo_product': new_item.is_combo_product,
+                    'product_type': new_item.product_type,
+                    'attribute_id1': new_item.attribute_id1,
+                    'attribute_name1': new_item.attribute_name1,
+                    'reorder_level': new_item.reorder_level,
+                    'stock_on_hand': new_item.stock_on_hand,
+                    'available_stock': new_item.available_stock,
+                    'actual_available_stock': new_item.actual_available_stock,
+                    'sku': new_item.sku,
+                    'upc': new_item.upc,
+                    'ean': new_item.ean,
+                    'isbn': new_item.isbn,
+                    'part_number': new_item.part_number,
+                    'attribute_option_id1': new_item.attribute_option_id1,
+                    'attribute_option_name1': new_item.attribute_option_name1,
+                    'image_name': new_item.image_name,
+                    'image_type': new_item.image_type,
+                    'created_time': new_item.created_time,
+                    'last_modified_time': new_item.last_modified_time,
+                    'hsn_or_sac': new_item.hsn_or_sac,
+                    'sat_item_key_code': new_item.sat_item_key_code,
+                    'unitkey_code': new_item.unitkey_code,
+                }
+            )
+
     return JsonResponse({'message': 'Items loaded successfully'}, status=200)
     
     
