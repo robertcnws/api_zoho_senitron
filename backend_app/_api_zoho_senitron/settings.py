@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-8=q+a0063s232#ebj-9l94lv8p+v4cb1%qh+-%su93w)4f@8w#
 DEBUG = True
 
 env = environ.Env(
-    DEBUG=(bool, False)
+    DEBUG=(bool, True)
 )
 
 environ.Env.read_env()
@@ -54,17 +54,22 @@ DB_PASSWORD = env('DB_PASSWORD_DEV') if ENVIRONMENT == 'DEV' else env('DB_PASSWO
 DB_HOST = env('DB_HOST_DEV') if ENVIRONMENT == 'DEV' else env('DB_HOST_QA') if ENVIRONMENT == 'QA' else env('DB_HOST_PROD')
 DB_PORT = env('DB_PORT')
 DB_ENGINE = env('DB_ENGINE')
+REDIS_HOST = env('REDIS_HOST')
 FRONTEND_URL = env('FRONTEND_URL_DEV') if ENVIRONMENT == 'DEV' else env('FRONTEND_URL_QA') if ENVIRONMENT == 'QA' else env('FRONTEND_URL_PROD')
 
 CSRF_TRUSTED_ORIGINS = [
     'https://localhost',
+    'http://localhost:3039',
+    'http://localhost:3030',
     'https://127.0.0.1',
+    'http://127.0.0.1:3039',
+    'http://127.0.0.1:3030',
     'https://host.docker.internal',
     'https://integration.nws.com',
     'https://api-zoho-senitron.nws.home'
 ]
 
-CSRF_COOKIE_SECURE = False  # False para desarrollo, True para producción
+CSRF_COOKIE_SECURE = False  
 
 CSRF_COOKIE_NAME = 'csrftoken'
 
@@ -74,13 +79,17 @@ CSRF_HEADER_NAME = 'HTTP_X_CSRFTOKEN'
 
 CSRF_COOKIE_SAMESITE = 'None'
 
-SESSION_COOKIE_SECURE = False  # False para desarrollo, True para producción
+SESSION_COOKIE_SECURE = False  
 
 CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
     "https://localhost",
+    'http://localhost:3039',
+    'http://localhost:3030',
     "https://127.0.0.1",
+    "http://127.0.0.1:3039",
+    "http://127.0.0.1:3030",
     "https://host.docker.internal",
     "https://integration.nws.com",
     "https://api-zoho-senitron.nws.home"
@@ -122,9 +131,19 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'rest_framework_simplejwt',
+    'channels',
+    'graphene_django',
     'api_zoho',
     'api_senitron',
 ]
+
+GRAPHENE = {
+    'SCHEMA': 'api_zoho.schema.schema',  
+    'MIDDLEWARE': [
+        'graphql_jwt.middleware.JSONWebTokenMiddleware', 
+    ],
+    'GRAPHIQL_ENABLED': True, 
+}
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -165,8 +184,18 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = '_api_zoho_senitron.wsgi.application'
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [(REDIS_HOST, 6379)], 
+        },
+    },
+}
 
+ASGI_APPLICATION = "_api_zoho_senitron.asgi.application"
+
+# WSGI_APPLICATION = '_api_zoho_senitron.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
@@ -201,7 +230,12 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-AUTHENTICATION_BACKENDS = ['api_zoho.auth_backends.LoginUserBackend', 'django.contrib.auth.backends.ModelBackend']
+AUTHENTICATION_BACKENDS = [
+    'api_zoho.auth_backends.LoginUserBackend', 
+    'django.contrib.auth.backends.ModelBackend',
+    'graphql_jwt.backends.JSONWebTokenBackend',
+]
+
 AUTH_USER_MODEL = 'api_zoho.LoginUser'
 
 
@@ -220,6 +254,22 @@ USE_TZ = True
 ## Static files (CSS, JavaScript, Images)
 ## https://docs.djangoproject.com/en/5.0/howto/static-files/
 
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
+
 STATIC_URL = '/static/'
 BASE_DIR_STATIC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BACKUP_DIR = os.path.join(BASE_DIR, 'backup')
@@ -227,10 +277,10 @@ BACKUP_DIR = os.path.join(BASE_DIR, 'backup')
 MEDIA_URL = '/backup/'
 MEDIA_ROOT = BACKUP_DIR
 
-# print(BASE_DIR_STATIC)
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # STATICFILES_DIRS = [
-#     os.path.join(f'{BASE_DIR_STATIC}/_api_zoho_senitron/', "static"),
+#     os.path.join(BASE_DIR, 'static'),
 # ]
 
 # Default primary key field type
@@ -239,4 +289,3 @@ MEDIA_ROOT = BACKUP_DIR
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50 MB en bytes
-

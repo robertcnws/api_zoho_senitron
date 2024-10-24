@@ -9,6 +9,7 @@ COPY requirements.txt /app/
 
 RUN pip install --upgrade pip
 RUN pip install gunicorn
+RUN pip install uvicorn
 RUN pip install -r requirements.txt
 
 # Instalar herramientas necesarias incluyendo cron
@@ -28,4 +29,5 @@ COPY . /app/
 EXPOSE 8000
 
 # Ejecuta el script de inicialización y luego arranca Gunicorn y cron
-CMD ["sh", "-c", "python manage.py makemigrations && python manage.py migrate && python init_scripts.py && gunicorn --bind 0.0.0.0:8000 _api_zoho_senitron.wsgi:application"]
+# CMD ["sh", "-c", "python manage.py makemigrations && python manage.py migrate && python manage.py collectstatic --no-input && python init_scripts.py && gunicorn --bind 0.0.0.0:8000 _api_zoho_senitron.asgi:application"]
+CMD ["sh", "-c", "python manage.py makemigrations && python manage.py migrate && python manage.py collectstatic --no-input && python init_scripts.py && gunicorn _api_zoho_senitron.asgi:application -w 3 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000"]

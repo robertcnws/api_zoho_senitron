@@ -1,3 +1,14 @@
+# bind = '0.0.0.0:8000'
+# workers = 3
+# threads = 2
+# timeout = 512
+# graceful_timeout = 512
+# keepalive = 5
+# accesslog = '-'
+# errorlog = '-'
+# loglevel = 'info'
+# wsgi_app = '_api_zoho_senitron.asgi:application'
+
 bind = '0.0.0.0:8000'
 workers = 3
 threads = 2
@@ -7,4 +18,4 @@ keepalive = 5
 accesslog = '-'
 errorlog = '-'
 loglevel = 'info'
-wsgi_app = '_api_zoho_senitron.wsgi:application'
+worker_class = 'uvicorn.workers.UvicornWorker'
