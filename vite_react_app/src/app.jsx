@@ -32,6 +32,7 @@ import { LoadingContext } from 'src/auth/context/loading-context';
 
 import client from './utils/graphql-client';
 import BackdropBackground from './layouts/components/backdrop-background';
+import { RouteProvider } from './auth/context/router-context';
 
 
 
@@ -56,15 +57,17 @@ export default function App() {
           <SettingsProvider settings={defaultSettings}>
             <ThemeProvider>
               <ApolloProvider client={client}>
-                <MotionLazy>
-                  <CheckoutProvider>
-                    <Snackbar />
-                    <ProgressBar />
-                    <SettingsDrawer />
-                    <Router />
-                    <BackdropBackground loading={loading} error={error} setError={setError} component={component} />
-                  </CheckoutProvider>
-                </MotionLazy>
+                <RouteProvider>
+                  <MotionLazy>
+                    <CheckoutProvider>
+                      <Snackbar />
+                      <ProgressBar />
+                      <SettingsDrawer />
+                      <Router />
+                      <BackdropBackground loading={loading} error={error} setError={setError} component={component} />
+                    </CheckoutProvider>
+                  </MotionLazy>
+                </RouteProvider>
               </ApolloProvider>
             </ThemeProvider>
           </SettingsProvider>

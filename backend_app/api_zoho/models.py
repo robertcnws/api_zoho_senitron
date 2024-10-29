@@ -111,6 +111,7 @@ class ZohoInventoryItem(models.Model):
     hsn_or_sac = models.BigIntegerField(null=True, blank=True)
     sat_item_key_code = models.CharField(max_length=255, null=True, blank=True)
     unitkey_code = models.CharField(max_length=255, null=True, blank=True)
+    synced_with_senitron = models.BooleanField(default=False)    
 
     def __str__(self):
         return self.name

@@ -1,8 +1,9 @@
 services:
-  backend_api_zoho_senitron:
+  backend-api-zoho-senitron:
     build:
       context: ./backend_app
-    container_name: backend_api_zoho_senitron
+    container_name: backend-api-zoho-senitron
+    image: robertocnws/backend-api-zoho-senitron:latest
     cap_add:
       - SYS_TIME
     volumes:
@@ -10,16 +11,16 @@ services:
       - ./backend_app/nginx_gunicorn/gunicorn.conf.py:/etc/nginx/gunicorn.conf.py
       - ./backend_app/local_backup:/app/backup
       - ./backend_app/static:/app/staticfiles
-      - /etc/localtime:/etc/localtime:ro
-      - /etc/timezone:/etc/timezone:ro
     ports:
       - "8000:8000"
     env_file:
       - ./backend_app/.env
     networks:
-      - api_zoho_senitron_network
+      - api-zoho-senitron-network
+    environment:
+      - TZ=America/New_York
     depends_on:
-      - redis_api_zoho_senitron
+      - redis-api-zoho-senitron
 
   # frontend_app:
   #   build:
@@ -32,9 +33,9 @@ services:
   #   networks:
   #     - api_zoho_senitron_network
 
-  postgres_api_zoho_senitron:
+  postgres-api-zoho-senitron:
     image: postgres:16.0
-    container_name: postgres_api_zoho_senitron
+    container_name: postgres-api-zoho-senitron
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres/scripts_db:/docker-entrypoint-initdb.d
@@ -45,12 +46,13 @@ services:
     ports:
       - "5442:5432"
     networks:
-      - api_zoho_senitron_network
+      - api-zoho-senitron-network
 
-  nginx_api_zoho_senitron:
+  nginx-api-zoho-senitron:
     build:
       context: ./nginx
-    container_name: nginx_api_zoho_senitron
+    container_name: nginx-api-zoho-senitron
+    image: robertocnws/nginx-api-zoho-senitron:latest
     ports:
       - "80:80"
       - "443:443"
@@ -60,23 +62,23 @@ services:
       - ./frontend_app/build:/usr/share/nginx/html
       - ./backend_app/static:/usr/share/nginx/html_backend
     depends_on:
-      - backend_api_zoho_senitron
+      - backend-api-zoho-senitron
       # - frontend_app
     networks:
-      - api_zoho_senitron_network
+      - api-zoho-senitron-network
 
-  redis_api_zoho_senitron:
+  redis-api-zoho-senitron:
     image: redis:latest
-    container_name: redis_api_zoho_senitron
+    container_name: redis-api-zoho-senitron
     volumes:
       - redis_data:/data
     networks:
-      - api_zoho_senitron_network
+      - api-zoho-senitron-network
 
 volumes:
   postgres_data:
   redis_data:
 
 networks:
-  api_zoho_senitron_network:
+  api-zoho-senitron-network:
     driver: bridge

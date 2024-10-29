@@ -237,7 +237,7 @@ def config_headers(request):
 # GET ALL INVENTORY ITEMS
 #############################################
 
-MAX_WORKERS = 10 
+MAX_WORKERS = 20
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -257,39 +257,33 @@ def load_inventory_items(request):
         'per_page': 200,
     }
 
-    url = f'{settings.ZOHO_INVENTORY_ITEMS_URL}'
+    url = settings.ZOHO_INVENTORY_ITEMS_URL
     items_to_get = []
+    session = requests.Session()
 
     def fetch_page_data(page):
         try:
             params['page'] = page
-            response = requests.get(url, headers=headers, params=params)
+            response = session.get(url, headers=headers, params=params)
             if response.status_code == 401:
                 new_token = refresh_zoho_access_token()
                 headers['Authorization'] = f'Zoho-oauthtoken {new_token}'
-                response = requests.get(url, headers=headers, params=params)
+                response = session.get(url, headers=headers, params=params)
             response.raise_for_status()
-            items = response.json()
-            return items.get('items', [])
+            data = response.json()
+            return data.get('items', []), data.get('total_pages', 1)
         except requests.RequestException as e:
-            logger.error(f"Error fetching items for page {page}: {e}")
-            return []
-    
-    has_more_pages = True
-    page = 1
+            logger.error(f"Error fetching page {page}: {e}")
+            return [], 0
+
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        future_to_page = {executor.submit(fetch_page_data, page): page}
-        while has_more_pages:
-            future = as_completed(future_to_page)
-            for f in future:
-                page_items = f.result()
-                if page_items:
-                    items_to_get.extend(page_items)
-                else:
-                    has_more_pages = False
-                page += 1
-                future_to_page[executor.submit(fetch_page_data, page)] = page
-    
+        initial_items, total_pages = fetch_page_data(1)
+        items_to_get.extend(initial_items)
+        futures = {executor.submit(fetch_page_data, page): page for page in range(2, total_pages + 1)}
+        for future in as_completed(futures):
+            page_items, _ = future.result()
+            items_to_get.extend(page_items)
+
     item_ids = [item['item_id'] for item in items_to_get]
     existing_items = ZohoInventoryItem.objects.filter(item_id__in=item_ids)
     existing_items_ids = set(existing_items.values_list('item_id', flat=True))
@@ -306,53 +300,21 @@ def load_inventory_items(request):
     
     with transaction.atomic():
         if new_items:
-            ZohoInventoryItem.objects.bulk_create(
-                new_items, batch_size=100, ignore_conflicts=True
-            )
-
+            ZohoInventoryItem.objects.bulk_create(new_items, batch_size=200, ignore_conflicts=True)
         if items_to_update:
             ZohoInventoryItem.objects.bulk_update(
                 items_to_update,
                 fields=[
-                    'group_id', 
-                    'group_name', 
-                    'name', 
-                    'status', 
-                    'source', 
-                    'is_linked_with_zohocrm',
-                    'item_type', 
-                    'description', 
-                    'rate', 
-                    'is_taxable', 
-                    'tax_id', 
-                    'tax_name', 
-                    'tax_percentage',
-                    'purchase_description', 
-                    'purchase_rate', 
-                    'is_combo_product', 
-                    'product_type', 
-                    'attribute_id1',
-                    'attribute_name1', 
-                    'reorder_level', 
-                    'stock_on_hand', 
-                    'available_stock', 
-                    'actual_available_stock',
-                    'sku', 
-                    'upc', 
-                    'ean', 
-                    'isbn', 
-                    'part_number', 
-                    'attribute_option_id1', 
-                    'attribute_option_name1',
-                    'image_name', 
-                    'image_type', 
-                    'created_time', 
-                    'last_modified_time', 
-                    'hsn_or_sac',
-                    'sat_item_key_code', 
-                    'unitkey_code'
+                    'group_id', 'group_name', 'name', 'status', 'source', 'is_linked_with_zohocrm',
+                    'item_type', 'description', 'rate', 'is_taxable', 'tax_id', 'tax_name', 
+                    'tax_percentage', 'purchase_description', 'purchase_rate', 'is_combo_product', 
+                    'product_type', 'attribute_id1', 'attribute_name1', 'reorder_level', 
+                    'stock_on_hand', 'available_stock', 'actual_available_stock', 'sku', 
+                    'upc', 'ean', 'isbn', 'part_number', 'attribute_option_id1', 
+                    'attribute_option_name1', 'image_name', 'image_type', 'created_time', 
+                    'last_modified_time', 'hsn_or_sac', 'sat_item_key_code', 'unitkey_code'
                 ],
-                batch_size=100
+                batch_size=200
             )
 
     return JsonResponse({'message': 'Items loaded successfully'}, status=200)
@@ -364,14 +326,14 @@ def load_inventory_items(request):
 #############################################
 
 
-def fetch_sales_order_details(item, headers, params):
+def fetch_sales_order_details(item, session, headers):
     try:
         url = f'{settings.ZOHO_INVENTORY_SALESORDERS_URL}/{item["salesorder_id"]}'
-        response = requests.get(url, headers=headers, params=params)
+        response = session.get(url, headers=headers, params={})
         if response.status_code == 401:
             new_token = refresh_zoho_access_token()
             headers['Authorization'] = f'Zoho-oauthtoken {new_token}'
-            response = requests.get(url, headers=headers, params=params)
+            response = session.get(url, headers=headers, params={})
         response.raise_for_status()
         full_item = response.json()
         return full_item.get('salesorder', None)
@@ -382,7 +344,6 @@ def fetch_sales_order_details(item, headers, params):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def load_inventory_sales_orders(request):
-    
     app_config = AppConfig.objects.first()
     logger.debug(app_config)
     try:
@@ -392,8 +353,8 @@ def load_inventory_sales_orders(request):
         return JsonResponse({'error': f"Error connecting to Zoho API (Load Items): {str(e)}"}, status=500)
 
     data = json.loads(request.body)
-    start_date = data.get('start_date', None)
-    end_date = data.get('end_date', None)
+    start_date = data.get('start_date')
+    end_date = data.get('end_date')
 
     if not start_date:
         return JsonResponse({'error': 'Date is missing'}, status=400)
@@ -404,31 +365,27 @@ def load_inventory_sales_orders(request):
     except ValueError:
         return JsonResponse({'error': 'Invalid date format'}, status=400)
     
-    if not end_date:
-        params = {
-            'organization_id': app_config.zoho_org_id,
-            'date': start_date,
-            'page': 1,
-            'per_page': 200,
-        }
+    params = {
+        'organization_id': app_config.zoho_org_id,
+        'per_page': 200,
+        'page': 1
+    }
+    if end_date:
+        params.update({'date_start': start_date, 'date_end': end_date})
     else:
-        params = {
-            'organization_id': app_config.zoho_org_id,
-            'date_start': start_date,
-            'date_end': end_date,
-            'page': 1,
-            'per_page': 200,
-        }
-    url = f'{settings.ZOHO_INVENTORY_SALESORDERS_URL}'
+        params['date'] = start_date
+
+    url = settings.ZOHO_INVENTORY_SALESORDERS_URL
     items_to_get = []
+    session = requests.Session()
 
     while True:
         try:
-            response = requests.get(url, headers=headers, params=params)
+            response = session.get(url, headers=headers, params=params)
             if response.status_code == 401:
                 new_token = refresh_zoho_access_token()
                 headers['Authorization'] = f'Zoho-oauthtoken {new_token}'
-                response = requests.get(url, headers=headers, params=params)
+                response = session.get(url, headers=headers, params=params)
             response.raise_for_status()
             items = response.json()
             items_to_get.extend(items.get('salesorders', []))
@@ -439,8 +396,8 @@ def load_inventory_sales_orders(request):
             logger.error(f"Error fetching sales orders: {e}")
             return JsonResponse({'error': 'Failed to fetch sales orders'}, status=500)
     
-    with ThreadPoolExecutor() as executor:
-        futures = [executor.submit(fetch_sales_order_details, item, headers, params) for item in items_to_get]
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        futures = [executor.submit(fetch_sales_order_details, item, session, headers) for item in items_to_get]
         full_items_to_get = [future.result() for future in as_completed(futures) if future.result()]
     
     salesorder_ids = [item['salesorder_id'] for item in full_items_to_get]
@@ -459,51 +416,23 @@ def load_inventory_sales_orders(request):
 
     with transaction.atomic():
         if new_sales_orders:
-            ZohoInventoryShipmentSalesOrder.objects.bulk_create(new_sales_orders, ignore_conflicts=True)
-            
+            ZohoInventoryShipmentSalesOrder.objects.bulk_create(new_sales_orders, ignore_conflicts=True, batch_size=200)
         if sales_orders_to_update:
             ZohoInventoryShipmentSalesOrder.objects.bulk_update(
                 sales_orders_to_update,
                 fields=[
-                    'salesorder_number',
-                    'date',
-                    'status',
-                    'customer_id',
-                    'customer_name',
-                    'is_taxable',
-                    'tax_id',
-                    'tax_name',
-                    'tax_percentage',
-                    'currency_id',
-                    'currency_code',
-                    'currency_symbol',
-                    'exchange_rate',
-                    'delivery_method',
-                    'total_quantity',
-                    'sub_total',
-                    'tax_total',
-                    'total',
-                    'created_by_email',
-                    'created_by_name',
-                    'salesperson_id',
-                    'salesperson_name',
-                    'is_test_order',
-                    'notes',
-                    'payment_terms',
-                    'payment_terms_label',
-                    'line_items',
-                    'shipping_address',
-                    'billing_address',
-                    'warehouses',
-                    'custom_fields',
-                    'order_sub_statuses',
-                    'shipment_sub_statuses',
-                    'created_time',
-                    'last_modified_time',
-                ]
+                    'salesorder_number', 'date', 'status', 'customer_id', 'customer_name',
+                    'is_taxable', 'tax_id', 'tax_name', 'tax_percentage', 'currency_id',
+                    'currency_code', 'currency_symbol', 'exchange_rate', 'delivery_method',
+                    'total_quantity', 'sub_total', 'tax_total', 'total', 'created_by_email',
+                    'created_by_name', 'salesperson_id', 'salesperson_name', 'is_test_order',
+                    'notes', 'payment_terms', 'payment_terms_label', 'line_items',
+                    'shipping_address', 'billing_address', 'warehouses', 'custom_fields',
+                    'order_sub_statuses', 'shipment_sub_statuses', 'created_time',
+                    'last_modified_time'
+                ],
+                batch_size=200
             )
-        
-
     return JsonResponse({'message': 'Sales Orders loaded successfully'}, status=200)
 
 # @api_view(['POST'])

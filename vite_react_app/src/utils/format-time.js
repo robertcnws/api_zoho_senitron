@@ -11,7 +11,7 @@ dayjs.extend(relativeTime);
  * Docs: https://day.js.org/docs/en/display/format
  */
 export const formatStr = {
-  dateTime: 'DD MMM YYYY h:mm a', // 17 Apr 2022 12:00 am
+  dateTime: 'MMM DD YYYY h:mm a', // 17 Apr 2022 12:00 am
   date: 'DD MMM YYYY', // 17 Apr 2022
   time: 'h:mm a', // 12:00 am
   split: {
@@ -30,7 +30,7 @@ export function today(format) {
 
 // ----------------------------------------------------------------------
 
-/** output: 17 Apr 2022 12:00 am
+/** output: Apr 17 2022 12:00 am
  */
 export function fDateTime(date, format) {
   if (!date) {

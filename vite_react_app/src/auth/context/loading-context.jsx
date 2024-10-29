@@ -1,16 +1,20 @@
 // LoadingContext.js
 import React, { createContext, useState, useMemo } from 'react';
 
+import { useTheme, useMediaQuery } from '@mui/material';
+
 export const LoadingContext = createContext();
 
 export function LoadingProvider({ children }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [component, setComponent] = useState(null);
+  const sizeTheme = useTheme();
+  const isMobile = useMediaQuery(sizeTheme.breakpoints.down('md'));
 
   const value = useMemo(
-    () => ({ loading, setLoading, error, setError, component, setComponent }),
-    [loading, error, component]
+    () => ({ loading, setLoading, error, setError, component, setComponent, isMobile }),
+    [loading, error, component, isMobile]
   );
 
   return (

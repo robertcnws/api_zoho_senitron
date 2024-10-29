@@ -14,6 +14,7 @@ import { Main } from './main';
 import { HeaderSection } from '../core/header-section';
 import { LayoutSection } from '../core/layout-section';
 import { SettingsButton } from '../components/settings-button';
+import { CustomFooter } from '../main/footer';
 
 // ----------------------------------------------------------------------
 
@@ -64,7 +65,8 @@ export function AuthCenteredLayout({ sx, children, header }) {
       /** **************************************
        * Footer
        *************************************** */
-      footerSection={null}
+      // footerSection={null}
+      footerSection={<CustomFooter />}
       /** **************************************
        * Style
        *************************************** */

@@ -17,12 +17,12 @@ export function ItemTableFiltersResult({ filters, onResetPage, totalResults, sx 
     filters.setState({ status: 'all' });
   }, [filters, onResetPage]);
 
-  const handleRemoveRole = useCallback(
+  const handleRemoveSynced = useCallback(
     (inputValue) => {
-      const newValue = filters.state.role.filter((item) => item !== inputValue);
+      const newValue = filters.state.syncedWithSenitron.filter((item) => item !== inputValue);
 
       onResetPage();
-      filters.setState({ role: newValue });
+      filters.setState({ syncedWithSenitron: newValue });
     },
     [filters, onResetPage]
   );
@@ -43,9 +43,9 @@ export function ItemTableFiltersResult({ filters, onResetPage, totalResults, sx 
         />
       </FiltersBlock>
 
-      <FiltersBlock label="Role:" isShow={!!filters.state.role.length}>
-        {filters.state.role.map((item) => (
-          <Chip {...chipProps} key={item} label={item} onDelete={() => handleRemoveRole(item)} />
+      <FiltersBlock label="Synced With Senitron:" isShow={!!filters.state.syncedWithSenitron.length}>
+        {filters.state.syncedWithSenitron.map((item) => (
+          <Chip {...chipProps} key={item} label={item} onDelete={() => handleRemoveSynced(item)} />
         ))}
       </FiltersBlock>
 

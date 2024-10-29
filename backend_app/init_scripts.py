@@ -1,7 +1,7 @@
 import os
 import django
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', '_api_zoho_senitron.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'api_project_zoho_senitron.settings')
 django.setup()
 
 from django.core.management import call_command

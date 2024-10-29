@@ -1,3 +1,4 @@
+import React, { useEffect } from 'react';
 import Box from '@mui/material/Box';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
@@ -13,7 +14,7 @@ import { Logo } from 'src/components/logo';
 import { Main } from './main';
 import { NavMobile } from './nav/mobile';
 import { NavDesktop } from './nav/desktop';
-import { Footer, HomeFooter } from './footer';
+import { CustomFooter, Footer, HomeFooter } from './footer';
 import { MenuButton } from '../components/menu-button';
 import { LayoutSection } from '../core/layout-section';
 import { HeaderSection } from '../core/header-section';
@@ -35,6 +36,10 @@ export function MainLayout({ sx, data, children, header }) {
   const layoutQuery = 'md';
 
   const navData = data?.nav ?? mainNavData;
+
+  useEffect(() => {
+    console.log('MainLayout useEffect');
+  }, []);
 
   return (
     <LayoutSection
@@ -108,8 +113,9 @@ export function MainLayout({ sx, data, children, header }) {
       /** **************************************
        * Footer
        *************************************** */
-      footerSection={homePage ? <HomeFooter /> : <Footer layoutQuery={layoutQuery} />}
+      // footerSection={<Footer layoutQuery={layoutQuery} />}
       // footerSection={homePage ? <HomeFooter /> : <Footer layoutQuery={layoutQuery} />}
+      footerSection={<CustomFooter />}
       /** **************************************
        * Style
        *************************************** */

@@ -65,7 +65,8 @@ def create_inventory_item_instance(logger, data):
                 'last_modified_time': last_modified_time,
                 'hsn_or_sac': data.get('hsn_or_sac') if isinstance(data.get('hsn_or_sac'), (int, float)) else 0,
                 'sat_item_key_code': data.get('sat_item_key_code', ''),
-                'unitkey_code': data.get('unitkey_code', '')
+                'unitkey_code': data.get('unitkey_code', ''),
+                # 'synced_with_senitron': data.get('synced_with_senitron', False),
             }
         )
         return obj

@@ -30,6 +30,7 @@ import { ContactsPopover } from '../components/contacts-popover';
 import { WorkspacesPopover } from '../components/workspaces-popover';
 import { navData as dashboardNavData } from '../config-nav-dashboard';
 import { NotificationsDrawer } from '../components/notifications-drawer';
+import { CustomFooter, Footer } from '../main/footer';
 
 // ----------------------------------------------------------------------
 
@@ -178,7 +179,9 @@ export function DashboardLayout({ sx, children, header, data }) {
       /** **************************************
        * Footer
        *************************************** */
-      footerSection={null}
+      // footerSection={null}
+      // footerSection={<Footer layoutQuery={layoutQuery} />}
+      footerSection={<CustomFooter />}
       /** **************************************
        * Style
        *************************************** */

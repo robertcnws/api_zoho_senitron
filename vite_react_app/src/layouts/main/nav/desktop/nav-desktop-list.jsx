@@ -173,7 +173,7 @@ function NavSubList({ data, subheader, sx, ...other }) {
         {data.map((item) =>
           isDashboard ? (
             <NavLi key={item.title} sx={{ mt: 1.5 }}>
-              <NavItemDashboard path={item.path} />
+              <NavItemDashboard path={item.path}/>
             </NavLi>
           ) : (
             <NavLi key={item.title} sx={{ mt: 1.5 }}>
@@ -182,6 +182,7 @@ function NavSubList({ data, subheader, sx, ...other }) {
                 title={item.title}
                 path={item.path}
                 active={item.path === removeLastSlash(pathname)}
+                onclick={item.onClick}
               />
             </NavLi>
           )

@@ -125,6 +125,7 @@ export const paths = {
     item: {
       root: `${ROOTS.DASHBOARD}/item`,
       list: `${ROOTS.DASHBOARD}/item/list`,
+      details: (id) => `${ROOTS.DASHBOARD}/item/${id}`,
     },
     product: {
       root: `${ROOTS.DASHBOARD}/product`,

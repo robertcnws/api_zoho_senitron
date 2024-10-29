@@ -67,6 +67,7 @@ const ParamsPage = lazy(() => import('src/pages/dashboard/params'));
 const BlankPage = lazy(() => import('src/pages/dashboard/blank'));
 // Item
 const ItemListPage = lazy(() => import('src/pages/dashboard/item/list'));
+const ItemDetailsPage = lazy(() => import('src/pages/dashboard/item/details'));
 
 // ----------------------------------------------------------------------
 
@@ -93,7 +94,9 @@ export const dashboardRoutes = [
       {
         path: 'item',
         children: [
+          { element: <ItemListPage />, index: true },
           { path: 'list', element: <ItemListPage /> },
+          { path: ':id', element: <ItemDetailsPage /> },
         ],
       },
       {

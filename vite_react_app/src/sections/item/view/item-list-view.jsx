@@ -1,4 +1,6 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useContext } from 'react';
+
+
 
 import Box from '@mui/material/Box';
 import Tab from '@mui/material/Tab';
@@ -15,14 +17,13 @@ import Alert from '@mui/material/Alert';
 
 import { paths } from 'src/routes/paths';
 import { useRouter } from 'src/routes/hooks';
-import { RouterLink } from 'src/routes/components';
 
 import { useBoolean } from 'src/hooks/use-boolean';
 import { useSetState } from 'src/hooks/use-set-state';
 
 import { varAlpha } from 'src/theme/styles';
 import { DashboardContent } from 'src/layouts/dashboard';
-import { ITEM_STATUS_OPTIONS, useItemsQuery } from 'src/_mock/_items';
+import { ITEM_STATUS_OPTIONS, ITEM_SYNC_OPTIONS, useItemsQuery } from 'src/_mock/_items';
 import { CONFIG } from 'src/config-global';
 
 import { Label } from 'src/components/label';
@@ -31,6 +32,9 @@ import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
 import { ConfirmDialog } from 'src/components/custom-dialog';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
+
+import { LoadingContext } from 'src/auth/context/loading-context';
+
 import {
   useTable,
   emptyRows,
@@ -47,24 +51,31 @@ import { ItemTableRow } from '../item-table-row';
 import { ItemTableToolbar } from '../item-table-toolbar';
 import { ItemTableFiltersResult } from '../item-table-filters-result';
 
+
 // ----------------------------------------------------------------------
 
 const STATUS_OPTIONS = [{ value: 'all', label: 'All' }, ...ITEM_STATUS_OPTIONS];
 
-const TABLE_HEAD = [
-  // { id: '', width: 48 },
-  { id: 'itemId', label: 'ID', width: 80 },
-  { id: 'sku', label: 'SKU', width: 80 },
-  { id: 'name', label: 'Name', width: 220 },
-  { id: 'status', label: 'Status', width: 100 },
-  { id: 'stockOnHand', label: 'On Hand', width: 100 },
-  { id: '', width: 50 },
-];
-
 // ----------------------------------------------------------------------
 
 export function ItemListView() {
-  const table = useTable();
+
+  const { isMobile } = useContext(LoadingContext);
+
+  const TABLE_HEAD = [
+    // { id: '', width: 48 },
+    ...(!isMobile ? [
+      { id: 'itemId', label: 'ID', width: 80 }
+    ] : []),
+    { id: 'sku', label: 'SKU', width: isMobile ? 30 : 80 },
+    { id: 'name', label: 'Name', width: isMobile ? 50 : 220 },
+    { id: 'status', label: 'Status', width: isMobile ? 50 : 100 },
+    { id: 'stockOnHand', label: 'On Hand', width: isMobile ? 50 : 100 },
+    { id: 'syncedWithSenitron', label: 'Synced', width: 50 },
+    { id: '', width: 50 },
+  ];
+
+  const table = useTable({ defaultDense: true });
 
   const router = useRouter();
 
@@ -72,12 +83,28 @@ export function ItemListView() {
 
   const { loading, error, data } = useItemsQuery();
 
-
   const [tableData, setTableData] = useState([]);
+
+
+  useEffect(() => {
+    localStorage.removeItem('routeByOrder');
+  }, []);
+
+
+  useEffect(() => {
+    const page = localStorage.getItem('itemPage');
+    if (page) {
+      table.setPage(parseInt(page, 10));
+    }
+    const rowsPerPage = localStorage.getItem('itemRowsPerPage');
+    if (rowsPerPage) {
+      table.setRowsPerPage(parseInt(rowsPerPage, 10));
+    }
+  }, [table]);
+
 
   useEffect(() => {
     const socket = new WebSocket(`wss://${CONFIG.apiHost}/${CONFIG.apiDomain}/ws/inventory_items/`);
-
     socket.onmessage = (event) => {
       const message = JSON.parse(event.data);
       if (message.type === 'created' || message.type === 'updated') {
@@ -87,7 +114,7 @@ export function ItemListView() {
             const updatedData = [...prevData];
             updatedData[existingItemIndex] = message.item;
             return updatedData;
-          } 
+          }
           return [message.item, ...prevData];
         });
       }
@@ -106,7 +133,7 @@ export function ItemListView() {
     }
   }, [data, loading, error]);
 
-  const filters = useSetState({ name: '', role: [], status: 'all' });
+  const filters = useSetState({ name: '', syncedWithSenitron: [], status: 'all' });
 
   const dataFiltered = applyFilter({
     inputData: tableData,
@@ -117,7 +144,7 @@ export function ItemListView() {
   const dataInPage = rowInPage(dataFiltered, table.page, table.rowsPerPage);
 
   const canReset =
-    !!filters.state.name || filters.state.status !== 'all';
+    !!filters.state.name || filters.state.status !== 'all' || filters.state.syncedWithSenitron.length > 0;
 
   const notFound = (!dataFiltered.length && canReset) || !dataFiltered.length;
 
@@ -160,6 +187,14 @@ export function ItemListView() {
       filters.setState({ status: newValue });
     },
     [filters, table]
+  );
+
+  const handleViewRow = useCallback(
+    (id) => {
+      localStorage.removeItem('routeByOrder');
+      router.push(paths.dashboard.item.details(id));
+    },
+    [router]
   );
 
   if (loading) {
@@ -208,16 +243,16 @@ export function ItemListView() {
             { name: 'Item', href: paths.dashboard.item.root },
             { name: 'List' },
           ]}
-          action={
-            <Button
-              component={RouterLink}
-              href={paths.dashboard.user.new}
-              variant="contained"
-              startIcon={<Iconify icon="mingcute:add-line" />}
-            >
-              New user
-            </Button>
-          }
+          // action={
+          //   <Button
+          //     component={RouterLink}
+          //     href={paths.dashboard.user.new}
+          //     variant="contained"
+          //     startIcon={<Iconify icon="mingcute:add-line" />}
+          //   >
+          //     New user
+          //   </Button>
+          // }
           sx={{ mb: { xs: 3, md: 5 } }}
         />
 
@@ -262,6 +297,7 @@ export function ItemListView() {
           <ItemTableToolbar
             filters={filters}
             onResetPage={table.onResetPage}
+            options={{ values: ITEM_SYNC_OPTIONS.map((option) => option.label) }}
           />
 
           {canReset && (
@@ -325,6 +361,7 @@ export function ItemListView() {
                           onSelectRow={() => table.onSelectRow(row.itemId)}
                           onDeleteRow={() => handleDeleteRow(row.itemId)}
                           onEditRow={() => handleEditRow(row.itemId)}
+                          onViewRow={() => handleViewRow(row.itemId)}
                         />
                       ))}
 
@@ -345,9 +382,15 @@ export function ItemListView() {
             dense={table.dense}
             count={dataFiltered.length}
             rowsPerPage={table.rowsPerPage}
-            onPageChange={table.onChangePage}
+            onPageChange={(event, newPage) => {
+              localStorage.setItem('itemPage', newPage);
+              table.onChangePage(event, newPage);
+            }}
             onChangeDense={table.onChangeDense}
-            onRowsPerPageChange={table.onChangeRowsPerPage}
+            onRowsPerPageChange={(event) => {
+              localStorage.setItem('itemRowsPerPage', event.target.value);
+              table.onChangeRowsPerPage(event);
+            }}
           />
         </Card>
       </DashboardContent>
@@ -379,7 +422,7 @@ export function ItemListView() {
 }
 
 function applyFilter({ inputData, comparator, filters }) {
-  const { name, status } = filters;
+  const { name, syncedWithSenitron, status } = filters;
 
   const stabilizedThis = inputData.map((el, index) => [el, index]);
 
@@ -393,13 +436,36 @@ function applyFilter({ inputData, comparator, filters }) {
 
   if (name) {
     inputData = inputData.filter(
-      (user) => user.name.toLowerCase().indexOf(name.toLowerCase()) !== -1
+      (item) => item.name.toLowerCase().indexOf(name.toLowerCase()) !== -1 || 
+      item.sku.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
+      item.itemId.toString().indexOf(name.toLowerCase()) !== -1 ||
+      item.stockOnHand.toString().indexOf(name.toLowerCase()) !== -1
     );
   }
 
   if (status !== 'all') {
-    inputData = inputData.filter((user) => user.status === status);
+    inputData = inputData.filter((item) => item.status === status);
   }
 
+  if (syncedWithSenitron.length) {
+    const trueValues = ['synced', 'yes'];
+    const falseValues = ['not synced', 'no'];
+    
+    const shouldIncludeTrue = syncedWithSenitron.some(val => trueValues.includes(val.toLowerCase()));
+    const shouldIncludeFalse = syncedWithSenitron.some(val => falseValues.includes(val.toLowerCase()));
+    
+    inputData = inputData.filter(item => {
+      if (shouldIncludeTrue && shouldIncludeFalse) {
+        return true;
+      }
+      if (shouldIncludeTrue) {
+        return item.syncedWithSenitron === true;
+      }
+      if (shouldIncludeFalse) {
+        return item.syncedWithSenitron === false;
+      }
+      return true;
+    });
+  }
   return inputData;
 }

@@ -49,7 +49,7 @@ export function NavMobile({ data, open, onClose, slots, sx }) {
         <Box component="nav" display="flex" flexDirection="column" flex="1 1 auto" sx={{ pb: 3 }}>
           <NavUl>
             {data.map((list) => (
-              <NavList key={list.title} data={list} />
+              <NavList key={list.title} data={list}/>
             ))}
           </NavUl>
         </Box>

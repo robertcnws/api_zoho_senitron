@@ -14,6 +14,7 @@ import { Main, Content } from './main';
 import { HeaderSection } from '../core/header-section';
 import { LayoutSection } from '../core/layout-section';
 import { SettingsButton } from '../components/settings-button';
+import { CustomFooter, Footer, HomeFooter } from '../main/footer';
 
 // ----------------------------------------------------------------------
 
@@ -64,7 +65,10 @@ export function AuthSplitLayout({ sx, section, children, header }) {
       /** **************************************
        * Footer
        *************************************** */
-      footerSection={null}
+      // footerSection={null}
+      // footerSection={homePage ? <HomeFooter /> : <Footer layoutQuery={layoutQuery} />}
+      // footerSection={<Footer layoutQuery={layoutQuery} />}
+      footerSection={<CustomFooter />}
       /** **************************************
        * Style
        *************************************** */

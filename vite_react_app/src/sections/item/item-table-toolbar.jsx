@@ -12,10 +12,11 @@ import { usePopover, CustomPopover } from 'src/components/custom-popover';
 import { CONFIG } from 'src/config-global';
 import axios from 'axios';
 import { LoadingContext } from 'src/auth/context/loading-context';
+import { Checkbox, FormControl, InputLabel, OutlinedInput, Select } from '@mui/material';
 
 // ----------------------------------------------------------------------
 
-export function ItemTableToolbar({ filters, onResetPage }) {
+export function ItemTableToolbar({ filters, onResetPage, options }) {
   const popover = usePopover();
 
   const { setLoading, setError, setComponent } = useContext(LoadingContext);
@@ -32,6 +33,17 @@ export function ItemTableToolbar({ filters, onResetPage }) {
     [filters, onResetPage]
   );
 
+  const handleFilterSynced = useCallback(
+    (event) => {
+      const newValue =
+        typeof event.target.value === 'string' ? event.target.value.split(',') : event.target.value;
+
+      onResetPage();
+      filters.setState({ syncedWithSenitron: newValue });
+    },
+    [filters, onResetPage]
+  );
+
 
   return (
     <>
@@ -41,13 +53,37 @@ export function ItemTableToolbar({ filters, onResetPage }) {
         direction={{ xs: 'column', md: 'row' }}
         sx={{ p: 2.5, pr: { xs: 2.5, md: 1 } }}
       >
+        <FormControl sx={{ flexShrink: 0, width: { xs: 1, md: 200 } }}>
+          <InputLabel htmlFor="item-filter-syncedWithSenitron-select-label">Synced With Senitron</InputLabel>
+
+          <Select
+            multiple
+            value={filters.state.syncedWithSenitron}
+            onChange={handleFilterSynced}
+            input={<OutlinedInput label="Synced With Senitron" />}
+            renderValue={(selected) => selected.map((value) => value).join(', ')}
+            inputProps={{ id: 'item-filter-syncedWithSenitron-select-label' }}
+            sx={{ textTransform: 'capitalize' }}
+          >
+            {options.values.map((option) => (
+              <MenuItem key={option} value={option}>
+                <Checkbox
+                  disableRipple
+                  size="small"
+                  checked={filters.state.syncedWithSenitron.includes(option)}
+                />
+                {option}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
 
         <Stack direction="row" alignItems="center" spacing={2} flexGrow={1} sx={{ width: 1 }}>
           <TextField
             fullWidth
             value={filters.state.name}
             onChange={handleFilterName}
-            placeholder="Search by item name..."
+            placeholder="Search by item (NAME, SKU, ID or STOCK ON HAND)..."
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -114,8 +150,29 @@ export function ItemTableToolbar({ filters, onResetPage }) {
                 });
             }}
           >
+            <Iconify icon="mdi:update" />
+            Fetch Updates from Zoho
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              popover.onClose();
+              setLoading(true);
+              axios
+                .post(`${CONFIG.apiUrl}/api_zoho/load/inventory_items/`)
+                .then(() => {
+                  console.log('Inventory items fetched');
+                })
+                .catch((err) => {
+                  console.error('Error fetching inventory items:', err);
+                  setError('There was an error fetching the inventory items.');
+                })
+                .finally(() => {
+                  setLoading(false);
+                });
+            }}
+          >
             <Iconify icon="mdi:sync" />
-            Fetch Updates
+            Sync All with Senitron
           </MenuItem>
         </MenuList>
       </CustomPopover>

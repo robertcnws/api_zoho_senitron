@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useContext } from 'react';
 
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
@@ -32,6 +32,9 @@ import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
 import { ConfirmDialog } from 'src/components/custom-dialog';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
+
+import { LoadingContext } from 'src/auth/context/loading-context';
+
 import {
   useTable,
   emptyRows,
@@ -52,18 +55,25 @@ import { OrderTableFiltersResult } from '../order-table-filters-result';
 
 const STATUS_OPTIONS = [{ value: 'all', label: 'All' }, ...SALES_ORDERS_STATUS_OPTIONS];
 
-const TABLE_HEAD = [
-  { id: 'salesorderId', label: 'ID', width: 88 },
-  { id: 'salesorderNumber', label: 'Number', width: 140 },
-  { id: 'date', label: 'Date', width: 140 },
-  { id: 'status', label: 'Status', width: 110 },
-  { id: '', width: 68 },
-];
 
 // ----------------------------------------------------------------------
 
 export function OrderListView() {
-  const table = useTable({ defaultOrderBy: 'salesorderNumber' });
+
+  const { isMobile } = useContext(LoadingContext);
+
+  const TABLE_HEAD = [
+    ...(!isMobile ?
+      [{ id: 'salesorderId', label: 'ID', width: 88 }] : []
+    ),
+    { id: 'salesorderNumber', label: 'Number', width: isMobile ? 50 : 140 },
+    { id: 'date', label: 'Date', width: isMobile ? 50 : 140 },
+    { id: 'status', label: 'Status', width: isMobile ? 50 : 110 },
+    { id: '', width: isMobile ? 30 : 68 },
+  ];
+
+
+  const table = useTable({ defaultOrderBy: 'salesorderNumber', defaultDense: true });
 
   const router = useRouter();
 
@@ -72,6 +82,20 @@ export function OrderListView() {
   const { loading, error, data } = useSalesOrdersQuery(null, null);
 
   const [tableData, setTableData] = useState([]);
+
+
+  useEffect(() => {
+    const page = localStorage.getItem('orderPage');
+    if (page) {
+      table.setPage(parseInt(page, 10));
+    }
+    const rowsPerPage = localStorage.getItem('orderRowsPerPage');
+    if (rowsPerPage) {
+      table.setRowsPerPage(parseInt(rowsPerPage, 10));
+    }
+  }, [table]);
+
+
 
   useEffect(() => {
     const socket = new WebSocket(`wss://${CONFIG.apiHost}/${CONFIG.apiDomain}/ws/inventory_sales_orders/`);
@@ -85,7 +109,7 @@ export function OrderListView() {
             const updatedData = [...prevData];
             updatedData[existingItemIndex] = message.item;
             return updatedData;
-          } 
+          }
           return [message.item, ...prevData];
         });
       }
@@ -280,9 +304,9 @@ export function OrderListView() {
                         table.page * table.rowsPerPage,
                         table.page * table.rowsPerPage + table.rowsPerPage
                       )
-                      .map((row) => (
+                      .map((row, index) => (
                         <OrderTableRow
-                          key={row.salesorderId}
+                          key={`${row.salesorderId}-${index}`}
                           row={row}
                           selected={table.selected.includes(row.salesorderId)}
                           onSelectRow={() => table.onSelectRow(row.salesorderId)}
@@ -308,9 +332,15 @@ export function OrderListView() {
             dense={table.dense}
             count={dataFiltered.length}
             rowsPerPage={table.rowsPerPage}
-            onPageChange={table.onChangePage}
+            onPageChange={(event, newPage) => {
+              localStorage.setItem('orderPage', newPage);
+              table.onChangePage(event, newPage);
+            }}
             onChangeDense={table.onChangeDense}
-            onRowsPerPageChange={table.onChangeRowsPerPage}
+            onRowsPerPageChange={(event) => {
+              localStorage.setItem('orderRowsPerPage', event.target.value);
+              table.onChangeRowsPerPage(event);
+            }}
           />
         </Card>
       </DashboardContent>
@@ -356,8 +386,10 @@ function applyFilter({ inputData, comparator, filters, dateError }) {
 
   if (salesorderNumber) {
     inputData = inputData.filter(
-      (order) =>
-        order.salesorderNumber.toLowerCase().indexOf(salesorderNumber.toLowerCase()) !== -1
+      (order) => (
+        order.salesorderNumber.toLowerCase().indexOf(salesorderNumber.toLowerCase()) !== -1 ||
+        order.salesorderId.toLowerCase().indexOf(salesorderNumber.toLowerCase()) !== -1 ||
+        order.lineItems.toLowerCase().indexOf(salesorderNumber.toLowerCase()) !== -1)
     );
   }
 

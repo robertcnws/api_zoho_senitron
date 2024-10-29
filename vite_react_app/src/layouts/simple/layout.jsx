@@ -11,6 +11,7 @@ import { Main, CompactContent } from './main';
 import { LayoutSection } from '../core/layout-section';
 import { HeaderSection } from '../core/header-section';
 import { SettingsButton } from '../components/settings-button';
+import { CustomFooter, Footer } from '../main/footer';
 
 // ----------------------------------------------------------------------
 
@@ -55,7 +56,9 @@ export function SimpleLayout({ sx, children, header, content }) {
       /** **************************************
        * Footer
        *************************************** */
-      footerSection={null}
+      // footerSection={null}
+      // footerSection={<Footer layoutQuery={layoutQuery} />}
+      footerSection={<CustomFooter />}
       /** **************************************
        * Style
        *************************************** */

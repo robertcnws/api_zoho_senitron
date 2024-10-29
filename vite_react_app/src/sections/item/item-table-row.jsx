@@ -1,3 +1,6 @@
+import React, { useContext } from 'react';
+
+import { LoadingContext } from 'src/auth/context/loading-context';
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
@@ -20,7 +23,10 @@ import { usePopover, CustomPopover } from 'src/components/custom-popover';
 
 // ----------------------------------------------------------------------
 
-export function ItemTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRow }) {
+export function ItemTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRow, onViewRow }) {
+
+  const { isMobile } = useContext(LoadingContext);
+
   const confirm = useBoolean();
 
   const popover = usePopover();
@@ -30,10 +36,10 @@ export function ItemTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
   return (
     <>
       <TableRow hover selected={selected} aria-checked={selected} tabIndex={-1}>
+
         <TableCell padding="checkbox">
           <Checkbox id={row.itemId} checked={selected} onClick={onSelectRow} />
         </TableCell>
-
         {/* <TableCell>
           <Stack spacing={2} direction="row" alignItems="center">
             <Avatar alt={row.name} src={row.avatarUrl} />
@@ -49,7 +55,9 @@ export function ItemTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
           </Stack>
         </TableCell> */}
 
-        <TableCell sx={{ whiteSpace: 'nowrap' }}>{row.itemId}</TableCell>
+        {!isMobile && (
+          <TableCell sx={{ whiteSpace: 'nowrap' }}>{row.itemId}</TableCell>
+        )}
 
         <TableCell sx={{ whiteSpace: 'nowrap' }}>{row.sku}</TableCell>
 
@@ -69,7 +77,17 @@ export function ItemTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
           </Label>
         </TableCell>
 
-        <TableCell sx={{ whiteSpace: 'nowrap' }}>{row.stockOnHand}</TableCell>
+        <TableCell sx={{ whiteSpace: 'nowrap' }}>{parseInt(row.stockOnHand, 10)}</TableCell>
+        <TableCell>
+          <Label
+            variant="soft"
+            color={
+              (row.syncedWithSenitron && 'success' || 'error' )
+            }
+          >
+            {row.syncedWithSenitron ? 'Yes' : 'No'}
+          </Label>
+        </TableCell>
 
         <TableCell>
           <Stack direction="row" alignItems="center">
@@ -98,15 +116,24 @@ export function ItemTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
         <MenuList>
           <MenuItem
             onClick={() => {
+              onViewRow();
+              popover.onClose();
+            }}
+          >
+            <Iconify icon="solar:eye-bold" />
+            View Item
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
               confirm.onTrue();
               popover.onClose();
             }}
             sx={{ color: 'error.main' }}
           >
             <Iconify icon="solar:trash-bin-trash-bold" />
-            Delete
+            Delete Item
           </MenuItem>
-          
+
         </MenuList>
       </CustomPopover>
 
@@ -114,7 +141,7 @@ export function ItemTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
         open={confirm.value}
         onClose={confirm.onFalse}
         title="Delete"
-        content="Are you sure want to delete?"
+        content={`Are you sure want to delete item: ${row.sku} (${row.name})?`}
         action={
           <Button variant="contained" color="error" onClick={onDeleteRow}>
             Delete

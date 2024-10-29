@@ -25,16 +25,19 @@ export function OrderTableToolbar({ filters, onResetPage, dateError }) {
   const popover = usePopover();
 
   const { setLoading, setError, setComponent } = useContext(LoadingContext);
+  
 
   useEffect(() => {
     setComponent('sales orders');
   }, [setComponent]);
 
   useEffect(() => {
+    if (localStorage.getItem('startDate')) filters.setState({ startDate: dayjs(localStorage.getItem('startDate')) });
+    if (localStorage.getItem('endDate')) filters.setState({ endDate: dayjs(localStorage.getItem('endDate')) });
     const today = dayjs();
     if (!filters.state.startDate && !filters.state.endDate) {
       filters.setState({
-        startDate: today,
+        startDate: today.subtract(7, 'day'),
         endDate: today,
       });
     }
@@ -51,7 +54,9 @@ export function OrderTableToolbar({ filters, onResetPage, dateError }) {
   const handleFilterStartDate = useCallback(
     (newValue) => {
       onResetPage();
-      filters.setState({ startDate: newValue });
+      const isoString = newValue.toISOString();
+      localStorage.setItem('startDate', isoString);
+      filters.setState({ startDate: dayjs(isoString) });
     },
     [filters, onResetPage]
   );
@@ -59,7 +64,9 @@ export function OrderTableToolbar({ filters, onResetPage, dateError }) {
   const handleFilterEndDate = useCallback(
     (newValue) => {
       onResetPage();
-      filters.setState({ endDate: newValue });
+      const isoString = newValue.toISOString();
+      localStorage.setItem('endDate', isoString);
+      filters.setState({ endDate: dayjs(isoString) });
     },
     [filters, onResetPage]
   );
@@ -107,7 +114,7 @@ export function OrderTableToolbar({ filters, onResetPage, dateError }) {
             fullWidth
             value={filters.state.salesorderNumber}
             onChange={handleFilterName}
-            placeholder="Search sales order number..."
+            placeholder="Search sales order (NUMBER, ID, item NAME, item SKU or item ID)..."
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -177,8 +184,8 @@ export function OrderTableToolbar({ filters, onResetPage, dateError }) {
                 });
             }}
           >
-            <Iconify icon="mdi:sync" />
-            Fetch Updates
+            <Iconify icon="mdi:update" />
+            Fetch Updates from Zoho
           </MenuItem>
         </MenuList>
       </CustomPopover>

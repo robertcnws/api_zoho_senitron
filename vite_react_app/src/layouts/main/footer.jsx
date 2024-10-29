@@ -4,7 +4,7 @@ import Stack from '@mui/material/Stack';
 import Divider from '@mui/material/Divider';
 import { useTheme } from '@mui/material/styles';
 import Container from '@mui/material/Container';
-import Grid from '@mui/material/Unstable_Grid2';
+import Grid from '@mui/material/Grid';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 
@@ -169,3 +169,58 @@ export function HomeFooter({ sx }) {
     </Box>
   );
 }
+
+// ----------------------------------------------------------------------
+
+export const CustomFooter = () => {
+
+  const currentYear = new Date().getFullYear();
+
+  return (
+    <Box
+      sx={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        width: '100%',
+        backgroundColor: '#f8f8f8',
+        borderTop: '1px solid #ddd',
+        py: 1,
+        textAlign: 'center',
+        zIndex: 1300,
+        mb: 0
+      }}
+    >
+      <Grid container spacing={2} justifyContent="center">
+        <Grid item xs={12} sm={6}>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ fontSize: '12px', fontWeight: 'bold' }}
+          >
+            © {currentYear} API Zoho Senitron. New Window System. All rights reserved.
+          </Typography>
+        </Grid>
+        
+        <Grid item xs={12} sm={6}>
+          <Stack
+            direction="row"
+            spacing={1}
+            justifyContent="center"
+            alignItems="center"
+            sx={{ mt: { xs: -1, sm: -1 }, mb: { xs: -1, sm: -1 } }}
+          >
+            {_socials.map((social) => (
+              <IconButton key={social.label} color="inherit">
+                {social.value === 'twitter' && <TwitterIcon />}
+                {social.value === 'facebook' && <FacebookIcon />}
+                {social.value === 'instagram' && <InstagramIcon />}
+                {social.value === 'linkedin' && <LinkedinIcon />}
+              </IconButton>
+            ))}
+          </Stack>
+        </Grid>
+      </Grid>
+    </Box>
+  )
+};

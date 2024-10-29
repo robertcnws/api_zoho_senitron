@@ -1,5 +1,5 @@
 """
-WSGI config for _api_zoho_senitron project.
+WSGI config for api_project_zoho_senitron project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
@@ -11,6 +11,6 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', '_api_zoho_senitron.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'api_project_zoho_senitron.settings')
 
 application = get_wsgi_application()

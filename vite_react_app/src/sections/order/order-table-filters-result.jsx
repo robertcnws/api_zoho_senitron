@@ -11,7 +11,7 @@ import { chipProps, FiltersBlock, FiltersResult } from 'src/components/filters-r
 export function OrderTableFiltersResult({ filters, totalResults, onResetPage, sx }) {
   const handleRemoveKeyword = useCallback(() => {
     onResetPage();
-    filters.setState({ name: '' });
+    filters.setState({ salesorderNumber: '' });
   }, [filters, onResetPage]);
 
   const handleRemoveStatus = useCallback(() => {
@@ -51,8 +51,8 @@ export function OrderTableFiltersResult({ filters, totalResults, onResetPage, sx
         />
       </FiltersBlock>
 
-      <FiltersBlock label="Keyword:" isShow={!!filters.state.name}>
-        <Chip {...chipProps} label={filters.state.name} onDelete={handleRemoveKeyword} />
+      <FiltersBlock label="Keyword:" isShow={!!filters.state.salesorderNumber}>
+        <Chip {...chipProps} label={filters.state.salesorderNumber} onDelete={handleRemoveKeyword} />
       </FiltersBlock>
     </FiltersResult>
   );
