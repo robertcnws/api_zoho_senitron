@@ -6,9 +6,9 @@ import DialogContent from '@mui/material/DialogContent';
 
 // ----------------------------------------------------------------------
 
-export function ConfirmDialog({ open, title, action, content, onClose, ...other }) {
+export function ConfirmDialog({ open, title, action, content, onClose, maxWidth, ...other }) {
   return (
-    <Dialog fullWidth maxWidth="xs" open={open} onClose={onClose} {...other}>
+    <Dialog fullWidth maxWidth={!maxWidth ? 'xs' : maxWidth} open={open} onClose={onClose} {...other}>
       <DialogTitle sx={{ pb: 2 }}>{title}</DialogTitle>
 
       {content && <DialogContent sx={{ typography: 'body2' }}> {content} </DialogContent>}

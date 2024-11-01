@@ -1,17 +1,70 @@
+import React, { useState, useEffect } from 'react';
 import Card from '@mui/material/Card';
 import CardHeader from '@mui/material/CardHeader';
+import { css } from '@emotion/react';
 import { useTheme, alpha as hexAlpha } from '@mui/material/styles';
 
 import { Chart, useChart } from 'src/components/chart';
+import { ModalSublistItems } from './view/modal-sublist-items';
 
 // ----------------------------------------------------------------------
 
-export function AnalyticsWebsiteVisits({ title, subheader, chart, ...other }) {
+export function AnalyticsWebsiteVisits({
+  title,
+  subheader,
+  element,
+  chart,
+  openModal,
+  setOpenModal,
+  modalTitle,
+  setModalTitle,
+  modalDataFiltered,
+  setModalDataFiltered,
+  modalButtonColor,
+  setModalButtonColor,
+  zohoItems,
+  senitronItems,
+  handleViewRow,
+  handleFilterName,
+  filters,
+  ...other
+}) {
+
   const theme = useTheme();
 
+  useEffect(() => {
+    if (zohoItems.length > 0 && senitronItems.length > 0) {
+      const newData = [];
+      const sItemMap = new Map();
+      senitronItems.forEach((sItem) => {
+        sItemMap.set(sItem.itemNumber, sItem);
+      });
+      zohoItems.forEach((zItem) => {
+        const sItem = sItemMap.get(zItem.itemId);
+        if (sItem) {
+          const max = Math.max(zItem.stockOnHand, sItem.senitronItem.qty);
+          const min = Math.min(zItem.stockOnHand, sItem.senitronItem.qty);
+          const match = (min / max) * 100;
+          newData.push({
+            itemId: zItem.itemId,
+            name: zItem.name,
+            sku: zItem.sku,
+            percentage: match,
+          });
+        }
+      });
+      setModalDataFiltered(newData);
+    }
+  }, [zohoItems, senitronItems, setModalDataFiltered]);
+
   const chartColors = chart.colors ?? [
-    hexAlpha(theme.palette.primary.dark, 0.8),
+    hexAlpha(theme.palette.success.main, 0.8),
+    hexAlpha(theme.palette.success.dark, 0.8),
+    hexAlpha(theme.palette.info.main, 0.8),
+    hexAlpha(theme.palette.info.dark, 0.8),
     hexAlpha(theme.palette.warning.main, 0.8),
+    hexAlpha(theme.palette.warning.dark, 0.8),
+    hexAlpha(theme.palette.error.main, 0.8),
   ];
 
   const chartOptions = useChart({
@@ -22,29 +75,89 @@ export function AnalyticsWebsiteVisits({ title, subheader, chart, ...other }) {
     },
     xaxis: {
       categories: chart.categories,
+      show: true,
     },
     legend: {
       show: true,
     },
     tooltip: {
       y: {
-        formatter: (value) => `${value} visits`,
+        formatter: (value) => `${value} ${element || 'visits'}<br>(Click to see details)`,
+        show: true,
+      },
+      useHTML: true,
+    },
+    dataLabels: {
+      enabled: true,
+      style: {
+        colors: ['#F9F9F9'],
+      }
+    },
+    chart: {
+      events: {
+        dataPointSelection: (event, chartContext, config) => {
+          const seriesIndex = config.seriesIndex;
+          setModalTitle(
+            seriesIndex === 0 ? 'Items Quantity Matched 100 %' :
+              seriesIndex === 1 ? 'Items Quantity Matched between 90 % and 100 %' :
+                seriesIndex === 2 ? 'Items Quantity Matched between 80 % and 90 %' :
+                  seriesIndex === 3 ? 'Items Quantity Matched between 70 % and 80 %' :
+                    seriesIndex === 4 ? 'Items Quantity Matched between 60 % and 70 %' :
+                      seriesIndex === 5 ? 'Items Quantity Matched between 50 % and 60 %' : 'Items Quantity Matched less than 50 %'
+          )
+          setModalButtonColor(
+            seriesIndex === 0 ? hexAlpha(theme.palette.success.main, 0.8) :
+              seriesIndex === 1 ? hexAlpha(theme.palette.success.dark, 0.8) :
+                seriesIndex === 2 ? hexAlpha(theme.palette.info.main, 0.8) :
+                  seriesIndex === 3 ? hexAlpha(theme.palette.info.dark, 0.8) :
+                    seriesIndex === 4 ? hexAlpha(theme.palette.warning.main, 0.8) :
+                      seriesIndex === 5 ? hexAlpha(theme.palette.warning.dark, 0.8) : hexAlpha(theme.palette.error.main, 0.8)
+          )
+          setModalDataFiltered(handleViewSublists(seriesIndex));
+          setOpenModal(true);
+        },
       },
     },
     ...chart.options,
   });
 
-  return (
-    <Card {...other}>
-      <CardHeader title={title} subheader={subheader} />
+  const handleViewSublists = (seriesIndex) => modalDataFiltered.filter((item) =>
+    seriesIndex === 0 ? item.percentage >= 100 :
+      seriesIndex === 1 ? item.percentage >= 90 && item.percentage < 100 :
+        seriesIndex === 2 ? item.percentage >= 80 && item.percentage < 90 :
+          seriesIndex === 3 ? item.percentage >= 70 && item.percentage < 80 :
+            seriesIndex === 4 ? item.percentage >= 60 && item.percentage < 70 :
+              seriesIndex === 5 ? item.percentage >= 50 && item.percentage < 60 : item.percentage < 50
+  );
 
-      <Chart
-        type="bar"
-        series={chart.series}
-        options={chartOptions}
-        height={364}
-        sx={{ py: 2.5, pl: 1, pr: 2.5 }}
+
+
+  return (
+    <>
+      <Card {...other}>
+        <CardHeader title={title} subheader={subheader} />
+
+        <Chart
+          type="bar"
+          series={chart.series}
+          options={chartOptions}
+          height={364}
+          sx={{ py: 2.5, pl: 1, pr: 2.5 }}
+        />
+      </Card>
+
+      <ModalSublistItems
+        openModal={openModal}
+        setOpenModal={setOpenModal}
+        modalDataFiltered={modalDataFiltered}
+        modalTitle={modalTitle}
+        modalButtonColor={modalButtonColor}
+        filters={filters}
+        handleFilterName={handleFilterName}
+        handleViewRow={handleViewRow}
       />
-    </Card>
+
+    </>
+
   );
 }

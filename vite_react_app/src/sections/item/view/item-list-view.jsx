@@ -1,7 +1,5 @@
 import { useState, useCallback, useEffect, useContext } from 'react';
-
-
-
+import axios from 'axios';
 import Box from '@mui/material/Box';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
@@ -23,7 +21,7 @@ import { useSetState } from 'src/hooks/use-set-state';
 
 import { varAlpha } from 'src/theme/styles';
 import { DashboardContent } from 'src/layouts/dashboard';
-import { ITEM_STATUS_OPTIONS, ITEM_SYNC_OPTIONS, useItemsQuery } from 'src/_mock/_items';
+import { ITEM_STATUS_OPTIONS, ITEM_SYNC_OPTIONS, useItemsQuery, useSenitronItemsQuery } from 'src/_mock/_items';
 import { CONFIG } from 'src/config-global';
 
 import { Label } from 'src/components/label';
@@ -51,10 +49,9 @@ import { ItemTableRow } from '../item-table-row';
 import { ItemTableToolbar } from '../item-table-toolbar';
 import { ItemTableFiltersResult } from '../item-table-filters-result';
 
-
 // ----------------------------------------------------------------------
 
-const STATUS_OPTIONS = [{ value: 'all', label: 'All' }, ...ITEM_STATUS_OPTIONS];
+const STATUS_OPTIONS = [{ value: 'all', label: 'All' }, ...ITEM_STATUS_OPTIONS].concat([{ value: 'synced', label: 'Synced Senitron' }]);
 
 // ----------------------------------------------------------------------
 
@@ -63,10 +60,6 @@ export function ItemListView() {
   const { isMobile } = useContext(LoadingContext);
 
   const TABLE_HEAD = [
-    // { id: '', width: 48 },
-    ...(!isMobile ? [
-      { id: 'itemId', label: 'ID', width: 80 }
-    ] : []),
     { id: 'sku', label: 'SKU', width: isMobile ? 30 : 80 },
     { id: 'name', label: 'Name', width: isMobile ? 50 : 220 },
     { id: 'status', label: 'Status', width: isMobile ? 50 : 100 },
@@ -83,10 +76,15 @@ export function ItemListView() {
 
   const { loading, error, data } = useItemsQuery();
 
+  const { data: senitronData } = useSenitronItemsQuery();
+
   const [tableData, setTableData] = useState([]);
+
+  const filters = useSetState({ name: '', syncedWithSenitron: [], status: localStorage.getItem('itemStatus') || 'all' });
 
 
   useEffect(() => {
+    localStorage.removeItem('routeByAnalytics');
     localStorage.removeItem('routeByOrder');
   }, []);
 
@@ -100,6 +98,10 @@ export function ItemListView() {
     if (rowsPerPage) {
       table.setRowsPerPage(parseInt(rowsPerPage, 10));
     }
+    // const savedStatus = localStorage.getItem('itemStatus');
+    // if (savedStatus) {
+    //   filters.setState({ status: savedStatus });
+    // }
   }, [table]);
 
 
@@ -124,16 +126,34 @@ export function ItemListView() {
     };
   }, []);
 
+
   useEffect(() => {
-    if (data && data.length > 0) {
-      setTableData(data);
+    if (data && data.length > 0 && senitronData && senitronData.length > 0) {
+      const rData = data.map((item) => {
+        const senitronItem = senitronData.find((sItem) => sItem?.itemNumber === item.itemId);
+        return {
+          ...item,
+          syncedWithSenitron: !!senitronItem,
+        };
+      });
+      setTableData(rData);
+      const payload = rData.map((item) => ({
+          itemId: item.itemId,
+          syncedWithSenitron: item.syncedWithSenitron,
+      }));
+      axios.post(`${CONFIG.apiUrl}/api_zoho/sync/senitron/`, payload)
+        .then(() => {
+          console.log('Inventory items synced with Senitron');
+        })
+        .catch((err) => {
+          console.error('Error syncing inventory items:', err);
+        });
     } else if (!loading && !error) {
       console.error("No data returned from useItemsQuery");
       setTableData([]);
     }
-  }, [data, loading, error]);
-
-  const filters = useSetState({ name: '', syncedWithSenitron: [], status: 'all' });
+  }, [data, senitronData, loading, error]);
+  
 
   const dataFiltered = applyFilter({
     inputData: tableData,
@@ -184,6 +204,7 @@ export function ItemListView() {
   const handleFilterStatus = useCallback(
     (event, newValue) => {
       table.onResetPage();
+      localStorage.setItem('itemStatus', newValue);
       filters.setState({ status: newValue });
     },
     [filters, table]
@@ -191,10 +212,12 @@ export function ItemListView() {
 
   const handleViewRow = useCallback(
     (id) => {
+      localStorage.removeItem('routeByAnalytics');
       localStorage.removeItem('routeByOrder');
+      localStorage.setItem('itemStatus', filters.state.status);
       router.push(paths.dashboard.item.details(id));
     },
-    [router]
+    [router, filters]
   );
 
   if (loading) {
@@ -282,12 +305,16 @@ export function ItemListView() {
                       (tab.value === 'active' && 'success') ||
                       (tab.value === 'confirmation_pending' && 'warning') ||
                       (tab.value === 'inactive' && 'error') ||
+                      (tab.value === 'synced' && 'info') ||
                       'default'
                     }
                   >
-                    {['active', 'confirmation_pending', 'inactive'].includes(tab.value)
+                    {tab.value === 'synced' ?
+                      tableData.filter((user) => user.syncedWithSenitron).length : tab.value === 'all' ?
+                        tableData.length : tableData.filter((user) => user.status === tab.value).length}
+                    {/* {['active', 'confirmation_pending', 'inactive'].includes(tab.value)
                       ? tableData.filter((user) => user.status === tab.value).length
-                      : tableData.length}
+                      : tableData.length} */}
                   </Label>
                 }
               />
@@ -436,36 +463,42 @@ function applyFilter({ inputData, comparator, filters }) {
 
   if (name) {
     inputData = inputData.filter(
-      (item) => item.name.toLowerCase().indexOf(name.toLowerCase()) !== -1 || 
-      item.sku.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
-      item.itemId.toString().indexOf(name.toLowerCase()) !== -1 ||
-      item.stockOnHand.toString().indexOf(name.toLowerCase()) !== -1
+      (item) => item.name.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
+        item.sku.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
+        item.itemId.toString().indexOf(name.toLowerCase()) !== -1 ||
+        item.stockOnHand.toString().indexOf(name.toLowerCase()) !== -1
     );
   }
 
   if (status !== 'all') {
-    inputData = inputData.filter((item) => item.status === status);
+    if (status !== 'synced') {
+      inputData = inputData.filter((item) => item.status === status);
+    } else {
+      inputData = inputData.filter((item) => item.syncedWithSenitron === true);
+    }
   }
 
-  if (syncedWithSenitron.length) {
-    const trueValues = ['synced', 'yes'];
-    const falseValues = ['not synced', 'no'];
-    
-    const shouldIncludeTrue = syncedWithSenitron.some(val => trueValues.includes(val.toLowerCase()));
-    const shouldIncludeFalse = syncedWithSenitron.some(val => falseValues.includes(val.toLowerCase()));
-    
-    inputData = inputData.filter(item => {
-      if (shouldIncludeTrue && shouldIncludeFalse) {
-        return true;
-      }
-      if (shouldIncludeTrue) {
-        return item.syncedWithSenitron === true;
-      }
-      if (shouldIncludeFalse) {
-        return item.syncedWithSenitron === false;
-      }
-      return true;
-    });
-  }
+  // if ()
+
+  // if (syncedWithSenitron.length) {
+  //   const trueValues = ['synced', 'yes'];
+  //   const falseValues = ['not synced', 'no'];
+
+  //   const shouldIncludeTrue = syncedWithSenitron.some(val => trueValues.includes(val.toLowerCase()));
+  //   const shouldIncludeFalse = syncedWithSenitron.some(val => falseValues.includes(val.toLowerCase()));
+
+  //   inputData = inputData.filter(item => {
+  //     if (shouldIncludeTrue && shouldIncludeFalse) {
+  //       return true;
+  //     }
+  //     if (shouldIncludeTrue) {
+  //       return item.syncedWithSenitron === true;
+  //     }
+  //     if (shouldIncludeFalse) {
+  //       return item.syncedWithSenitron === false;
+  //     }
+  //     return true;
+  //   });
+  // }
   return inputData;
 }

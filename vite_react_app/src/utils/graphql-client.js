@@ -8,9 +8,8 @@ import {
 import { CONFIG } from '../config-global';
 
 
-
 const client = new ApolloClient({
-  uri: `${CONFIG.apiUrl}/api_zoho/graphql/`, 
+  uri: `${CONFIG.apiUrl}/query/graphql/`, 
   cache: new InMemoryCache(),
 });
 

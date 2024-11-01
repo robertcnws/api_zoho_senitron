@@ -35,13 +35,17 @@ export function OrderDetailsToolbar({
 
           <Stack spacing={0.5}>
             <Stack spacing={1} direction="row" alignItems="center">
-              <Typography variant="h4"> Order {orderNumber} </Typography>
+              <Typography variant="h5"> Order </Typography>
+              <Label variant="soft" color="default">
+                {orderNumber}
+              </Label>
               <Label
                 variant="soft"
                 color={
-                  (status === 'completed' && 'success') ||
-                  (status === 'pending' && 'warning') ||
-                  (status === 'cancelled' && 'error') ||
+                  (status === 'fulfilled' && 'success') ||
+                  (status === 'confirmed' && 'info') ||
+                  (status === 'partially_shipped' && 'warning') ||
+                  (status === 'draft' && 'error') ||
                   'default'
                 }
               >
@@ -50,7 +54,7 @@ export function OrderDetailsToolbar({
             </Stack>
 
             <Typography variant="body2" sx={{ color: 'text.disabled' }}>
-              {fDateTime(createdAt)}
+              Created: {fDateTime(createdAt)}
             </Typography>
           </Stack>
         </Stack>
@@ -62,7 +66,7 @@ export function OrderDetailsToolbar({
           alignItems="center"
           justifyContent="flex-end"
         >
-          <Button
+          {/* <Button
             color="inherit"
             variant="outlined"
             endIcon={<Iconify icon="eva:arrow-ios-downward-fill" />}
@@ -70,7 +74,7 @@ export function OrderDetailsToolbar({
             sx={{ textTransform: 'capitalize' }}
           >
             {status}
-          </Button>
+          </Button> */}
 
           <Button
             color="inherit"
@@ -80,9 +84,9 @@ export function OrderDetailsToolbar({
             Print
           </Button>
 
-          <Button color="inherit" variant="contained" startIcon={<Iconify icon="solar:pen-bold" />}>
+          {/* <Button color="inherit" variant="contained" startIcon={<Iconify icon="solar:pen-bold" />}>
             Edit
-          </Button>
+          </Button> */}
         </Stack>
       </Stack>
 

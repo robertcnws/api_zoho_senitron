@@ -45,9 +45,50 @@ const GET_ZOHO_INVENTORY_ITEMS = gql`
   }
 `;
 
+const GET_SENITRON_INVENTORY_ITEM = gql`
+  {
+    allSenitronInventoryItemsAssets {
+      id
+      serialNumber
+      itemNumber
+      altSerial
+      firstSeen
+      lastSeen
+      lastSeenAntenna
+      lastZone
+      handheldReader
+      handheldLastSeen
+      staticZone
+      staticZoneLastUpdate
+      receivingDate
+      currentUnits
+      storageUnit
+      adjustQty
+      createdAt
+      updatedAt
+      epc
+      text3
+      senitronItem {
+        itemNumber
+        tagsCount
+        qty
+      }
+      status {
+        name
+        id
+      }
+    }
+  }
+`;
+
 export const useItemsQuery = () => {
   const { loading, error, data } = useQuery(GET_ZOHO_INVENTORY_ITEMS);
   return { loading, error, data: data?.allZohoInventoryItems };
+};
+
+export const useSenitronItemsQuery = () => {
+  const { loading, error, data } = useQuery(GET_SENITRON_INVENTORY_ITEM);
+  return { loading, error, data: data?.allSenitronInventoryItemsAssets };
 };
 
 export const ITEM_STATUS_OPTIONS = [

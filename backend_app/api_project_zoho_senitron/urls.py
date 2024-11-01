@@ -20,5 +20,7 @@ from django.urls import path, include
 urlpatterns = [
     path('api_zoho_senitron/admin/', admin.site.urls),
     path('api_zoho_senitron/api_zoho/', include('api_zoho.urls')),
+    path('api_zoho_senitron/api_senitron/', include('api_senitron.urls')),
+    path('api_zoho_senitron/query/', include('api_project_zoho_senitron_graph_ql.urls')),
     # path('api_zoho_senitron/ws/', include(websocket_urlpatterns)),
 ]

@@ -1,32 +1,68 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
+import axios from 'axios';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Stack from '@mui/material/Stack';
-import Avatar from '@mui/material/Avatar';
 import CardHeader from '@mui/material/CardHeader';
 import IconButton from '@mui/material/IconButton';
-import ListItemText from '@mui/material/ListItemText';
 
-import { fCurrency } from 'src/utils/format-number';
 
 import { Iconify } from 'src/components/iconify';
-import { Scrollbar } from 'src/components/scrollbar';
 import { Label } from 'src/components/label';
-import { Grid, TextareaAutosize } from '@mui/material';
+import { Grid, TextareaAutosize, Tooltip } from '@mui/material';
 import { fDateTime } from 'src/utils/format-time';
 import { LoadingContext } from 'src/auth/context/loading-context';
+import { CONFIG } from 'src/config-global';
 
 
 // ----------------------------------------------------------------------
 
-export function ItemDetailsItems({ item }) {
+export function ItemDetailsItems({ item, senitronItem, setItem, setSenitronItem }) {
+  const { setLoading, setError, setComponent } = useContext(LoadingContext);
+  const [currentItem, setCurrentItem] = useState(item);
+  const [currentSenitronItem, setCurrentSenitronItem] = useState(senitronItem);
 
-  const { isMobile } = useContext(LoadingContext);
+  useEffect(() => {
+    const socket = new WebSocket(`wss://${CONFIG.apiHost}/${CONFIG.apiDomain}/ws/inventory_items/`);
+    socket.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      if (message.type === 'created' || message.type === 'updated') {
+        setCurrentItem((prevItem) => {
+          if (message.item.itemId === prevItem?.itemId) {
+            return message.item;
+          }
+          return prevItem;
+        });
+      }
+    };
+    return () => {
+      socket.close();
+    };
+  }, []);
+
+  useEffect(() => {
+    const socket = new WebSocket(`wss://${CONFIG.apiHost}/${CONFIG.apiDomain}/ws/senitron_inventory_items_assets/`);
+    socket.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      if (message.type === 'created' || message.type === 'updated') {
+        setCurrentSenitronItem((prevItem) => {
+          if (message.item.itemNumber === prevItem?.itemNumber) {
+            return message.item;
+          }
+          return prevItem;
+        });
+      }
+    };
+    return () => {
+      socket.close();
+    };
+  }, []);
+
 
   const renderTotal = (
     <Stack spacing={1} alignItems="flex-start" sx={{ p: 3, textAlign: 'left', typography: 'body2' }}>
       <Grid container spacing={2}>
-        {item.itemId && (
+        {currentItem.itemId && (
           <>
             <Grid container item xs={12}>
               <Grid item xs={3}>
@@ -34,28 +70,13 @@ export function ItemDetailsItems({ item }) {
               </Grid>
               <Grid item xs={9}>
                 <Box sx={{ typography: 'subtitle2' }}>
-                  <Label color="default"> {item.itemId || '-'} </Label>
+                  <Label color="default"> {currentItem.itemId || '-'} </Label>
                 </Box>
               </Grid>
-
             </Grid>
           </>
         )}
-        {/* {item.name && (
-          <>
-            <Grid container item xs={12}>
-              <Grid item xs={3}>
-                <Box sx={{ color: 'text.secondary' }}>Name: </Box>
-              </Grid>
-              <Grid item xs={9}>
-                <Box sx={{ typography: 'subtitle2' }}>
-                  <Label color="default"> {item.name || '-'} </Label>
-                </Box>
-              </Grid>
-            </Grid>
-          </>
-        )} */}
-        {item.sku && (
+        {currentItem.sku && (
           <>
             <Grid container item xs={12}>
               <Grid item xs={3}>
@@ -63,51 +84,13 @@ export function ItemDetailsItems({ item }) {
               </Grid>
               <Grid item xs={9}>
                 <Box sx={{ typography: 'subtitle2' }}>
-                  <Label color="default">{item.sku || '-'} </Label>
+                  <Label color="default">{currentItem.sku || '-'} </Label>
                 </Box>
               </Grid>
             </Grid>
           </>
         )}
-        <Grid container item xs={12}>
-          <Grid item xs={3}>
-            <Box sx={{ color: 'text.secondary' }}>Stock On Hand: </Box>
-          </Grid>
-          <Grid item xs={9}>
-            <Box sx={{ typography: 'subtitle2' }}>
-              <Label color="default"> {parseInt(item.stockOnHand, 10) || '-'} </Label>
-            </Box>
-          </Grid>
-        </Grid>
-        {item.source && (
-          <>
-            <Grid container item xs={12}>
-              <Grid item xs={3}>
-                <Box sx={{ color: 'text.secondary' }}>Source: </Box>
-              </Grid>
-              <Grid item xs={9}>
-                <Box sx={{ typography: 'subtitle2' }}>
-                  <Label color="default"> {item.source || '-'} </Label>
-                </Box>
-              </Grid>
-            </Grid>
-          </>
-        )}
-        {item.itemType && (
-          <>
-            <Grid container item xs={12}>
-              <Grid item xs={3}>
-                <Box sx={{ color: 'text.secondary' }}>Item Type: </Box>
-              </Grid>
-              <Grid item xs={9}>
-                <Box sx={{ typography: 'subtitle2' }}>
-                  <Label color="default"> {item.itemType || '-'} </Label>
-                </Box>
-              </Grid>
-            </Grid>
-          </>
-        )}
-        {item.rate && (
+        {currentItem.rate && (
           <>
             <Grid container item xs={12}>
               <Grid item xs={3}>
@@ -115,41 +98,61 @@ export function ItemDetailsItems({ item }) {
               </Grid>
               <Grid item xs={9}>
                 <Box sx={{ typography: 'subtitle2' }}>
-                  <Label color="default"> $ {parseFloat(item.rate).toFixed(2) || '-'} </Label>
+                  <Label color="default"> $ {parseFloat(currentItem.rate).toFixed(2) || '-'} </Label>
                 </Box>
               </Grid>
             </Grid>
           </>
         )}
-        {/* {item.createdTime && (
-          <>
-            <Grid container item xs={12}>
-              <Grid item xs={3}>
-                <Box sx={{ color: 'text.secondary' }}>Created Time: </Box>
-              </Grid>
-              <Grid item xs={9}>
-                <Box sx={{ typography: 'subtitle2' }}>
-                  <Label color="default"> {fDateTime(item.createdTime) || '-'} </Label>
-                </Box>
-              </Grid>
+        <Grid container item xs={12}>
+          <Grid item xs={3}>
+            <Box sx={{ color: 'text.secondary' }}>Stock On Hand (Zoho): </Box>
+          </Grid>
+          <Grid item xs={9}>
+            <Box sx={{ typography: 'subtitle2' }}>
+              <Label color="default"> {parseInt(currentItem.stockOnHand, 10) || '-'} </Label>
+            </Box>
+          </Grid>
+        </Grid>
+        {currentSenitronItem?.senitronItem?.qty && (
+          <Grid container item xs={12}>
+            <Grid item xs={3}>
+              <Box sx={{ color: 'text.secondary' }}>Quantity (Senitron): </Box>
             </Grid>
-          </>
-        )} */}
-        {item.lastModifiedTime && (
+            <Grid item xs={9}>
+              <Box sx={{ typography: 'subtitle2' }}>
+                <Label color="default"> {parseInt(currentSenitronItem?.senitronItem?.qty, 10) || '-'} </Label>
+              </Box>
+            </Grid>
+          </Grid>
+        )}
+        {currentSenitronItem?.text3 && (
+          <Grid container item xs={12}>
+            <Grid item xs={3}>
+              <Box sx={{ color: 'text.secondary' }}>Info (Senitron): </Box>
+            </Grid>
+            <Grid item xs={9}>
+              <Box sx={{ typography: 'subtitle2' }}>
+                <Label color="default"> {currentSenitronItem?.text3 || '-'} </Label>
+              </Box>
+            </Grid>
+          </Grid>
+        )}
+        {currentSenitronItem?.handheldReader && (
           <>
             <Grid container item xs={12}>
               <Grid item xs={3}>
-                <Box sx={{ color: 'text.secondary' }}>Last Modified Time: </Box>
+                <Box sx={{ color: 'text.secondary' }}>Hand Held Reader (Senitron): </Box>
               </Grid>
               <Grid item xs={9}>
                 <Box sx={{ typography: 'subtitle2' }}>
-                  <Label color="default"> {fDateTime(item.lastModifiedTime) || '-'} </Label>
+                  <Label color="default"> {currentSenitronItem?.handheldReader || '-'} </Label>
                 </Box>
               </Grid>
             </Grid>
           </>
         )}
-        {item.description && (
+        {/* {currentItem.description && (
           <>
             <Grid container item xs={12}>
               <Grid item xs={3}>
@@ -160,36 +163,89 @@ export function ItemDetailsItems({ item }) {
                   <TextareaAutosize
                     aria-label="empty textarea"
                     placeholder="Empty"
-                    value={item.description || '-'}
+                    value={currentItem.description || '-'}
                     disabled
-                    minRows={8} // Número fijo de filas
-                    maxRows={8} // Mismo valor que minRows para evitar el ajuste
+                    minRows={8}
+                    maxRows={10}
                     style={{
-                      width: isMobile ? '70%' : '100%',    // Ancho fijo
-                      resize: 'none',    // Deshabilita la capacidad de redimensionar manualmente
-                      padding: '8px',    // Opcional: Ajusta el padding según tus necesidades
-                      borderRadius: '4px', // Opcional: Bordes redondeados
-                      borderColor: '#ccc', // Opcional: Color del borde
+                      width: isMobile ? '70%' : '100%',
+                      resize: 'none',
+                      padding: '8px',
+                      borderRadius: '4px',
+                      borderColor: '#ccc',
                     }}
                   />
                 </Box>
               </Grid>
             </Grid>
           </>
-        )}
+        )} */}
       </Grid>
-
-    </Stack >
+    </Stack>
   );
 
   return (
     <Card>
       <CardHeader
-        title="Details from Zoho"
+        title="Item Details"
         action={
-          <IconButton>
-            <Iconify icon="solar:details" />
-          </IconButton>
+          <Tooltip
+            title="Update from APIs"
+            arrow
+            sx={{
+              '& .MuiTooltip-tooltip': {
+                backgroundColor: '#000000',
+                color: 'white',
+                fontSize: '0.875rem',
+              },
+            }}
+          >
+            <IconButton
+              onClick={() => {
+                setComponent(`inventory item (SKU: ${currentItem.sku}, ID: ${currentItem.itemId}) details`);
+                setLoading(true);
+                axios
+                  .post(`${CONFIG.apiUrl}/api_zoho/load/inventory_items/`)
+                  .then(() => {
+                    axios
+                      .post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_items/`)
+                      .then(() => {
+                        setItem(currentItem);
+                        axios
+                          .post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_item_assets/`)
+                          .then(() => {
+                            setSenitronItem(currentSenitronItem);
+                            console.log('Zoho Inventory item fetched');
+                            console.log('Senitron Inventory item fetched');
+                          })
+                          .catch((err) => {
+                            console.error('Error fetching senitron inventory item asset:', err);
+                            setError('There was an error fetching senitron inventory item asset.');
+                          })
+                          .finally(() => {
+                            setLoading(false);
+                          });
+                      })
+                      .catch((err) => {
+                        console.error('Error fetching senitron inventory item:', err);
+                        setError('There was an error fetching senitron inventory item.');
+                      })
+                      .finally(() => {
+                        setLoading(false);
+                      });
+                  })
+                  .catch((err) => {
+                    console.error('Error fetching inventory item:', err);
+                    setError('There was an error fetching the inventory item.');
+                  })
+                  .finally(() => {
+                    setLoading(false);
+                  });
+              }}
+            >
+              <Iconify icon="mdi:update" />
+            </IconButton>
+          </Tooltip>
         }
       />
       {renderTotal}

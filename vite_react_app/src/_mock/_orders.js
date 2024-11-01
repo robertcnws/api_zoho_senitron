@@ -8,6 +8,36 @@ const GET_ZOHO_INVENTORY_SALES_ORDERS = gql`
       date
       status
       lineItems
+      customerId
+      customerName
+      isTaxable
+      taxId
+      taxName
+      taxPercentage
+      currencyId
+      currencyCode
+      currencySymbol
+      exchangeRate
+      deliveryMethod
+      totalQuantity
+      subTotal
+      taxTotal
+      total
+      createdByEmail
+      createdByName
+      salespersonId
+      isTestOrder
+      notes
+      paymentTerms
+      paymentTermsLabel
+      shippingAddress
+      billingAddress
+      warehouses
+      customFields
+      orderSubStatuses
+      shipmentSubStatuses
+      createdTime
+      lastModifiedTime
     }
   }
 `;

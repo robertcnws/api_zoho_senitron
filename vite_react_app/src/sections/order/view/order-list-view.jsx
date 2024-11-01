@@ -63,9 +63,6 @@ export function OrderListView() {
   const { isMobile } = useContext(LoadingContext);
 
   const TABLE_HEAD = [
-    ...(!isMobile ?
-      [{ id: 'salesorderId', label: 'ID', width: 88 }] : []
-    ),
     { id: 'salesorderNumber', label: 'Number', width: isMobile ? 50 : 140 },
     { id: 'date', label: 'Date', width: isMobile ? 50 : 140 },
     { id: 'status', label: 'Status', width: isMobile ? 50 : 110 },

@@ -34,9 +34,9 @@ const RouteProvider = ({ children }) => {
                 if (!currentPath.includes(subtext)) {
                     if (!localStorage.getItem('routeByOrder')) {
                         localStorage.removeItem(key);
-                        console.log(
-                            `Se eliminó '${key}' de localStorage porque la ruta '${currentPath}' no contiene '${subtext}'.`
-                        );
+                        // console.log(
+                        //     `Se eliminó '${key}' de localStorage porque la ruta '${currentPath}' no contiene '${subtext}'.`
+                        // );
                     }
                 }
             });

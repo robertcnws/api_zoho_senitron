@@ -47,7 +47,7 @@ export const navData = [
   {
     subheader: 'Overview',
     items: [
-      { title: 'App', path: paths.dashboard.root, icon: ICONS.dashboard },
+      // { title: 'App', path: paths.dashboard.root, icon: ICONS.dashboard },
       // { title: 'Ecommerce', path: paths.dashboard.general.ecommerce, icon: ICONS.ecommerce },
       { title: 'Analytics', path: paths.dashboard.general.analytics, icon: ICONS.analytics },
       // { title: 'Banking', path: paths.dashboard.general.banking, icon: ICONS.banking },
@@ -109,17 +109,17 @@ export const navData = [
           // { title: 'Details', path: paths.dashboard.order.demo.details },
         ],
       },
-      {
-        title: 'Invoice',
-        path: paths.dashboard.invoice.root,
-        icon: ICONS.invoice,
-        children: [
-          { title: 'List', path: paths.dashboard.invoice.root },
-          { title: 'Details', path: paths.dashboard.invoice.demo.details },
-          { title: 'Create', path: paths.dashboard.invoice.new },
-          { title: 'Edit', path: paths.dashboard.invoice.demo.edit },
-        ],
-      },
+      // {
+      //   title: 'Invoice',
+      //   path: paths.dashboard.invoice.root,
+      //   icon: ICONS.invoice,
+      //   children: [
+      //     { title: 'List', path: paths.dashboard.invoice.root },
+      //     { title: 'Details', path: paths.dashboard.invoice.demo.details },
+      //     { title: 'Create', path: paths.dashboard.invoice.new },
+      //     { title: 'Edit', path: paths.dashboard.invoice.demo.edit },
+      //   ],
+      // },
       // {
       //   title: 'Blog',
       //   path: paths.dashboard.post.root,

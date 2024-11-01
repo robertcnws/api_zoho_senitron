@@ -57,6 +57,11 @@ DB_ENGINE = env('DB_ENGINE')
 REDIS_HOST = env('REDIS_HOST')
 FRONTEND_URL = env('FRONTEND_URL_DEV') if ENVIRONMENT == 'DEV' else env('FRONTEND_URL_QA') if ENVIRONMENT == 'QA' else env('FRONTEND_URL_PROD')
 
+# ENV VARS SENITRON
+API_KEY_SENITRON = env('API_KEY_SENITRON')
+API_SENITRON_QUANTITIES_URL = env('API_SENITRON_QUANTITIES_URL')
+API_SENITRON_ASSETS_URL = env('API_SENITRON_ASSETS_URL')
+
 CSRF_TRUSTED_ORIGINS = [
     'https://localhost',
     'http://localhost:3039',
@@ -138,7 +143,7 @@ INSTALLED_APPS = [
 ]
 
 GRAPHENE = {
-    'SCHEMA': 'api_zoho.schema.schema',  
+    'SCHEMA': 'api_project_zoho_senitron_graph_ql.full_schema.schema',  
     'MIDDLEWARE': [
         'graphql_jwt.middleware.JSONWebTokenMiddleware', 
     ],

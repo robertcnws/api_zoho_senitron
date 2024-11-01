@@ -60,6 +60,7 @@ export function OrderTableRow({ row, selected, onViewRow, onSelectRow, onDeleteR
 
   const handleViewItemRow = useCallback(
     (id) => {
+      localStorage.removeItem('routeByAnalytics');
       localStorage.setItem('routeByOrder', id);
       router.push(paths.dashboard.item.details(id));
     },
@@ -75,14 +76,6 @@ export function OrderTableRow({ row, selected, onViewRow, onSelectRow, onDeleteR
           inputProps={{ id: `row-checkbox-${row.id}`, 'aria-label': `Row checkbox` }}
         />
       </TableCell>
-
-      {!isMobile && (
-        <TableCell>
-          <Link color="inherit" onClick={onViewRow} underline="always" sx={{ cursor: 'pointer' }}>
-            {row.salesorderId}
-          </Link>
-        </TableCell>
-      )}
 
       <TableCell>
         <Link color="inherit" onClick={onViewRow} underline="always" sx={{ cursor: 'pointer' }}>

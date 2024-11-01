@@ -1,4 +1,5 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
+import axios from 'axios';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Stack from '@mui/material/Stack';
@@ -8,173 +9,109 @@ import IconButton from '@mui/material/IconButton';
 
 import { Iconify } from 'src/components/iconify';
 import { Label } from 'src/components/label';
-import { Grid, TextareaAutosize } from '@mui/material';
-import { fDateTime } from 'src/utils/format-time';
+import { Grid, Table, TableBody, TableContainer, Tooltip } from '@mui/material';
 import { LoadingContext } from 'src/auth/context/loading-context';
+import { TableNoData } from 'src/components/table';
+import { CONFIG } from 'src/config-global';
 
 
 // ----------------------------------------------------------------------
 
 export function ItemDetailsSenitronItems({ item }) {
 
-  const { isMobile } = useContext(LoadingContext);
+  const { setLoading, setError, setComponent } = useContext(LoadingContext);
+  const [currentItem, setCurrentItem] = useState(item);
+
+  useEffect(() => {
+    const socket = new WebSocket(`wss://${CONFIG.apiHost}/${CONFIG.apiDomain}/ws/senitron_inventory_items_assets/`);
+    socket.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      if (message.type === 'created' || message.type === 'updated') {
+        setCurrentItem((prevItem) => {
+          if (message.item.itemNumber === prevItem.itemNumber) {
+            return message.item;
+          }
+          return prevItem;
+        });
+      }
+    };
+    return () => {
+      socket.close();
+    };
+  }, []);
+
+
 
   const renderTotal = (
     <Stack spacing={1} alignItems="flex-start" sx={{ p: 3, textAlign: 'left', typography: 'body2' }}>
-      {/* <Grid container spacing={2}>
-        {item.itemId && (
+      <Grid container spacing={2}>
+        {currentItem?.itemNumber && (
           <>
             <Grid container item xs={12}>
               <Grid item xs={3}>
-                <Box sx={{ color: 'text.secondary' }}>ID: </Box>
+                <Box sx={{ color: 'text.secondary' }}>Item Number: </Box>
               </Grid>
               <Grid item xs={9}>
                 <Box sx={{ typography: 'subtitle2' }}>
-                  <Label color="default"> {item.itemId || '-'} </Label>
-                </Box>
-              </Grid>
-
-            </Grid>
-          </>
-        )}
-        {item.name && (
-          <>
-            <Grid container item xs={12}>
-              <Grid item xs={3}>
-                <Box sx={{ color: 'text.secondary' }}>Name: </Box>
-              </Grid>
-              <Grid item xs={9}>
-                <Box sx={{ typography: 'subtitle2' }}>
-                  <Label color="default"> {item.name || '-'} </Label>
+                  <Label color="default"> {currentItem?.itemNumber || '-'} </Label>
                 </Box>
               </Grid>
             </Grid>
           </>
         )}
-        {item.sku && (
+        {currentItem?.handheldReader && (
           <>
             <Grid container item xs={12}>
               <Grid item xs={3}>
-                <Box sx={{ color: 'text.secondary' }}>SKU: </Box>
+                <Box sx={{ color: 'text.secondary' }}>Hand Held Reader: </Box>
               </Grid>
               <Grid item xs={9}>
                 <Box sx={{ typography: 'subtitle2' }}>
-                  <Label color="default">{item.sku || '-'} </Label>
+                  <Label color="default"> {currentItem?.handheldReader || '-'} </Label>
                 </Box>
               </Grid>
             </Grid>
           </>
         )}
-        <Grid container item xs={12}>
-          <Grid item xs={3}>
-            <Box sx={{ color: 'text.secondary' }}>Stock On Hand: </Box>
+        {currentItem?.senitronItem?.tagsCount && (
+          <>
+            <Grid container item xs={12}>
+              <Grid item xs={3}>
+                <Box sx={{ color: 'text.secondary' }}>Tags Count: </Box>
+              </Grid>
+              <Grid item xs={9}>
+                <Box sx={{ typography: 'subtitle2' }}>
+                  <Label color="default">{parseInt(currentItem?.senitronItem?.tagsCount, 10) || '-'} </Label>
+                </Box>
+              </Grid>
+            </Grid>
+          </>
+        )}
+        {currentItem?.senitronItem?.qty && (
+          <Grid container item xs={12}>
+            <Grid item xs={3}>
+              <Box sx={{ color: 'text.secondary' }}>Quantity: </Box>
+            </Grid>
+            <Grid item xs={9}>
+              <Box sx={{ typography: 'subtitle2' }}>
+                <Label color="default"> {parseInt(currentItem?.senitronItem?.qty, 10) || '-'} </Label>
+              </Box>
+            </Grid>
           </Grid>
-          <Grid item xs={9}>
-            <Box sx={{ typography: 'subtitle2' }}>
-              <Label color="default"> {parseInt(item.stockOnHand, 10) || '-'} </Label>
-            </Box>
+        )}
+        {currentItem?.text3 && (
+          <Grid container item xs={12}>
+            <Grid item xs={3}>
+              <Box sx={{ color: 'text.secondary' }}>Info: </Box>
+            </Grid>
+            <Grid item xs={9}>
+              <Box sx={{ typography: 'subtitle2' }}>
+                <Label color="default"> {currentItem?.text3 || '-'} </Label>
+              </Box>
+            </Grid>
           </Grid>
-        </Grid>
-        {item.source && (
-          <>
-            <Grid container item xs={12}>
-              <Grid item xs={3}>
-                <Box sx={{ color: 'text.secondary' }}>Source: </Box>
-              </Grid>
-              <Grid item xs={9}>
-                <Box sx={{ typography: 'subtitle2' }}>
-                  <Label color="default"> {item.source || '-'} </Label>
-                </Box>
-              </Grid>
-            </Grid>
-          </>
         )}
-        {item.itemType && (
-          <>
-            <Grid container item xs={12}>
-              <Grid item xs={3}>
-                <Box sx={{ color: 'text.secondary' }}>Item Type: </Box>
-              </Grid>
-              <Grid item xs={9}>
-                <Box sx={{ typography: 'subtitle2' }}>
-                  <Label color="default"> {item.itemType || '-'} </Label>
-                </Box>
-              </Grid>
-            </Grid>
-          </>
-        )}
-        {item.rate && (
-          <>
-            <Grid container item xs={12}>
-              <Grid item xs={3}>
-                <Box sx={{ color: 'text.secondary' }}>Rate: </Box>
-              </Grid>
-              <Grid item xs={9}>
-                <Box sx={{ typography: 'subtitle2' }}>
-                  <Label color="default"> $ {parseFloat(item.rate).toFixed(2) || '-'} </Label>
-                </Box>
-              </Grid>
-            </Grid>
-          </>
-        )}
-        {item.createdTime && (
-          <>
-            <Grid container item xs={12}>
-              <Grid item xs={3}>
-                <Box sx={{ color: 'text.secondary' }}>Created Time: </Box>
-              </Grid>
-              <Grid item xs={9}>
-                <Box sx={{ typography: 'subtitle2' }}>
-                  <Label color="default"> {fDateTime(item.createdTime) || '-'} </Label>
-                </Box>
-              </Grid>
-            </Grid>
-          </>
-        )}
-        {item.lastModifiedTime && (
-          <>
-            <Grid container item xs={12}>
-              <Grid item xs={3}>
-                <Box sx={{ color: 'text.secondary' }}>Last Modified Time: </Box>
-              </Grid>
-              <Grid item xs={9}>
-                <Box sx={{ typography: 'subtitle2' }}>
-                  <Label color="default"> {fDateTime(item.lastModifiedTime) || '-'} </Label>
-                </Box>
-              </Grid>
-            </Grid>
-          </>
-        )}
-        {item.description && (
-          <>
-            <Grid container item xs={12}>
-              <Grid item xs={3}>
-                <Box sx={{ color: 'text.secondary' }}>Description: </Box>
-              </Grid>
-              <Grid item xs={9}>
-                <Box sx={{ typography: 'subtitle2', maxWidth: '100%' }}>
-                  <TextareaAutosize
-                    aria-label="empty textarea"
-                    placeholder="Empty"
-                    value={item.description || '-'}
-                    disabled
-                    minRows={8} // Número fijo de filas
-                    maxRows={8} // Mismo valor que minRows para evitar el ajuste
-                    style={{
-                      width: isMobile ? '70%' : '100%',    // Ancho fijo
-                      resize: 'none',    // Deshabilita la capacidad de redimensionar manualmente
-                      padding: '8px',    // Opcional: Ajusta el padding según tus necesidades
-                      borderRadius: '4px', // Opcional: Bordes redondeados
-                      borderColor: '#ccc', // Opcional: Color del borde
-                    }}
-                  />
-                </Box>
-              </Grid>
-            </Grid>
-          </>
-        )}
-      </Grid> */}
-
+      </Grid>
     </Stack >
   );
 
@@ -182,13 +119,61 @@ export function ItemDetailsSenitronItems({ item }) {
     <Card>
       <CardHeader
         title="Details from Senitron"
-        action={
-          <IconButton>
-            <Iconify icon="solar:details" />
-          </IconButton>
+        action={currentItem &&
+          <Tooltip
+            title="Update from Senitron"
+            arrow
+            sx={{
+              '& .MuiTooltip-tooltip': {
+                backgroundColor: '#000000',
+                color: 'white',
+                fontSize: '0.875rem',
+              },
+            }}
+          >
+            <IconButton
+              onClick={() =>  {
+                setComponent(`senitron inventory item (ID: ${currentItem.itemNumber}) details`);
+                setLoading(true);
+                axios
+                  .post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_items/`)
+                  .then(() => {
+                    axios
+                      .post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_item_assets/`)
+                      .then(() => {
+                        console.log('Senitron Inventory items fetched');
+                      })
+                      .catch((err) => {
+                        console.error('Error fetching senitron inventory items assets:', err);
+                        setError('There was an error fetching senitron inventory items assets.');
+                      })
+                      .finally(() => {
+                        setLoading(false);
+                      });
+                  })
+                  .catch((err) => {
+                    console.error('Error fetching senitron inventory items:', err);
+                    setError('There was an error fetching senitron inventory items.');
+                  })
+                  .finally(() => {
+                    setLoading(false);
+                  });
+              }}
+            >
+              <Iconify icon="mdi:update" />
+            </IconButton>
+          </Tooltip>
         }
       />
-      {renderTotal}
+      {item ? renderTotal :
+        <TableContainer sx={{ maxHeight: 440 }}>
+          <Table size='medium' sx={{ minWidth: 960 }} stickyHeader>
+            <TableBody>
+              <TableNoData notFound={!item} />
+            </TableBody>
+          </Table>
+        </TableContainer>
+      }
     </Card>
   );
 }

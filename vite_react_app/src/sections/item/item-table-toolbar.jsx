@@ -21,10 +21,6 @@ export function ItemTableToolbar({ filters, onResetPage, options }) {
 
   const { setLoading, setError, setComponent } = useContext(LoadingContext);
 
-  useEffect(() => {
-    setComponent('items');
-  }, [setComponent]);
-
   const handleFilterName = useCallback(
     (event) => {
       onResetPage();
@@ -53,7 +49,7 @@ export function ItemTableToolbar({ filters, onResetPage, options }) {
         direction={{ xs: 'column', md: 'row' }}
         sx={{ p: 2.5, pr: { xs: 2.5, md: 1 } }}
       >
-        <FormControl sx={{ flexShrink: 0, width: { xs: 1, md: 200 } }}>
+        {/* <FormControl sx={{ flexShrink: 0, width: { xs: 1, md: 200 } }}>
           <InputLabel htmlFor="item-filter-syncedWithSenitron-select-label">Synced With Senitron</InputLabel>
 
           <Select
@@ -76,7 +72,7 @@ export function ItemTableToolbar({ filters, onResetPage, options }) {
               </MenuItem>
             ))}
           </Select>
-        </FormControl>
+        </FormControl> */}
 
         <Stack direction="row" alignItems="center" spacing={2} flexGrow={1} sx={{ width: 1 }}>
           <TextField
@@ -136,6 +132,7 @@ export function ItemTableToolbar({ filters, onResetPage, options }) {
             onClick={() => {
               popover.onClose();
               setLoading(true);
+              setComponent('zoho inventory items');
               axios
                 .post(`${CONFIG.apiUrl}/api_zoho/load/inventory_items/`)
                 .then(() => {
@@ -157,14 +154,27 @@ export function ItemTableToolbar({ filters, onResetPage, options }) {
             onClick={() => {
               popover.onClose();
               setLoading(true);
+              setComponent('senitron items');
               axios
-                .post(`${CONFIG.apiUrl}/api_zoho/load/inventory_items/`)
+                .post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_items/`)
                 .then(() => {
-                  console.log('Inventory items fetched');
+                  axios
+                    .post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_item_assets/`)
+                    .then(() => {
+                      console.log('Zoho Inventory items fetched');
+                      console.log('Senitron Inventory items fetched');
+                    })
+                    .catch((err) => {
+                      console.error('Error fetching senitron inventory items assets:', err);
+                      setError('There was an error fetching senitron inventory items assets.');
+                    })
+                    .finally(() => {
+                      setLoading(false);
+                    });
                 })
                 .catch((err) => {
-                  console.error('Error fetching inventory items:', err);
-                  setError('There was an error fetching the inventory items.');
+                  console.error('Error fetching senitron inventory items:', err);
+                  setError('There was an error fetching senitron inventory items.');
                 })
                 .finally(() => {
                   setLoading(false);
@@ -172,7 +182,7 @@ export function ItemTableToolbar({ filters, onResetPage, options }) {
             }}
           >
             <Iconify icon="mdi:sync" />
-            Sync All with Senitron
+            Sync with Senitron
           </MenuItem>
         </MenuList>
       </CustomPopover>

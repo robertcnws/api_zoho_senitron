@@ -9,6 +9,7 @@ from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from .models import AppConfig, ZohoInventoryItem, ZohoInventoryShipmentSalesOrder
+from api_senitron.models import SenitronItem, TimelineItem
 from .manage_instances import create_inventory_item_instance, create_inventory_sales_order_instance
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -293,10 +294,44 @@ def load_inventory_items(request):
 
     for data in items_to_get:
         new_item = create_inventory_item_instance(logger, data)
+        prev_item = existing_items.get(item_id=new_item.item_id) if existing_items else None
+        senitron_item = SenitronItem.objects.filter(item_number=data['item_id']).first()
         if new_item.item_id in existing_items_ids:
             items_to_update.append(new_item)
+            if prev_item.status != new_item.status:
+                TimelineItem.objects.create(
+                    item_number=new_item.item_id, 
+                    previous_status_zoho=prev_item.status,
+                    date_previous_status_zoho=prev_item.last_modified_time if prev_item.last_modified_time else prev_item.created_time,
+                    actual_status_zoho=new_item.status,
+                    date_actual_status_zoho=new_item.last_modified_time if new_item.last_modified_time else new_item.created_time,
+                    zoho_item=new_item,
+                    senitron_item=senitron_item if senitron_item else None,
+                    text=f"Zoho Item (SKU: {new_item.sku or '-'}, ID: {new_item.item_id}) zoho status changed from {prev_item.status} to {new_item.status}"
+                ).save()
+            if int(prev_item.stock_on_hand) != int(new_item.stock_on_hand):
+                TimelineItem.objects.create(
+                    item_number=new_item.item_id, 
+                    previous_stock_on_hand=prev_item.stock_on_hand,
+                    date_previous_stock_on_hand=prev_item.last_modified_time if prev_item.last_modified_time else prev_item.created_time,
+                    actual_stock_on_hand=new_item.stock_on_hand,
+                    date_actual_stock_on_hand=new_item.last_modified_time if new_item.last_modified_time else new_item.created_time,
+                    zoho_item=new_item,
+                    senitron_item=senitron_item if senitron_item else None,
+                    text=f"Zoho Item (SKU: {new_item.sku or '-'}, ID: {new_item.item_id}) stock on hand changed from {prev_item.stock_on_hand} to {new_item.stock_on_hand}"
+                ).save()
         else:
             new_items.append(new_item)
+            TimelineItem.objects.create(
+                item_number=new_item.item_id,
+                actual_stock_on_hand=new_item.stock_on_hand,
+                date_actual_stock_on_hand=new_item.last_modified_time if new_item.last_modified_time else new_item.created_time,
+                actual_status_zoho=new_item.status,
+                date_actual_status_zoho=new_item.last_modified_time if new_item.last_modified_time else new_item.created_time,
+                zoho_item=new_item,
+                senitron_item=senitron_item if senitron_item else None,
+                text=f"Zoho Item (SKU: {new_item.sku or '-'}, ID: {new_item.item_id}) created with status {new_item.status}"
+            ).save()
     
     with transaction.atomic():
         if new_items:
@@ -435,132 +470,20 @@ def load_inventory_sales_orders(request):
             )
     return JsonResponse({'message': 'Sales Orders loaded successfully'}, status=200)
 
-# @api_view(['POST'])
-# @permission_classes([AllowAny])
-# def load_inventory_sales_orders(request):
-#     # username = request.data.get('username', '')
-#     app_config = AppConfig.objects.first()
-#     logger.debug(app_config)
-#     try:
-#         headers = config_headers(request)  
-#     except Exception as e:
-#         logger.error(f"Error connecting to Zoho API: {str(e)}")
-#         return JsonResponse({'error': f"Error connecting to Zoho API (Load Items): {str(e)}"}, status=500)
-    
-#     data = json.loads(request.body)
-    
-#     date = data.get('date', None)
-    
-#     if not date:
-#         return JsonResponse({'error': 'Date is missing'}, status=400)
-#     elif not isinstance(date, str):
-#         return JsonResponse({'error': 'Invalid date format'}, status=400)
-#     elif not dt.strptime(date, '%Y-%m-%d'):
-#         return JsonResponse({'error': 'Invalid date'}, status=400)
-        
-#     params = {
-#         'organization_id': app_config.zoho_org_id,
-#         'date': date,
-#         'page': 1,       
-#         'per_page': 200,  
-#     }
-        
-#     url = f'{settings.ZOHO_INVENTORY_SALESORDERS_URL}'
-#     values_from_json = 'salesorders'
-#     items_to_get = []
-#     full_items_to_get = []
-        
-#     while True:
-#         try:
-#             response = requests.get(url, headers=headers, params=params)
-#             if response.status_code == 401:  
-#                 new_token = refresh_zoho_access_token()
-#                 headers['Authorization'] = f'Zoho-oauthtoken {new_token}'
-#                 response = requests.get(url, headers=headers, params=params)  
-#             elif response.status_code != 200:
-#                 logger.error(f"Error fetching items: {response.text}")
-#                 return JsonResponse({'error': response.text}, status=response.status_code)
-#             else:
-#                 response.raise_for_status()
-#                 items = response.json()
-#                 if items.get(values_from_json, []):
-#                     items_to_get.extend(items[values_from_json])
-#                 if 'page_context' in items and 'has_more_page' in items['page_context'] and items['page_context']['has_more_page']:
-#                     params['page'] += 1  
-#                 else:
-#                     break  
-#         except requests.exceptions.RequestException as e:
-#             logger.error(f"Error fetching sales orders: {e}")
-#             return JsonResponse({'error': 'Failed to fetch sales orders'}, status=500)
-    
-#     for item in items_to_get:
-#         url = f'{settings.ZOHO_INVENTORY_SALESORDERS_URL}/{item["salesorder_id"]}'
-#         try:
-#             response = requests.get(url, headers=headers, params=params)
-#             if response.status_code == 401:  
-#                 new_token = refresh_zoho_access_token()
-#                 headers['Authorization'] = f'Zoho-oauthtoken {new_token}'
-#                 response = requests.get(url, headers=headers, params=params)  
-#             elif response.status_code != 200:
-#                 logger.error(f"Error fetching items: {response.text}")
-#                 return JsonResponse({'error': response.text}, status=response.status_code)
-#             else:
-#                 response.raise_for_status()
-#                 full_item = response.json()
-#                 if full_item.get('salesorder', {}):
-#                     full_items_to_get.append(full_item['salesorder'])
-#         except requests.exceptions.RequestException as e:
-#             logger.error(f"Error fetching details sale order: {e}")
-#             return JsonResponse({'error': 'Failed to fetch detail sale order'}, status=500)
-        
-#     with transaction.atomic():
-#         for data in full_items_to_get:
-#             new_item = create_inventory_sales_order_instance(data)
-#             duplicates = ZohoInventorySalesOrder.objects.filter(salesorder_id=new_item.salesorder_id)
-#             if duplicates.count() > 1:
-#                 duplicates.exclude(id=duplicates.first().id).delete()
-#             ZohoInventorySalesOrder.objects.update_or_create(
-#                 salesorder_id=new_item.salesorder_id,
-#                 defaults={
-#                     'salesorder_number': new_item.salesorder_number,
-#                     'date': new_item.date,
-#                     'status': new_item.status,
-#                     'customer_id': new_item.customer_id,
-#                     'customer_name': new_item.customer_name,
-#                     'is_taxable': new_item.is_taxable,
-#                     'tax_id': new_item.tax_id,
-#                     'tax_name': new_item.tax_name,
-#                     'tax_percentage': new_item.tax_percentage,
-#                     'currency_id': new_item.currency_id,
-#                     'currency_code': new_item.currency_code,
-#                     'currency_symbol': new_item.currency_symbol,
-#                     'exchange_rate': new_item.exchange_rate,
-#                     'delivery_method': new_item.delivery_method,
-#                     'total_quantity': new_item.total_quantity,
-#                     'sub_total': new_item.sub_total,
-#                     'tax_total': new_item.tax_total,
-#                     'total': new_item.total,
-#                     'created_by_email': new_item.created_by_email,
-#                     'created_by_name': new_item.created_by_name,
-#                     'salesperson_id': new_item.salesperson_id,
-#                     'salesperson_name': new_item.salesperson_name,
-#                     'is_test_order': new_item.is_test_order,
-#                     'notes': new_item.notes,
-#                     'payment_terms': new_item.payment_terms,
-#                     'payment_terms_label': new_item.payment_terms_label,
-#                     'line_items': new_item.line_items,
-#                     'shipping_address': new_item.shipping_address,
-#                     'billing_address': new_item.billing_address,
-#                     'warehouses': new_item.warehouses,
-#                     'custom_fields': new_item.custom_fields,
-#                     'order_sub_statuses': new_item.order_sub_statuses,
-#                     'shipment_sub_statuses': new_item.shipment_sub_statuses,
-#                     'created_time': new_item.created_time,
-#                     'last_modified_time': new_item.last_modified_time,
-#                 }
-#             )
-                
-#     return JsonResponse({'message': 'Sales Orders loaded successfully'}, status=200)
+
+@api_view(['POST'])
+@permission_classes([AllowAny]) 
+def sync_with_senitron(request):
+    data = json.loads(request.body) if request.body else {}
+    print('Data', data)
+    for item in data:
+        try:
+            zoho_item = ZohoInventoryItem.objects.filter(item_id=item['itemId']).first()
+            zoho_item.synced_with_senitron = item['syncedWithSenitron']
+            zoho_item.save()
+        except ZohoInventoryItem.DoesNotExist:
+            logger.error(f"Item {item['item_id']} not found in Zoho")
+    return JsonResponse({'message': 'Items synced successfully'}, status=200)
     
     
 

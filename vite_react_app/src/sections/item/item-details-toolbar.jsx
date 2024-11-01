@@ -46,6 +46,9 @@ export function ItemDetailsToolbar({
             <Typography variant="body2" sx={{ color: 'text.disabled' }}>
               Created: {fDateTime(item.createdTime)}
             </Typography>
+            <Typography variant="body2" sx={{ color: 'text.disabled' }}>
+              Last Modified: {fDateTime(item.lastModifiedTime)}
+            </Typography>
           </Stack>
         </Stack>
 

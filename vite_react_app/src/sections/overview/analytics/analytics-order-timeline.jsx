@@ -1,3 +1,5 @@
+import React, { useEffect } from 'react';
+import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Timeline from '@mui/lab/Timeline';
 import TimelineDot from '@mui/lab/TimelineDot';
@@ -12,32 +14,55 @@ import { fDateTime } from 'src/utils/format-time';
 
 // ----------------------------------------------------------------------
 
-export function AnalyticsOrderTimeline({ title, subheader, list, ...other }) {
+export function AnalyticsOrderTimeline({ title, subheader, list, onViewDetails, ...other }) {
+
+  const [timelineItems, setTimelineItems] = React.useState(null);
+
+  useEffect(() => {
+    const newItems = [];
+    list?.forEach((item) => {
+      const newItem = {
+        id: item.itemNumber,
+        title: item.text,
+        time: item.text.includes('stock on hand') ? item.dateActualStockOnHand :
+          item.text.includes('zoho status') ? item.dateActualStatusZoho :
+            item.text.includes('quantity') ? item.dateActualQuantity :
+              item.text.includes('created') && item.text.includes('Senitron') ? item.dateActualQuantity :
+                item.text.includes('created') && item.text.includes('Zoho') ? item.dateActualStockOnHand : item.dateActualStatusSenitron,
+        type: item.text.includes('created') ? 'order1' : item.text.includes('changed') ? 'order4' : item.text.includes('updated') ? 'order3' : 'order2',
+      };
+      newItems.push(newItem);
+    });
+    setTimelineItems(newItems);
+  }, [list]);
+
   return (
     <Card {...other}>
       <CardHeader title={title} subheader={subheader} />
-
-      <Timeline
-        sx={{
-          m: 0,
-          p: 3,
-          [`& .${timelineItemClasses.root}:before`]: {
-            flex: 0,
-            padding: 0,
-          },
-        }}
-      >
-        {list.map((item, index) => (
-          <Item key={item.id} item={item} lastItem={index === list.length - 1} />
-        ))}
-      </Timeline>
+      <Box sx={{ maxHeight: 390, overflowY: 'auto' }}>
+        <Timeline
+          sx={{
+            m: 0,
+            p: 3,
+            [`& .${timelineItemClasses.root}:before`]: {
+              flex: 0,
+              padding: 0,
+            },
+          }}
+        >
+          {timelineItems?.map((item, index) => (
+            <Item key={item.id} item={item} lastItem={index === list.length - 1} onViewDetails={onViewDetails} />
+          ))}
+        </Timeline>
+      </Box>
     </Card>
   );
 }
 
-function Item({ item, lastItem, ...other }) {
+
+function Item({ item, lastItem, onViewDetails, ...other }) {
   return (
-    <TimelineItem {...other}>
+    <TimelineItem {...other} sx={{ cursor: 'pointer' }} onClick={() => onViewDetails(item.id)}>
       <TimelineSeparator>
         <TimelineDot
           color={

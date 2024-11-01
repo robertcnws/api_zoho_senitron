@@ -1,56 +1,145 @@
+import React, { useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Stack from '@mui/material/Stack';
-import Avatar from '@mui/material/Avatar';
 import CardHeader from '@mui/material/CardHeader';
 import IconButton from '@mui/material/IconButton';
-import ListItemText from '@mui/material/ListItemText';
-
-import { fCurrency } from 'src/utils/format-number';
+import { Grid } from '@mui/material';
+import { Label } from 'src/components/label';
 
 import { Iconify } from 'src/components/iconify';
-import { Scrollbar } from 'src/components/scrollbar';
+import { line } from 'stylis';
 
 // ----------------------------------------------------------------------
 
-export function OrderDetailsItems({
-  taxes,
-  shipping,
-  discount,
-  subtotal,
-  items = [],
-  totalAmount,
-}) {
+export function OrderDetailsItems({ order }) {
+
+  const [lineItems, setLineItems] = useState([]);
+
+  useEffect(() => {
+    const items = order.lineItems;
+    console.log('items', items);
+    // setLineItems(items instanceof Array ? items : JSON.parse(items));
+  }, [order.lineItems]);
+
+  const renderItems = lineItems.map((item) => (
+    <Stack key={item.item_id} direction="row" alignItems="center" justifyContent="space-between">
+      <Stack direction="row" alignItems="center" spacing={2}>
+        <Box component="img" sx={{ width: 48, height: 48, borderRadius: 1.5 }} />
+        <Stack spacing={1}>
+          <Label color="info">{item.name}</Label>
+          <Label color="text.secondary">{item.sku}</Label>
+        </Stack>
+      </Stack>
+    </Stack>
+  ));
+
   const renderTotal = (
-    <Stack spacing={2} alignItems="flex-end" sx={{ p: 3, textAlign: 'right', typography: 'body2' }}>
-      <Stack direction="row">
-        <Box sx={{ color: 'text.secondary' }}>Subtotal</Box>
-        <Box sx={{ width: 160, typography: 'subtitle2' }}>{fCurrency(subtotal) || '-'}</Box>
-      </Stack>
+    <Stack spacing={2} alignItems="flex-start" sx={{ p: 3, textAlign: 'left', typography: 'body2' }}>
+      <Grid container spacing={2}>
+        {order.salesorderId && (
+          <>
+            <Grid container item xs={12}>
+              <Grid item xs={3}>
+                <Box sx={{ color: 'text.secondary' }}>ID: </Box>
+              </Grid>
+              <Grid item xs={9}>
+                <Box sx={{ typography: 'subtitle2' }}>
+                  <Label color="default"> {order.salesorderId || '-'} </Label>
+                </Box>
+              </Grid>
 
-      <Stack direction="row">
-        <Box sx={{ color: 'text.secondary' }}>Shipping</Box>
-        <Box sx={{ width: 160, ...(shipping && { color: 'error.main' }) }}>
-          {shipping ? `- ${fCurrency(shipping)}` : '-'}
-        </Box>
-      </Stack>
+            </Grid>
+          </>
+        )}
+        {order.customerName && (
+          <>
+            <Grid container item xs={12}>
+              <Grid item xs={3}>
+                <Box sx={{ color: 'text.secondary' }}>Customer: </Box>
+              </Grid>
+              <Grid item xs={9}>
+                <Box sx={{ typography: 'subtitle2' }}>
+                  <Label color="default"> {order.customerName || '-'} </Label>
+                </Box>
+              </Grid>
 
-      <Stack direction="row">
-        <Box sx={{ color: 'text.secondary' }}>Discount</Box>
-        <Box sx={{ width: 160, ...(discount && { color: 'error.main' }) }}>
-          {discount ? `- ${fCurrency(discount)}` : '-'}
-        </Box>
-      </Stack>
+            </Grid>
+          </>
+        )}
+        {order.totalQuantity && (
+          <>
+            <Grid container item xs={12}>
+              <Grid item xs={3}>
+                <Box sx={{ color: 'text.secondary' }}>Total Quantity: </Box>
+              </Grid>
+              <Grid item xs={9}>
+                <Box sx={{ typography: 'subtitle2' }}>
+                  <Label color="default"> {order.totalQuantity || '-'} </Label>
+                </Box>
+              </Grid>
 
-      <Stack direction="row">
-        <Box sx={{ color: 'text.secondary' }}>Taxes</Box>
-        <Box sx={{ width: 160 }}>{taxes ? fCurrency(taxes) : '-'}</Box>
-      </Stack>
+            </Grid>
+          </>
+        )}
+        {order.total && (
+          <>
+            <Grid container item xs={12}>
+              <Grid item xs={3}>
+                <Box sx={{ color: 'text.secondary' }}>Totals: </Box>
+              </Grid>
+              <Grid item xs={9}>
+                <Box sx={{ typography: 'subtitle2' }}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={4}>
+                      <Box sx={{ color: 'text.secondary' }}>Subtotal: </Box>
+                    </Grid>
+                    <Grid item xs={1}>
+                      <Box alignItems="flex-end" sx={{ p: 0, textAlign: 'right', typography: 'body2' }}>
+                        <Label color="default"> {parseFloat(order.subTotal).toFixed(2) || '-'} </Label>
+                      </Box>
+                    </Grid>
+                  </Grid>
+                  <Grid container spacing={2}>
+                    <Grid item xs={4}>
+                      <Box sx={{ color: 'text.secondary' }}>Tax Total: </Box>
+                    </Grid>
+                    <Grid item xs={1}>
+                      <Box alignItems="flex-end" sx={{ p: 0, textAlign: 'right', typography: 'body2' }}>
+                        <Label color="default"> {parseFloat(order.taxTotal).toFixed(2) || '-'} </Label>
+                      </Box>
+                    </Grid>
+                  </Grid>
+                  <Grid container spacing={2}>
+                    <Grid item xs={4}>
+                      <Box sx={{ color: 'text.secondary' }}>Total: </Box>
+                    </Grid>
+                    <Grid item xs={1}>
+                      <Box alignItems="flex-end" sx={{ p: 0, textAlign: 'right', typography: 'body2' }}>
+                        <Label color="default"> {parseFloat(order.total).toFixed(2) || '-'} </Label>
+                      </Box>
+                    </Grid>
+                  </Grid>
+                </Box>
+              </Grid>
 
-      <Stack direction="row" sx={{ typography: 'subtitle1' }}>
-        <div>Total</div>
-        <Box sx={{ width: 160 }}>{fCurrency(totalAmount) || '-'}</Box>
-      </Stack>
+            </Grid>
+          </>
+        )}
+        {order.lineItems && (
+          <>
+            <Grid container item xs={12}>
+              <Grid item xs={3}>
+                <Box sx={{ color: 'text.secondary' }}>Items (Products): </Box>
+              </Grid>
+              <Grid item xs={9}>
+                {renderItems}
+              </Grid>
+
+            </Grid>
+          </>
+        )}
+      </Grid>
     </Stack>
   );
 
@@ -64,40 +153,6 @@ export function OrderDetailsItems({
           </IconButton>
         }
       />
-
-      <Scrollbar>
-        {items.map((item) => (
-          <Stack
-            key={item.id}
-            direction="row"
-            alignItems="center"
-            sx={{
-              p: 3,
-              minWidth: 640,
-              borderBottom: (theme) => `dashed 2px ${theme.vars.palette.background.neutral}`,
-            }}
-          >
-            <Avatar src={item.coverUrl} variant="rounded" sx={{ width: 48, height: 48, mr: 2 }} />
-
-            <ListItemText
-              primary={item.name}
-              secondary={item.sku}
-              primaryTypographyProps={{ typography: 'body2' }}
-              secondaryTypographyProps={{
-                component: 'span',
-                color: 'text.disabled',
-                mt: 0.5,
-              }}
-            />
-
-            <Box sx={{ typography: 'body2' }}>x{item.quantity}</Box>
-
-            <Box sx={{ width: 110, textAlign: 'right', typography: 'subtitle2' }}>
-              {fCurrency(item.price)}
-            </Box>
-          </Stack>
-        ))}
-      </Scrollbar>
 
       {renderTotal}
     </Card>
