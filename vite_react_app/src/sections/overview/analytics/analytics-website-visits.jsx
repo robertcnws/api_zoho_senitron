@@ -97,13 +97,14 @@ export function AnalyticsWebsiteVisits({
       events: {
         dataPointSelection: (event, chartContext, config) => {
           const seriesIndex = config.seriesIndex;
+          const list = handleViewSublists(seriesIndex);
           setModalTitle(
-            seriesIndex === 0 ? 'Items Quantity Matched 100 %' :
-              seriesIndex === 1 ? 'Items Quantity Matched between 90 % and 100 %' :
-                seriesIndex === 2 ? 'Items Quantity Matched between 80 % and 90 %' :
-                  seriesIndex === 3 ? 'Items Quantity Matched between 70 % and 80 %' :
-                    seriesIndex === 4 ? 'Items Quantity Matched between 60 % and 70 %' :
-                      seriesIndex === 5 ? 'Items Quantity Matched between 50 % and 60 %' : 'Items Quantity Matched less than 50 %'
+            seriesIndex === 0 ? `${list.length} Items (Quantity Matched 100 %)` :
+              seriesIndex === 1 ? `${list.length} Items (Quantity Matched between 90 % and 100 %)` :
+                seriesIndex === 2 ? `${list.length} Items (Quantity Matched between 80 % and 90 %)` :
+                  seriesIndex === 3 ? `${list.length} Items (Quantity Matched between 70 % and 80 %)` :
+                    seriesIndex === 4 ? `${list.length} Items (Quantity Matched between 60 % and 70 %)` :
+                      seriesIndex === 5 ? `${list.length} Items (Quantity Matched between 50 % and 60 %)` : `${list.length} Items (Quantity Matched less than 50 %)`
           )
           setModalButtonColor(
             seriesIndex === 0 ? hexAlpha(theme.palette.success.main, 0.8) :
@@ -113,7 +114,7 @@ export function AnalyticsWebsiteVisits({
                     seriesIndex === 4 ? hexAlpha(theme.palette.warning.main, 0.8) :
                       seriesIndex === 5 ? hexAlpha(theme.palette.warning.dark, 0.8) : hexAlpha(theme.palette.error.main, 0.8)
           )
-          setModalDataFiltered(handleViewSublists(seriesIndex));
+          setModalDataFiltered(list);
           setOpenModal(true);
         },
       },
@@ -130,13 +131,10 @@ export function AnalyticsWebsiteVisits({
               seriesIndex === 5 ? item.percentage >= 50 && item.percentage < 60 : item.percentage < 50
   );
 
-
-
   return (
     <>
       <Card {...other}>
         <CardHeader title={title} subheader={subheader} />
-
         <Chart
           type="bar"
           series={chart.series}
@@ -156,8 +154,6 @@ export function AnalyticsWebsiteVisits({
         handleFilterName={handleFilterName}
         handleViewRow={handleViewRow}
       />
-
     </>
-
   );
 }

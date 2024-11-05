@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { gql, useQuery } from '@apollo/client';
 
 const GET_ZOHO_INVENTORY_ITEMS = gql`
@@ -82,12 +83,28 @@ const GET_SENITRON_INVENTORY_ITEM = gql`
 `;
 
 export const useItemsQuery = () => {
-  const { loading, error, data } = useQuery(GET_ZOHO_INVENTORY_ITEMS);
+  const { loading, error, data, startPolling, stopPolling } = useQuery(GET_ZOHO_INVENTORY_ITEMS);
+
+  useEffect(() => {
+    startPolling(5000); 
+    return () => {
+      stopPolling();
+    };
+  }, [startPolling, stopPolling]);
+
   return { loading, error, data: data?.allZohoInventoryItems };
 };
 
 export const useSenitronItemsQuery = () => {
-  const { loading, error, data } = useQuery(GET_SENITRON_INVENTORY_ITEM);
+  const { loading, error, data, startPolling, stopPolling } = useQuery(GET_SENITRON_INVENTORY_ITEM);
+
+  useEffect(() => {
+    startPolling(5000); 
+    return () => {
+      stopPolling();
+    };
+  }, [startPolling, stopPolling]);
+
   return { loading, error, data: data?.allSenitronInventoryItemsAssets };
 };
 
@@ -95,6 +112,12 @@ export const ITEM_STATUS_OPTIONS = [
   { value: 'active', label: 'Active' },
   { value: 'confirmation_pending', label: 'Confirmation Pending' },
   { value: 'inactive', label: 'Inactive' },
+];
+
+export const ITEM_STATUS_SHORT_OPTIONS = [
+  { value: 'active', label: 'Items Active' },
+  { value: 'confirmation_pending', label: 'Items in Confirmation Pending' },
+  { value: 'inactive', label: 'Items Inactive' },
 ];
 
 export const ITEM_SYNC_OPTIONS = [

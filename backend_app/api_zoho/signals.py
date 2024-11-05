@@ -1,9 +1,12 @@
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
-from .models import ZohoInventoryItem, ZohoInventoryShipmentSalesOrder
+from .models import ZohoInventoryItem, ZohoInventoryShipmentSalesOrder, LoginUser
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 import json
+
+
+# ZohoInventoryItem
 
 @receiver(post_save, sender=ZohoInventoryItem)
 def inventory_item_saved(sender, instance, created, **kwargs):
@@ -105,7 +108,8 @@ def inventory_item_deleted(sender, instance, **kwargs):
         }
     }
     async_to_sync(channel_layer.group_send)('inventory_items', event)
-    
+   
+# ZohoInventoryShipmentSalesOrder 
     
 @receiver(post_save, sender=ZohoInventoryShipmentSalesOrder)
 def inventory_sales_order_saved(sender, instance, created, **kwargs):
@@ -202,3 +206,63 @@ def inventory_sales_order_deleted(sender, instance, **kwargs):
         }
     }
     async_to_sync(channel_layer.group_send)('inventory_sales_order', event)
+    
+# LoginUser
+
+@receiver(post_save, sender=LoginUser)
+def login_user_saved(sender, instance, created, **kwargs):
+    channel_layer = get_channel_layer()
+    event = {
+        'type': 'send_login_user_update',
+        'message': {
+            'type': 'created' if created else 'updated',
+            "item": {
+                "username": instance.username if instance.username else None,
+                "lastLogin": instance.last_login.isoformat() if instance.last_login else None,
+                "isSuperuser": instance.is_superuser,
+                "firstName": instance.first_name if instance.first_name else None,
+                "lastName": instance.last_name if instance.last_name else None,
+                "email": instance.email if instance.email else None,
+                "isStaff": instance.is_staff,
+                "isActive": instance.is_active,
+                "dateJoined": instance.date_joined.isoformat() if instance.date_joined else None,
+                "phoneNumber": instance.phone_number if instance.phone_number else None,
+                "country": instance.country if instance.country else None,
+                "state": instance.state if instance.state else None,
+                "city": instance.city if instance.city else None,
+                "address": instance.address if instance.address else None,
+                "zipCode": instance.zip_code if instance.zip_code else None,
+                "gender": instance.gender if instance.gender else None,
+            }
+        }
+    }
+    async_to_sync(channel_layer.group_send)('login_users', event)   
+    
+@receiver(post_delete, sender=LoginUser)
+def login_user_deleted(sender, instance, **kwargs):
+    channel_layer = get_channel_layer()
+    event = {
+        'type': 'send_login_user_update',
+        'message': {
+            'type': 'deleted',
+            "item": {
+                "username": instance.username if instance.username else None,
+                "lastLogin": instance.last_login.isoformat() if instance.last_login else None,
+                "isSuperuser": instance.is_superuser,
+                "firstName": instance.first_name if instance.first_name else None,
+                "lastName": instance.last_name if instance.last_name else None,
+                "email": instance.email if instance.email else None,
+                "isStaff": instance.is_staff,
+                "isActive": instance.is_active,
+                "dateJoined": instance.date_joined.isoformat() if instance.date_joined else None,
+                "phoneNumber": instance.phone_number if instance.phone_number else None,
+                "country": instance.country if instance.country else None,
+                "state": instance.state if instance.state else None,
+                "city": instance.city if instance.city else None,
+                "address": instance.address if instance.address else None,
+                "zipCode": instance.zip_code if instance.zip_code else None,
+                "gender": instance.gender if instance.gender else None,
+            }
+        }
+    }
+    async_to_sync(channel_layer.group_send)('login_users', event)

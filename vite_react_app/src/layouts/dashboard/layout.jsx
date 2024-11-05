@@ -143,11 +143,11 @@ export function DashboardLayout({ sx, children, header, data }) {
                 {/* -- Searchbar -- */}
                 <Searchbar data={navData} />
                 {/* -- Language popover -- */}
-                <LanguagePopover data={allLangs} />
+                {/* <LanguagePopover data={allLangs} /> */}
                 {/* -- Notifications popover -- */}
                 <NotificationsDrawer data={_notifications} />
                 {/* -- Contacts popover -- */}
-                <ContactsPopover data={_contacts} />
+                {/* <ContactsPopover data={_contacts} /> */}
                 {/* -- Settings button -- */}
                 <SettingsButton />
                 {/* -- Account drawer -- */}

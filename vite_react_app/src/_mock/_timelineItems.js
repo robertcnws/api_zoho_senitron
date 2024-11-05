@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { gql, useQuery } from '@apollo/client';
 
 const GET_TIMELINES_ITEMS = gql`
@@ -46,6 +47,14 @@ const GET_TIMELINES_ITEMS = gql`
 `;
 
 export const useTimelineItemsQuery = () => {
-  const { loading, error, data } = useQuery(GET_TIMELINES_ITEMS);
+  const { loading, error, data, startPolling, stopPolling } = useQuery(GET_TIMELINES_ITEMS);
+
+  useEffect(() => {
+    startPolling(5000); 
+    return () => {
+      stopPolling();
+    };
+  }, [startPolling, stopPolling]);
+  
   return { loading, error, data: data?.allTimelineItems };
 };

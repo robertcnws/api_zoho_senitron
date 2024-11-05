@@ -51,6 +51,8 @@ class SenitronItemAsset(models.Model):
     text3 = models.TextField(blank=True, null=True)
     status = models.ForeignKey(SenitronStatus, on_delete=models.CASCADE, null=True, related_name='status')
     senitron_item = models.ForeignKey(SenitronItem, on_delete=models.CASCADE, null=True, related_name='senitron_item')
+    read = models.BooleanField(default=False)
+    date_read = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
         return f"Item {self.item_number} - Serial: {self.serial_number}"

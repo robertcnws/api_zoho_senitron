@@ -1,5 +1,7 @@
 import { z as zod } from 'zod';
 import { useMemo } from 'react';
+import axios from 'axios';
+import { CONFIG } from 'src/config-global';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, Controller } from 'react-hook-form';
 import { isValidPhoneNumber } from 'react-phone-number-input/input';
@@ -22,44 +24,53 @@ import { fData } from 'src/utils/format-number';
 import { Label } from 'src/components/label';
 import { toast } from 'src/components/snackbar';
 import { Form, Field, schemaHelper } from 'src/components/hook-form';
+import { MenuItem } from '@mui/material';
 
 // ----------------------------------------------------------------------
-
-export const NewUserSchema = zod.object({
-  avatarUrl: schemaHelper.file({
-    message: { required_error: 'Avatar is required!' },
-  }),
-  name: zod.string().min(1, { message: 'Name is required!' }),
-  email: zod
-    .string()
-    .min(1, { message: 'Email is required!' })
-    .email({ message: 'Email must be a valid email address!' }),
-  phoneNumber: schemaHelper.phoneNumber({ isValidPhoneNumber }),
-  country: schemaHelper.objectOrNull({
-    message: { required_error: 'Country is required!' },
-  }),
-  address: zod.string().min(1, { message: 'Address is required!' }),
-  company: zod.string().min(1, { message: 'Company is required!' }),
-  state: zod.string().min(1, { message: 'State is required!' }),
-  city: zod.string().min(1, { message: 'City is required!' }),
-  role: zod.string().min(1, { message: 'Role is required!' }),
-  zipCode: zod.string().min(1, { message: 'Zip code is required!' }),
-  // Not required
-  status: zod.string(),
-  isVerified: zod.boolean(),
-});
 
 // ----------------------------------------------------------------------
 
 export function UserNewEditForm({ currentUser }) {
+  
   const router = useRouter();
+
+  const NewUserSchema = zod.object({
+    // avatarUrl: schemaHelper.file({
+    //   message: { required_error: 'Avatar is required!' },
+    // }),
+    username: zod.string().min(1, { message: 'Username is required!' }),
+    firstName: zod.string().min(1, { message: 'First name is required!' }),
+    lastName: zod.string().min(1, { message: 'Last name is required!' }),
+    email: zod
+      .string()
+      .min(1, { message: 'Email is required!' })
+      .email({ message: 'Email must be a valid email address!' }),
+    phoneNumber: schemaHelper.phoneNumber({ isValidPhoneNumber }),
+    country: schemaHelper.objectOrNull({
+      message: { required_error: 'Country is required!' },
+    }),
+    address: zod.string().min(1, { message: 'Address is required!' }),
+    gender: zod.string().min(1, { message: 'Gender is required!' }),
+    state: zod.string().min(1, { message: 'State is required!' }),
+    city: zod.string().min(1, { message: 'City is required!' }),
+    role: zod.string().min(1, { message: 'Role is required!' }),
+    zipCode: zod.string().min(1, { message: 'Zip code is required!' }),
+    password: currentUser ? zod.string() : zod.string().min(1, { message: 'Password is required!' }),
+    confirmPassword: currentUser ? zod.string() : zod.string().min(1, { message: 'Confirm Password is required!' }),
+
+    // Not required
+    status: zod.string(),
+    isVerified: zod.boolean(),
+  });
 
   const defaultValues = useMemo(
     () => ({
       status: currentUser?.status || '',
       avatarUrl: currentUser?.avatarUrl || null,
       isVerified: currentUser?.isVerified || true,
-      name: currentUser?.name || '',
+      firstName: currentUser?.firstName || '',
+      lastName: currentUser?.lastName || '',
+      username: currentUser?.username || '',
       email: currentUser?.email || '',
       phoneNumber: currentUser?.phoneNumber || '',
       country: currentUser?.country || '',
@@ -67,8 +78,10 @@ export function UserNewEditForm({ currentUser }) {
       city: currentUser?.city || '',
       address: currentUser?.address || '',
       zipCode: currentUser?.zipCode || '',
-      company: currentUser?.company || '',
+      gender: currentUser?.gender || '',
       role: currentUser?.role || '',
+      password: '',
+      confirmPassword: '',
     }),
     [currentUser]
   );
@@ -90,8 +103,11 @@ export function UserNewEditForm({ currentUser }) {
   const values = watch();
 
   const onSubmit = handleSubmit(async (data) => {
+    
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      const id = currentUser ? currentUser.id : 0;
+      const response = await axios.post(`${CONFIG.apiUrl}/api_zoho/manage_user/${id}/`, data);
+      console.log('Respuesta del servidor:', response.data);
       reset();
       toast.success(currentUser ? 'Update success!' : 'Create success!');
       router.push(paths.dashboard.user.list);
@@ -104,13 +120,13 @@ export function UserNewEditForm({ currentUser }) {
   return (
     <Form methods={methods} onSubmit={onSubmit}>
       <Grid container spacing={3}>
-        <Grid xs={12} md={4}>
-          <Card sx={{ pt: 10, pb: 5, px: 3 }}>
+        {/* <Grid xs={12} md={4}>
+          <Card sx={{ pt: 3, pb: 5, px: 3 }}>
             {currentUser && (
               <Label
                 color={
                   (values.status === 'active' && 'success') ||
-                  (values.status === 'banned' && 'error') ||
+                  (values.status === 'inactive' && 'error') ||
                   'warning'
                 }
                 sx={{ position: 'absolute', top: 24, right: 24 }}
@@ -120,6 +136,7 @@ export function UserNewEditForm({ currentUser }) {
             )}
 
             <Box sx={{ mb: 5 }}>
+              <Field.Text name="username" label="Username" />
               <Field.UploadAvatar
                 name="avatarUrl"
                 maxSize={3145728}
@@ -139,7 +156,7 @@ export function UserNewEditForm({ currentUser }) {
                   </Typography>
                 }
               />
-            </Box>
+            </Box> 
 
             {currentUser && (
               <FormControlLabel
@@ -202,9 +219,9 @@ export function UserNewEditForm({ currentUser }) {
               </Stack>
             )}
           </Card>
-        </Grid>
+        </Grid> */}
 
-        <Grid xs={12} md={8}>
+        <Grid xs={12} md={12}>
           <Card sx={{ p: 3 }}>
             <Box
               rowGap={3}
@@ -215,8 +232,10 @@ export function UserNewEditForm({ currentUser }) {
                 sm: 'repeat(2, 1fr)',
               }}
             >
-              <Field.Text name="name" label="Full name" />
+              <Field.Text name="username" label="Username" />
               <Field.Text name="email" label="Email address" />
+              <Field.Text name="firstName" label="First name" />
+              <Field.Text name="lastName" label="Last name" />
               <Field.Phone name="phoneNumber" label="Phone number" />
 
               <Field.CountrySelect
@@ -230,8 +249,24 @@ export function UserNewEditForm({ currentUser }) {
               <Field.Text name="city" label="City" />
               <Field.Text name="address" label="Address" />
               <Field.Text name="zipCode" label="Zip/code" />
-              <Field.Text name="company" label="Company" />
-              <Field.Text name="role" label="Role" />
+              <Field.Select name="gender" label="Gender">
+                <MenuItem key="M" value="M">
+                  Male
+                </MenuItem>
+                <MenuItem key="F" value="F">
+                  Female
+                </MenuItem>
+              </Field.Select>
+              <Field.Select name="role" label="Role">
+                <MenuItem key="Admin" value="Admin">
+                  Admin
+                </MenuItem>
+                <MenuItem key="User" value="User">
+                  User
+                </MenuItem>
+              </Field.Select>
+              <Field.Text name="password" label="Password" type="password"/>
+              <Field.Text name="confirmPassword" label="Confirm Password" type="password"/>
             </Box>
 
             <Stack alignItems="flex-end" sx={{ mt: 3 }}>

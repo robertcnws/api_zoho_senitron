@@ -8,7 +8,8 @@ import json
 from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from .models import AppConfig, ZohoInventoryItem, ZohoInventoryShipmentSalesOrder
+from django.contrib.auth.models import User
+from .models import AppConfig, ZohoInventoryItem, ZohoInventoryShipmentSalesOrder, LoginUser
 from api_senitron.models import SenitronItem, TimelineItem
 from .manage_instances import create_inventory_item_instance, create_inventory_sales_order_instance
 from rest_framework.decorators import api_view, permission_classes
@@ -16,12 +17,9 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.db import transaction
 from datetime import datetime as dt
 from concurrent.futures import as_completed, ThreadPoolExecutor
-from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login as auth_login
 from django.forms.models import model_to_dict
 import logging
-
-
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -57,6 +55,75 @@ def login(request):
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON', 'description': 'Request is not in a valid format'}, status=400)
     return JsonResponse({'error': 'Method not allowed', 'description': 'Method not allowed'}, status=405)
+
+
+#############################################
+# CREATE USER
+#############################################
+
+@csrf_exempt
+def manage_user(request, user_id):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            user = LoginUser.objects.create_user(
+                username=data.get('username'),
+                password=data.get('password'),
+                first_name=data.get('firstName'),
+                last_name=data.get('lastName'),
+                email=data.get('email'),
+                is_active=data.get('isActive') == 'active' or True,
+                is_staff=data.get('role') == 'Admin' or False,
+                is_superuser=data.get('is_superuser', False),
+                phone_number=data.get('phoneNumber', None),
+                country=data.get('country', None),
+                state=data.get('state', None),
+                city=data.get('city', None),
+                address=data.get('address', None),
+                zip_code=data.get('zipCode', None),
+                gender=data.get('gender', None),                
+            )
+            user.set_password(data.get('password'))
+            return JsonResponse({
+                'data': model_to_dict(user)
+            }, status=201)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON', 'description': 'Request is not in a valid format'}, status=400)
+    elif request.method == 'PUT':
+        try:
+            data = json.loads(request.body)
+            user = LoginUser.objects.filter(id=user_id).first()
+            if not user:
+                return JsonResponse({'error': 'User not found'}, status=404)
+            user.username = data.get('username', user.username)
+            user.first_name = data.get('firstName', user.first_name)
+            user.last_name = data.get('lastName', user.last_name)
+            user.email = data.get('email', user.email)
+            user.is_active = data.get('status') == 'active'
+            user.is_staff = data.get('role') == 'Admin'
+            user.is_superuser = data.get('isSuperuser', user.is_superuser)
+            user.phone_number = data.get('phoneNumber', user.phone_number)
+            user.country = data.get('country', user.country)
+            user.state = data.get('state', user.state)
+            user.city = data.get('city', user.city)
+            user.address = data.get('address', user.address)
+            user.zip_code = data.get('zipCode', user.zip_code)
+            if data.get('password'):
+                user.set_password(data.get('password'))
+            user.save()
+            return JsonResponse({
+                'data': model_to_dict(user)
+            }, status=200)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON', 'description': 'Request is not in a valid format'}, status=400)
+    elif request.method == 'DELETE':
+        user = LoginUser.objects.filter(id=user_id).first()
+        if not user:
+            return JsonResponse({'error': 'User not found'}, status=404)
+        user.delete()
+        return JsonResponse({'message': 'User deleted successfully'}, status=200)
+    return JsonResponse({'error': 'Method not allowed', 'description': 'Method not allowed'}, status=405)
+    
 
 
 #############################################
@@ -484,7 +551,9 @@ def sync_with_senitron(request):
         except ZohoInventoryItem.DoesNotExist:
             logger.error(f"Item {item['item_id']} not found in Zoho")
     return JsonResponse({'message': 'Items synced successfully'}, status=200)
-    
+
+
+   
     
 
 #############################################

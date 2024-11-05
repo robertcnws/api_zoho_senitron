@@ -94,27 +94,27 @@ export function OrderListView() {
 
 
 
-  useEffect(() => {
-    const socket = new WebSocket(`wss://${CONFIG.apiHost}/${CONFIG.apiDomain}/ws/inventory_sales_orders/`);
+  // useEffect(() => {
+  //   const socket = new WebSocket(`wss://${CONFIG.apiHost}/${CONFIG.apiDomain}/ws/inventory_sales_orders/`);
 
-    socket.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      if (message.type === 'created' || message.type === 'updated') {
-        setTableData((prevData) => {
-          const existingItemIndex = prevData.findIndex(item => item.salesorderId === message.item.salesorderId);
-          if (existingItemIndex !== -1) {
-            const updatedData = [...prevData];
-            updatedData[existingItemIndex] = message.item;
-            return updatedData;
-          }
-          return [message.item, ...prevData];
-        });
-      }
-    };
-    return () => {
-      socket.close();
-    };
-  }, []);
+  //   socket.onmessage = (event) => {
+  //     const message = JSON.parse(event.data);
+  //     if (message.type === 'created' || message.type === 'updated') {
+  //       setTableData((prevData) => {
+  //         const existingItemIndex = prevData.findIndex(item => item.salesorderId === message.item.salesorderId);
+  //         if (existingItemIndex !== -1) {
+  //           const updatedData = [...prevData];
+  //           updatedData[existingItemIndex] = message.item;
+  //           return updatedData;
+  //         }
+  //         return [message.item, ...prevData];
+  //       });
+  //     }
+  //   };
+  //   return () => {
+  //     socket.close();
+  //   };
+  // }, []);
 
   useEffect(() => {
     if (data && data.length > 0) {
@@ -197,7 +197,7 @@ export function OrderListView() {
         <CustomBreadcrumbs
           heading="List"
           links={[
-            { name: 'Dashboard', href: paths.dashboard.root },
+            { name: 'Dashboard', href: paths.dashboard.general.analytics },
             { name: 'Order', href: paths.dashboard.order.root },
             { name: 'List' },
           ]}

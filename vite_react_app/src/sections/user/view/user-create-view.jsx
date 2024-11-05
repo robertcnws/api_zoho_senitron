@@ -14,8 +14,8 @@ export function UserCreateView() {
       <CustomBreadcrumbs
         heading="Create a new user"
         links={[
-          { name: 'Dashboard', href: paths.dashboard.root },
-          { name: 'User', href: paths.dashboard.user.root },
+          { name: 'Dashboard', href: paths.dashboard.general.analytics },
+          { name: 'User', href: paths.dashboard.user.list },
           { name: 'New user' },
         ]}
         sx={{ mb: { xs: 3, md: 5 } }}

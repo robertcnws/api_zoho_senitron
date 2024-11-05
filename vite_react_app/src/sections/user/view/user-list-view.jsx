@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 
 import Box from '@mui/material/Box';
 import Tab from '@mui/material/Tab';
@@ -19,7 +19,9 @@ import { useSetState } from 'src/hooks/use-set-state';
 
 import { varAlpha } from 'src/theme/styles';
 import { DashboardContent } from 'src/layouts/dashboard';
-import { _roles, _userList, USER_STATUS_OPTIONS } from 'src/_mock';
+import { _roles, USER_STATUS_OPTIONS } from 'src/_mock';
+import { useUserList } from 'src/_mock/_user';
+import { CONFIG } from 'src/config-global';
 
 import { Label } from 'src/components/label';
 import { toast } from 'src/components/snackbar';
@@ -43,15 +45,15 @@ import { UserTableRow } from '../user-table-row';
 import { UserTableToolbar } from '../user-table-toolbar';
 import { UserTableFiltersResult } from '../user-table-filters-result';
 
+
 // ----------------------------------------------------------------------
 
 const STATUS_OPTIONS = [{ value: 'all', label: 'All' }, ...USER_STATUS_OPTIONS];
 
 const TABLE_HEAD = [
   { id: 'name', label: 'Name' },
-  { id: 'phoneNumber', label: 'Phone number', width: 180 },
-  { id: 'company', label: 'Company', width: 220 },
-  { id: 'role', label: 'Role', width: 180 },
+  { id: 'phoneNumber', label: 'Phone number', width: 200 },
+  { id: 'role', label: 'Role', width: 200 },
   { id: 'status', label: 'Status', width: 100 },
   { id: '', width: 88 },
 ];
@@ -59,28 +61,77 @@ const TABLE_HEAD = [
 // ----------------------------------------------------------------------
 
 export function UserListView() {
-  const table = useTable();
+  const table = useTable({ defaultDense: true });
 
   const router = useRouter();
 
   const confirm = useBoolean();
 
-  const [tableData, setTableData] = useState(_userList);
+  const { loading, error, data: _userList } = useUserList();
+
+  const [tableData, setTableData] = useState([]);
 
   const filters = useSetState({ name: '', role: [], status: 'all' });
 
-  const dataFiltered = applyFilter({
-    inputData: tableData,
-    comparator: getComparator(table.order, table.orderBy),
-    filters: filters.state,
-  });
+  // useEffect(() => {
+  //   const socket = new WebSocket(`wss://${CONFIG.apiHost}/${CONFIG.apiDomain}/ws/users/`);
 
-  const dataInPage = rowInPage(dataFiltered, table.page, table.rowsPerPage);
+  //   socket.onopen = () => {
+  //     console.log('WebSocket connected');
+  //   };
+  
+  //   socket.onerror = (err) => {
+  //     console.error('WebSocket error:', err);
+  //   };
+  
+  //   socket.onclose = (event) => {
+  //     console.log('WebSocket closed:', event);
+  //   };
 
-  const canReset =
-    !!filters.state.name || filters.state.role.length > 0 || filters.state.status !== 'all';
+  //   socket.onmessage = (event) => {
+  //     const message = JSON.parse(event.data);
+  //     if (message.type === 'created' || message.type === 'updated') {
+  //       setTableData((prevData) => {
+  //         const existingItemIndex = prevData.findIndex(item => item.id === message.item.id);
+  //         if (existingItemIndex !== -1) {
+  //           const updatedData = [...prevData];
+  //           updatedData[existingItemIndex] = message.item;
+  //           return updatedData;
+  //         }
+  //         return [message.item, ...prevData];
+  //       });
+  //     }
+  //   };
+  //   return () => {
+  //     socket.close();
+  //   };
+  // }, []);
 
-  const notFound = (!dataFiltered.length && canReset) || !dataFiltered.length;
+
+  useEffect(() => {
+    if (_userList && _userList.length > 0) {
+      setTableData(_userList);
+    } else if (!loading && !error) {
+      console.error("No data returned from useUserList");
+      setTableData([]);
+    }
+  }, [_userList, loading, error]);
+
+  const dataFiltered = useMemo(() => applyFilter({
+      inputData: tableData,
+      comparator: getComparator(table.order, table.orderBy),
+      filters: filters.state,
+    }), [tableData, table.order, table.orderBy, filters.state]);
+  
+  const dataInPage = useMemo(() => rowInPage(dataFiltered, table.page, table.rowsPerPage), [dataFiltered, table.page, table.rowsPerPage]);
+  
+  const canReset = useMemo(() => (
+      !!filters.state.name ||
+      filters.state.role.length > 0 ||
+      filters.state.status !== 'all'
+    ), [filters.state]);
+  
+  const notFound = useMemo(() => (!dataFiltered.length && canReset) || !dataFiltered.length, [dataFiltered.length, canReset]);
 
   const handleDeleteRow = useCallback(
     (id) => {
@@ -129,7 +180,7 @@ export function UserListView() {
         <CustomBreadcrumbs
           heading="List"
           links={[
-            { name: 'Dashboard', href: paths.dashboard.root },
+            { name: 'Dashboard', href: paths.dashboard.general.analytics },
             { name: 'User', href: paths.dashboard.user.root },
             { name: 'List' },
           ]}
@@ -170,12 +221,11 @@ export function UserListView() {
                     }
                     color={
                       (tab.value === 'active' && 'success') ||
-                      (tab.value === 'pending' && 'warning') ||
-                      (tab.value === 'banned' && 'error') ||
+                      (tab.value === 'inactive' && 'error') ||
                       'default'
                     }
                   >
-                    {['active', 'pending', 'banned', 'rejected'].includes(tab.value)
+                    {['active', 'inactive'].includes(tab.value)
                       ? tableData.filter((user) => user.status === tab.value).length
                       : tableData.length}
                   </Label>
@@ -317,7 +367,14 @@ function applyFilter({ inputData, comparator, filters }) {
 
   if (name) {
     inputData = inputData.filter(
-      (user) => user.name.toLowerCase().indexOf(name.toLowerCase()) !== -1
+      (user) => user.name.toLowerCase().indexOf(name.toLowerCase()) !== -1 || 
+      user.email.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
+      user.phoneNumber.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
+      user.zipCode.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
+      user.state.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
+      user.city.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
+      user.address.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
+      user.country.toLowerCase().indexOf(name.toLowerCase()) !== -1
     );
   }
 

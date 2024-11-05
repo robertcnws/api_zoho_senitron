@@ -51,7 +51,7 @@ export function AnalyticsOrderTimeline({ title, subheader, list, onViewDetails, 
           }}
         >
           {timelineItems?.map((item, index) => (
-            <Item key={item.id} item={item} lastItem={index === list.length - 1} onViewDetails={onViewDetails} />
+            <Item key={`${item.id}-${index}`} item={item} lastItem={index === list.length - 1} onViewDetails={onViewDetails} />
           ))}
         </Timeline>
       </Box>

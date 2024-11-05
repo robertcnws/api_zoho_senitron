@@ -133,7 +133,9 @@ def create_inventory_item_asset_instance(logger, data):
                 'epc': epc,
                 'text3': text3,
                 'status': status,
-                'senitron_item': senitron_item
+                'senitron_item': senitron_item,
+                'read': True,
+                'date_read': timezone.now()
             }
         )
         return asset

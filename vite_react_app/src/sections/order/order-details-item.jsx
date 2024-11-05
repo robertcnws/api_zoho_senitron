@@ -1,38 +1,89 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { paths } from 'src/routes/paths';
+import { useRouter } from 'src/routes/hooks';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Stack from '@mui/material/Stack';
 import CardHeader from '@mui/material/CardHeader';
-import IconButton from '@mui/material/IconButton';
-import { Grid } from '@mui/material';
+import { Grid, IconButton, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
 import { Label } from 'src/components/label';
-
 import { Iconify } from 'src/components/iconify';
-import { line } from 'stylis';
+
 
 // ----------------------------------------------------------------------
 
 export function OrderDetailsItems({ order }) {
 
-  const [lineItems, setLineItems] = useState([]);
+  const router = useRouter();
+
+  const parseLineItems = (lineItems) => {
+    if (typeof lineItems === 'string') {
+      try {
+        return JSON.parse(lineItems).filter(item => item.sku);
+      } catch (error) {
+        console.error('Error al parsear lineItems:', error);
+        return [];
+      }
+    } else {
+      return (lineItems || []).filter(item => item.sku);
+    }
+  }
+
+  const [lineItems, setLineItems] = useState(null);
+
 
   useEffect(() => {
     const items = order.lineItems;
-    console.log('items', items);
-    // setLineItems(items instanceof Array ? items : JSON.parse(items));
+    setLineItems(parseLineItems(items));
   }, [order.lineItems]);
 
-  const renderItems = lineItems.map((item) => (
-    <Stack key={item.item_id} direction="row" alignItems="center" justifyContent="space-between">
+
+  const handleViewItemRow = useCallback(
+    (id) => {
+      localStorage.removeItem('routeByAnalytics');
+      localStorage.setItem('routeByOrder', id);
+      router.push(paths.dashboard.item.details(id));
+    },
+    [router]
+  );
+
+
+  const renderItems =
+    <Stack direction="row" alignItems="center" justifyContent="space-between">
       <Stack direction="row" alignItems="center" spacing={2}>
-        <Box component="img" sx={{ width: 48, height: 48, borderRadius: 1.5 }} />
-        <Stack spacing={1}>
-          <Label color="info">{item.name}</Label>
-          <Label color="text.secondary">{item.sku}</Label>
-        </Stack>
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>SKU</TableCell>
+                <TableCell>Name</TableCell>
+                <TableCell>Quantity</TableCell>
+                <TableCell />
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {lineItems && lineItems.map((item, index) => (
+                <TableRow key={index}>
+                  <TableCell>{item.sku}</TableCell>
+                  <TableCell>{item.name}</TableCell>
+                  <TableCell>{item.quantity_shipped}</TableCell>
+                  <TableCell>
+                    <IconButton
+                      color='default'
+                      onClick={() => handleViewItemRow(item.item_id)}
+                      value={item.item_id}
+                    >
+                      <Iconify icon="solar:eye-bold" />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       </Stack>
     </Stack>
-  ));
+
 
   const renderTotal = (
     <Stack spacing={2} alignItems="flex-start" sx={{ p: 3, textAlign: 'left', typography: 'body2' }}>
@@ -126,7 +177,7 @@ export function OrderDetailsItems({ order }) {
             </Grid>
           </>
         )}
-        {order.lineItems && (
+        {lineItems && lineItems.length > 0 && (
           <>
             <Grid container item xs={12}>
               <Grid item xs={3}>
@@ -143,15 +194,16 @@ export function OrderDetailsItems({ order }) {
     </Stack>
   );
 
+
   return (
     <Card>
       <CardHeader
         title="Details"
-        action={
-          <IconButton>
-            <Iconify icon="solar:pen-bold" />
-          </IconButton>
-        }
+      // action={
+      //   <IconButton>
+      //     <Iconify icon="solar:pen-bold" />
+      //   </IconButton>
+      // }
       />
 
       {renderTotal}

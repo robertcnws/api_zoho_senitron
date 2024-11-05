@@ -34,23 +34,23 @@ export function OrderDetailsView({ order }) {
       />
 
       <Grid container spacing={3}>
-        <Grid xs={12} md={8}>
+        <Grid xs={12} md={12}>
           <Stack spacing={3} direction={{ xs: 'column-reverse', md: 'column' }}>
             <OrderDetailsItems order={order}
             />
 
-            <OrderDetailsHistory history={order?.history} />
+            {/* <OrderDetailsHistory history={order?.history} /> */}
           </Stack>
         </Grid>
 
-        <Grid xs={12} md={4}>
+        {/* <Grid xs={12} md={4}>
           <OrderDetailsInfo
             customer={order?.customerName}
             delivery={order?.delivery}
             payment={order?.payment}
             shippingAddress={order?.shippingAddress}
           />
-        </Grid>
+        </Grid> */}
       </Grid>
     </DashboardContent>
   );

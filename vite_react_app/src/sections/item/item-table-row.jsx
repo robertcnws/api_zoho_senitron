@@ -31,7 +31,7 @@ export function ItemTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
 
   return (
     <>
-      <TableRow hover selected={selected} aria-checked={selected} tabIndex={-1}>
+      <TableRow hover selected={selected} aria-checked={selected} tabIndex={-1} sx={{ cursor: 'pointer'}}>
 
         <TableCell padding="checkbox">
           <Checkbox id={row.itemId} checked={selected} onClick={onSelectRow} />
@@ -51,11 +51,11 @@ export function ItemTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
           </Stack>
         </TableCell> */}
 
-        <TableCell sx={{ whiteSpace: 'nowrap' }}>{row.sku}</TableCell>
+        <TableCell sx={{ whiteSpace: 'nowrap' }} onClick={() => onViewRow(row.itemId)}>{row.sku}</TableCell>
 
-        <TableCell sx={{ whiteSpace: 'nowrap' }}>{row.name}</TableCell>
+        <TableCell sx={{ whiteSpace: 'nowrap' }} onClick={() => onViewRow(row.itemId)}>{row.name}</TableCell>
 
-        <TableCell>
+        <TableCell onClick={() => onViewRow(row.itemId)}>
           <Label
             variant="soft"
             color={
@@ -69,12 +69,25 @@ export function ItemTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
           </Label>
         </TableCell>
 
-        <TableCell sx={{ whiteSpace: 'nowrap' }}>{parseInt(row.stockOnHand, 10)}</TableCell>
-        <TableCell>
+        <TableCell sx={{ whiteSpace: 'nowrap' }} onClick={() => onViewRow(row.itemId)}>{parseInt(row.stockOnHand, 10)}</TableCell>
+        <TableCell sx={{ whiteSpace: 'nowrap' }} onClick={() => onViewRow(row.itemId)}>{parseInt(row.quantity, 10)}</TableCell>
+        <TableCell onClick={() => onViewRow(row.itemId)}>
           <Label
+            sx={{ cursor: 'pointer' }}
             variant="soft"
             color={
-              (row.syncedWithSenitron && 'success' || 'error' )
+              (row.difference === 0 ? 'success' : row.difference > 0 ? 'warning' : 'error' )
+            }
+          >
+            {row.difference}
+          </Label>
+        </TableCell>
+        <TableCell onClick={() => onViewRow(row.itemId)}>
+          <Label
+            sx={{ cursor: 'pointer' }}
+            variant="soft"
+            color={
+              (row.syncedWithSenitron && 'info' || 'error' )
             }
           >
             {row.syncedWithSenitron ? 'Yes' : 'No'}

@@ -76,7 +76,7 @@ export function UserTableToolbar({ filters, options, onResetPage }) {
             fullWidth
             value={filters.state.name}
             onChange={handleFilterName}
-            placeholder="Search..."
+            placeholder="Search users (NAME, EMAIL, PHONE NUMBER, ZIP CODE, STATE, CITY, ADDRESS or COUNTRY) ..."
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">

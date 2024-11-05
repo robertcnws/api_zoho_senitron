@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { gql, useQuery } from '@apollo/client';
 
 const GET_ZOHO_INVENTORY_SALES_ORDERS = gql`
@@ -43,9 +44,16 @@ const GET_ZOHO_INVENTORY_SALES_ORDERS = gql`
 `;
 
 export const useSalesOrdersQuery = (startDate, endDate) => {
-  const { loading, error, data } = useQuery(GET_ZOHO_INVENTORY_SALES_ORDERS, {
+  const { loading, error, data, startPolling, stopPolling } = useQuery(GET_ZOHO_INVENTORY_SALES_ORDERS, {
     variables: { startDate, endDate },
   });
+
+  useEffect(() => {
+    startPolling(5000); 
+    return () => {
+      stopPolling();
+    };
+  }, [startPolling, stopPolling]);
   
   return { loading, error, data: data?.allZohoInventorySalesOrders };
 };

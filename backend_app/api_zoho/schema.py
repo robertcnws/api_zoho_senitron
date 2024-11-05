@@ -33,7 +33,7 @@ class Query(graphene.ObjectType):
     )
 
     def resolve_all_login_users(self, info, **kwargs):
-        return LoginUser.objects.all()
+        return LoginUser.objects.all().order_by('username')
 
     def resolve_all_zoho_inventory_items(self, info, **kwargs):
         # return ZohoInventoryItem.objects.all().order_by('-item_id')

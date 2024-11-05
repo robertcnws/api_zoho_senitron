@@ -51,7 +51,10 @@ import { ItemTableFiltersResult } from '../item-table-filters-result';
 
 // ----------------------------------------------------------------------
 
-const STATUS_OPTIONS = [{ value: 'all', label: 'All' }, ...ITEM_STATUS_OPTIONS].concat([{ value: 'synced', label: 'Synced Senitron' }]);
+const STATUS_OPTIONS = [{ value: 'all', label: 'All' }, ...ITEM_STATUS_OPTIONS].concat([
+  { value: 'synced', label: 'Synced Senitron' }, 
+  { value: 'not_synced', label: 'Not Synced Senitron' },
+]);
 
 // ----------------------------------------------------------------------
 
@@ -64,6 +67,8 @@ export function ItemListView() {
     { id: 'name', label: 'Name', width: isMobile ? 50 : 220 },
     { id: 'status', label: 'Status', width: isMobile ? 50 : 100 },
     { id: 'stockOnHand', label: 'On Hand', width: isMobile ? 50 : 100 },
+    { id: 'quantity', label: 'Sen. Qty', width: isMobile ? 50 : 100 },
+    { id: 'difference', label: 'Difference', width: isMobile ? 50 : 100 },
     { id: 'syncedWithSenitron', label: 'Synced', width: 50 },
     { id: '', width: 50 },
   ];
@@ -105,26 +110,26 @@ export function ItemListView() {
   }, [table]);
 
 
-  useEffect(() => {
-    const socket = new WebSocket(`wss://${CONFIG.apiHost}/${CONFIG.apiDomain}/ws/inventory_items/`);
-    socket.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      if (message.type === 'created' || message.type === 'updated') {
-        setTableData((prevData) => {
-          const existingItemIndex = prevData.findIndex(item => item.itemId === message.item.itemId);
-          if (existingItemIndex !== -1) {
-            const updatedData = [...prevData];
-            updatedData[existingItemIndex] = message.item;
-            return updatedData;
-          }
-          return [message.item, ...prevData];
-        });
-      }
-    };
-    return () => {
-      socket.close();
-    };
-  }, []);
+  // useEffect(() => {
+  //   const socket = new WebSocket(`wss://${CONFIG.apiHost}/${CONFIG.apiDomain}/ws/inventory_items/`);
+  //   socket.onmessage = (event) => {
+  //     const message = JSON.parse(event.data);
+  //     if (message.type === 'created' || message.type === 'updated') {
+  //       setTableData((prevData) => {
+  //         const existingItemIndex = prevData.findIndex(item => item.itemId === message.item.itemId);
+  //         if (existingItemIndex !== -1) {
+  //           const updatedData = [...prevData];
+  //           updatedData[existingItemIndex] = message.item;
+  //           return updatedData;
+  //         }
+  //         return [message.item, ...prevData];
+  //       });
+  //     }
+  //   };
+  //   return () => {
+  //     socket.close();
+  //   };
+  // }, []);
 
 
   useEffect(() => {
@@ -134,6 +139,8 @@ export function ItemListView() {
         return {
           ...item,
           syncedWithSenitron: !!senitronItem,
+          quantity: senitronItem?.senitronItem.qty || 0,
+          difference: parseInt(item.stockOnHand, 10) - parseInt(senitronItem?.senitronItem.qty || 0, 10),
         };
       });
       setTableData(rData);
@@ -262,7 +269,7 @@ export function ItemListView() {
         <CustomBreadcrumbs
           heading="List"
           links={[
-            { name: 'Dashboard', href: paths.dashboard.root },
+            { name: 'Dashboard', href: paths.dashboard.general.analytics },
             { name: 'Item', href: paths.dashboard.item.root },
             { name: 'List' },
           ]}
@@ -306,11 +313,14 @@ export function ItemListView() {
                       (tab.value === 'confirmation_pending' && 'warning') ||
                       (tab.value === 'inactive' && 'error') ||
                       (tab.value === 'synced' && 'info') ||
+                      (tab.value === 'not_synced' && 'default') ||
                       'default'
                     }
                   >
                     {tab.value === 'synced' ?
-                      tableData.filter((user) => user.syncedWithSenitron).length : tab.value === 'all' ?
+                      tableData.filter((user) => user.syncedWithSenitron).length : 
+                      tab.value === 'not_synced' ?
+                      tableData.filter((user) => !user.syncedWithSenitron).length : tab.value === 'all' ?
                         tableData.length : tableData.filter((user) => user.status === tab.value).length}
                     {/* {['active', 'confirmation_pending', 'inactive'].includes(tab.value)
                       ? tableData.filter((user) => user.status === tab.value).length
@@ -471,10 +481,12 @@ function applyFilter({ inputData, comparator, filters }) {
   }
 
   if (status !== 'all') {
-    if (status !== 'synced') {
+    if (status !== 'synced' && status !== 'not_synced') {
       inputData = inputData.filter((item) => item.status === status);
-    } else {
+    } else if (status === 'synced') {
       inputData = inputData.filter((item) => item.syncedWithSenitron === true);
+    } else if (status === 'not_synced') {
+      inputData = inputData.filter((item) => item.syncedWithSenitron === false);
     }
   }
 

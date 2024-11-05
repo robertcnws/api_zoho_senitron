@@ -195,6 +195,7 @@ CHANNEL_LAYERS = {
         'CONFIG': {
             "hosts": [(REDIS_HOST, 6379)], 
         },
+        'CAPACITY': 1500,
     },
 }
 

@@ -1,12 +1,74 @@
+import { useEffect } from 'react';
+import { gql, useQuery } from '@apollo/client';
 import { _mock } from './_mock';
+
+
+const GET_LOGIN_USERS = gql`
+  {
+    allLoginUsers {
+      id
+      password
+      lastLogin
+      isSuperuser
+      username
+      firstName
+      lastName
+      email
+      isStaff
+      isActive
+      dateJoined
+      phoneNumber
+      country
+      state
+      city
+      address
+      zipCode
+      gender
+    }
+  }
+`;
+
+export const useUserList = () => {
+  const { loading, error, data, startPolling, stopPolling } = useQuery(GET_LOGIN_USERS);
+
+  useEffect(() => {
+    startPolling(5000); 
+    return () => {
+      stopPolling();
+    };
+  }, [startPolling, stopPolling]);
+
+  const loginUsers = data?.allLoginUsers || [];
+
+  const _userList = loginUsers.map((user, index) => ({
+    username: user.username,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    id: user.id,
+    zipCode: user.zipCode,
+    state: user.state,
+    city: user.city,
+    role: user.isStaff ? 'Admin' : 'User',
+    email: user.email,
+    address: user.address,
+    name: `${user.firstName} ${user.lastName}`,
+    isVerified: true,
+    company: 'NWS',
+    country: user.country,
+    avatarUrl: _mock.image.avatar(index),
+    phoneNumber: user.phoneNumber,
+    status: user.isActive ? 'active' : 'inactive',
+    gender: user.gender
+  }));
+
+  return { loading, error, data: _userList };
+};
 
 // ----------------------------------------------------------------------
 
 export const USER_STATUS_OPTIONS = [
-  { value: 'active', label: 'Active' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'banned', label: 'Banned' },
-  { value: 'rejected', label: 'Rejected' },
+  { value: 'active', label: 'Active', color: 'success.main' },
+  { value: 'inactive', label: 'Inactive', color: 'error.main' },
 ];
 
 export const _userAbout = {
@@ -123,21 +185,3 @@ export const _userPlans = [
   { subscription: 'starter', price: 4.99, primary: true },
   { subscription: 'premium', price: 9.99, primary: false },
 ];
-
-export const _userList = [...Array(20)].map((_, index) => ({
-  id: _mock.id(index),
-  zipCode: '85807',
-  state: 'Virginia',
-  city: 'Rancho Cordova',
-  role: _mock.role(index),
-  email: _mock.email(index),
-  address: '908 Jack Locks',
-  name: _mock.fullName(index),
-  isVerified: _mock.boolean(index),
-  company: _mock.companyNames(index),
-  country: _mock.countryNames(index),
-  avatarUrl: _mock.image.avatar(index),
-  phoneNumber: _mock.phoneNumber(index),
-  status:
-    (index % 2 && 'pending') || (index % 3 && 'banned') || (index % 4 && 'rejected') || 'active',
-}));

@@ -13,6 +13,7 @@ app_name = 'api_zoho'
 
 urlpatterns = [
     path("login/", views.login, name="login"),
+    path("manage_user/<int:user_id>/", views.manage_user, name="manage_user"),
     path("connect/", views.zoho_api_connect, name="zoho_api_connect"),
     path("zoho_api_settings/", views.zoho_api_settings, name="zoho_api_settings"),
     path("generate_auth_url/", views.generate_auth_url, name="generate_auth_url"),

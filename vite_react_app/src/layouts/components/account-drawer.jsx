@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
@@ -30,6 +30,8 @@ import { SignOutButton } from './sign-out-button';
 // ----------------------------------------------------------------------
 
 export function AccountDrawer({ data = [], sx, ...other }) {
+
+
   const theme = useTheme();
 
   const router = useRouter();
@@ -39,6 +41,14 @@ export function AccountDrawer({ data = [], sx, ...other }) {
   const { user } = useMockedUser();
 
   const [open, setOpen] = useState(false);
+
+  const [userLogged, setUserLogged] = useState(null);
+
+  useEffect(() => {
+    const userInApp = JSON.parse(localStorage.getItem('userLogged'));
+    setUserLogged(userInApp.data);
+  }, []);
+
 
   const handleOpenDrawer = useCallback(() => {
     setOpen(true);
@@ -60,7 +70,7 @@ export function AccountDrawer({ data = [], sx, ...other }) {
     <AnimateAvatar
       width={96}
       slotProps={{
-        avatar: { src: user?.photoURL, alt: user?.displayName },
+        avatar: { src: user?.photoURL, alt: userLogged?.firstName || userLogged?.first_name},
         overlay: {
           border: 2,
           spacing: 3,
@@ -68,7 +78,7 @@ export function AccountDrawer({ data = [], sx, ...other }) {
         },
       }}
     >
-      {user?.displayName?.charAt(0).toUpperCase()}
+      {userLogged?.firstName?.charAt(0).toUpperCase() || userLogged?.first_name?.charAt(0).toUpperCase()}
     </AnimateAvatar>
   );
 
@@ -101,15 +111,15 @@ export function AccountDrawer({ data = [], sx, ...other }) {
             {renderAvatar}
 
             <Typography variant="subtitle1" noWrap sx={{ mt: 2 }}>
-              {user?.displayName}
+              {userLogged?.firstName || userLogged?.first_name} {userLogged?.lastName || userLogged?.last_name}
             </Typography>
 
             <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }} noWrap>
-              {user?.email}
+              {userLogged?.email}
             </Typography>
           </Stack>
 
-          <Stack direction="row" spacing={1} flexWrap="wrap" justifyContent="center" sx={{ p: 3 }}>
+          {/* <Stack direction="row" spacing={1} flexWrap="wrap" justifyContent="center" sx={{ p: 3 }}>
             {[...Array(3)].map((_, index) => (
               <Tooltip
                 key={_mock.fullName(index + 1)}
@@ -133,9 +143,9 @@ export function AccountDrawer({ data = [], sx, ...other }) {
                 <Iconify icon="mingcute:add-line" />
               </IconButton>
             </Tooltip>
-          </Stack>
+          </Stack> */}
 
-          <Stack
+          {/* <Stack
             sx={{
               py: 3,
               px: 2.5,
@@ -173,14 +183,14 @@ export function AccountDrawer({ data = [], sx, ...other }) {
                 </MenuItem>
               );
             })}
-          </Stack>
+          </Stack> */}
 
           {/* <Box sx={{ px: 2.5, py: 3 }}>
             <UpgradeBlock />
           </Box> */}
         </Scrollbar>
 
-        <Box sx={{ p: 2.5 }}>
+        <Box sx={{ p: 5.5 }}>
           <SignOutButton onClose={handleCloseDrawer} />
         </Box>
       </Drawer>

@@ -18,7 +18,7 @@ import json
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-MAX_WORKERS = 20
+MAX_WORKERS = 50
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -28,7 +28,7 @@ def load_senitron_inventory_items(request):
     
     params = {
         'api_key': settings.API_KEY_SENITRON,
-        'per_page': 200,
+        'per_page': 5000,
         'page': 1
     }
     if data.get('item_number'):
@@ -106,7 +106,7 @@ def load_senitron_inventory_items(request):
                     'tags_count',
                     'qty'
                 ],
-                batch_size=200
+                batch_size=1000
             )
 
     return JsonResponse({'message': 'Senitron Items loaded successfully'}, status=200)
@@ -120,7 +120,7 @@ def load_senitron_inventory_item_assets(request):
     
     params = {
         'api_key': settings.API_KEY_SENITRON,
-        'per_page': 200,
+        'per_page': 5000,
         'page': 1
     }
     if data.get('item_number'):
@@ -237,7 +237,7 @@ def load_senitron_inventory_item_assets(request):
                     'status',
                     'senitron_item'
                 ],
-                batch_size=200
+                batch_size=1000
             )
 
     return JsonResponse({'message': 'Senitron Items Assets loaded successfully'}, status=200)

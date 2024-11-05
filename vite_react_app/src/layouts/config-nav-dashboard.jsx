@@ -76,19 +76,28 @@ export const navData = [
           },
         ],
       },
-      // {
-      //   title: 'User',
-      //   path: paths.dashboard.user.root,
-      //   icon: ICONS.user,
-      //   children: [
-      //     // { title: 'Profile', path: paths.dashboard.user.root },
-      //     // { title: 'Cards', path: paths.dashboard.user.cards },
-      //     { title: 'List', path: paths.dashboard.user.list },
-      //     // { title: 'Create', path: paths.dashboard.user.new },
-      //     // { title: 'Edit', path: paths.dashboard.user.demo.edit },
-      //     // { title: 'Account', path: paths.dashboard.user.account },
-      //   ],
-      // },
+      {
+        title: 'Order',
+        path: paths.dashboard.order.root,
+        icon: ICONS.order,
+        children: [
+          { title: 'List', path: paths.dashboard.order.root },
+          // { title: 'Details', path: paths.dashboard.order.demo.details },
+        ],
+      },
+      {
+        title: 'User',
+        path: paths.dashboard.user.root,
+        icon: ICONS.user,
+        children: [
+          // { title: 'Profile', path: paths.dashboard.user.root },
+          // { title: 'Cards', path: paths.dashboard.user.cards },
+          { title: 'List', path: paths.dashboard.user.list },
+          { title: 'Create', path: paths.dashboard.user.new },
+          // { title: 'Edit', path: paths.dashboard.user.demo.edit },
+          // { title: 'Account', path: paths.dashboard.user.account },
+        ],
+      },
       // {
       //   title: 'Product',
       //   path: paths.dashboard.product.root,
@@ -100,15 +109,7 @@ export const navData = [
       //     { title: 'Edit', path: paths.dashboard.product.demo.edit },
       //   ],
       // },
-      {
-        title: 'Order',
-        path: paths.dashboard.order.root,
-        icon: ICONS.order,
-        children: [
-          { title: 'List', path: paths.dashboard.order.root },
-          // { title: 'Details', path: paths.dashboard.order.demo.details },
-        ],
-      },
+      
       // {
       //   title: 'Invoice',
       //   path: paths.dashboard.invoice.root,

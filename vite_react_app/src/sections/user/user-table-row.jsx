@@ -36,12 +36,12 @@ export function UserTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
           <Checkbox id={row.id} checked={selected} onClick={onSelectRow} />
         </TableCell>
 
-        <TableCell>
+        <TableCell sx={{ cursor: 'pointer' }}>
           <Stack spacing={2} direction="row" alignItems="center">
             <Avatar alt={row.name} src={row.avatarUrl} />
 
             <Stack sx={{ typography: 'body2', flex: '1 1 auto', alignItems: 'flex-start' }}>
-              <Link color="inherit" onClick={onEditRow} sx={{ cursor: 'pointer' }}>
+              <Link color="inherit" onClick={quickEdit.onTrue} sx={{ cursor: 'pointer' }}>
                 {row.name}
               </Link>
               <Box component="span" sx={{ color: 'text.disabled' }}>
@@ -51,19 +51,16 @@ export function UserTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
           </Stack>
         </TableCell>
 
-        <TableCell sx={{ whiteSpace: 'nowrap' }}>{row.phoneNumber}</TableCell>
+        <TableCell sx={{ whiteSpace: 'nowrap', cursor: 'pointer' }} onClick={quickEdit.onTrue}>{row.phoneNumber}</TableCell>
 
-        <TableCell sx={{ whiteSpace: 'nowrap' }}>{row.company}</TableCell>
+        <TableCell sx={{ whiteSpace: 'nowrap', cursor: 'pointer' }} onClick={quickEdit.onTrue}>{row.role}</TableCell>
 
-        <TableCell sx={{ whiteSpace: 'nowrap' }}>{row.role}</TableCell>
-
-        <TableCell>
+        <TableCell sx={{ cursor: 'pointer' }} onClick={quickEdit.onTrue}>
           <Label
             variant="soft"
             color={
               (row.status === 'active' && 'success') ||
-              (row.status === 'pending' && 'warning') ||
-              (row.status === 'banned' && 'error') ||
+              (row.status === 'inactive' && 'error') ||
               'default'
             }
           >
@@ -111,7 +108,7 @@ export function UserTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
 
           <MenuItem
             onClick={() => {
-              onEditRow();
+              quickEdit.onTrue(); 
               popover.onClose();
             }}
           >
