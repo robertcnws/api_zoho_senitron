@@ -9,7 +9,9 @@ import { MainLayout } from 'src/layouts/main';
 
 import { SplashScreen } from 'src/components/loading-screen';
 
+import { AuthSplitLayout } from 'src/layouts/auth-split';
 
+import { GuestGuard } from 'src/auth/guard';
 
 import { authRoutes } from './auth';
 import { mainRoutes } from './main';
@@ -18,13 +20,19 @@ import { dashboardRoutes } from './dashboard';
 import { componentsRoutes } from './components';
 
 
+
+
 // ----------------------------------------------------------------------
 
-const HomePage = lazy(() => import('src/pages/home'));
+// const HomePage = lazy(() => import('src/pages/home'));
+const Jwt = {
+  SignInPage: lazy(() => import('src/pages/auth/jwt/sign-in')),
+  SignUpPage: lazy(() => import('src/pages/auth/jwt/sign-up')),
+};
 
 export function Router() {
 
-  
+
 
   return useRoutes([
     {
@@ -33,11 +41,20 @@ export function Router() {
        * Skip home page
        * element: <Navigate to={CONFIG.auth.redirectPath} replace />,
        */
+      // element: (
+      //   <Suspense fallback={<SplashScreen />}>
+      //     <MainLayout>
+      //       <HomePage />
+      //     </MainLayout>
+      //   </Suspense>
+      // ),
       element: (
         <Suspense fallback={<SplashScreen />}>
-          <MainLayout>
-            <HomePage />
-          </MainLayout>
+          <GuestGuard>
+            <AuthSplitLayout section={{ title: 'Hi, Welcome back' }}>
+              <Jwt.SignInPage />
+            </AuthSplitLayout>
+          </GuestGuard>
         </Suspense>
       ),
     },
