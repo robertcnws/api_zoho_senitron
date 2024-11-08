@@ -49,34 +49,37 @@ const GET_ZOHO_INVENTORY_ITEMS = gql`
 const GET_SENITRON_INVENTORY_ITEM = gql`
   {
     allSenitronInventoryItemsAssets {
-      id
-      serialNumber
       itemNumber
-      altSerial
-      firstSeen
-      lastSeen
-      lastSeenAntenna
-      lastZone
-      handheldReader
-      handheldLastSeen
-      staticZone
-      staticZoneLastUpdate
-      receivingDate
-      currentUnits
-      storageUnit
-      adjustQty
-      createdAt
-      updatedAt
-      epc
-      text3
+      count
       senitronItem {
         itemNumber
         tagsCount
         qty
       }
-      status {
-        name
+      assets {
         id
+        serialNumber
+        altSerial
+        firstSeen
+        lastSeen
+        lastSeenAntenna
+        lastZone
+        handheldReader
+        handheldLastSeen
+        staticZone
+        staticZoneLastUpdate
+        receivingDate
+        currentUnits
+        storageUnit
+        adjustQty
+        createdAt
+        updatedAt
+        epc
+        text3
+        status {
+          id
+          name
+        }
       }
     }
   }
@@ -109,15 +112,15 @@ export const useSenitronItemsQuery = () => {
 };
 
 export const ITEM_STATUS_OPTIONS = [
-  { value: 'active', label: 'Active' },
-  { value: 'confirmation_pending', label: 'Confirmation Pending' },
-  { value: 'inactive', label: 'Inactive' },
+  // { value: 'active', label: 'Active' },
+  // { value: 'confirmation_pending', label: 'Confirmation Pending' },
+  // { value: 'inactive', label: 'Inactive' },
 ];
 
 export const ITEM_STATUS_SHORT_OPTIONS = [
-  { value: 'active', label: 'Items Active' },
-  { value: 'confirmation_pending', label: 'Items in Confirmation Pending' },
-  { value: 'inactive', label: 'Items Inactive' },
+  // { value: 'active', label: 'Items Active' },
+  // { value: 'confirmation_pending', label: 'Items in Confirmation Pending' },
+  // { value: 'inactive', label: 'Items Inactive' },
 ];
 
 export const ITEM_SYNC_OPTIONS = [

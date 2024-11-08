@@ -52,8 +52,8 @@ import { ItemTableFiltersResult } from '../item-table-filters-result';
 // ----------------------------------------------------------------------
 
 const STATUS_OPTIONS = [{ value: 'all', label: 'All' }, ...ITEM_STATUS_OPTIONS].concat([
-  { value: 'synced', label: 'Synced Senitron' }, 
-  { value: 'not_synced', label: 'Not Synced Senitron' },
+  { value: 'synced', label: 'Tracked Inventory Items' },
+  { value: 'not_synced', label: 'Not Tracked Inventory Items' },
 ]);
 
 // ----------------------------------------------------------------------
@@ -139,18 +139,19 @@ export function ItemListView() {
         return {
           ...item,
           syncedWithSenitron: !!senitronItem,
-          quantity: senitronItem?.senitronItem.qty || 0,
-          difference: parseInt(item.stockOnHand, 10) - parseInt(senitronItem?.senitronItem.qty || 0, 10),
+          quantity: senitronItem?.count || 0,
+          difference: parseInt(item.stockOnHand, 10) - parseInt(senitronItem?.count || 0, 10),
+          assets: senitronItem?.assets || [],
         };
       });
       setTableData(rData);
       const payload = rData.map((item) => ({
-          itemId: item.itemId,
-          syncedWithSenitron: item.syncedWithSenitron,
+        itemId: item.itemId,
+        syncedWithSenitron: item.syncedWithSenitron,
       }));
       axios.post(`${CONFIG.apiUrl}/api_zoho/sync/senitron/`, payload)
         .then(() => {
-          console.log('Inventory items synced with Senitron');
+          console.log('Inventory items tracked with Senitron');
         })
         .catch((err) => {
           console.error('Error syncing inventory items:', err);
@@ -160,7 +161,7 @@ export function ItemListView() {
       setTableData([]);
     }
   }, [data, senitronData, loading, error]);
-  
+
 
   const dataFiltered = applyFilter({
     inputData: tableData,
@@ -318,10 +319,10 @@ export function ItemListView() {
                     }
                   >
                     {tab.value === 'synced' ?
-                      tableData.filter((user) => user.syncedWithSenitron).length : 
+                      tableData.filter((user) => user.syncedWithSenitron).length :
                       tab.value === 'not_synced' ?
-                      tableData.filter((user) => !user.syncedWithSenitron).length : tab.value === 'all' ?
-                        tableData.length : tableData.filter((user) => user.status === tab.value).length}
+                        tableData.filter((user) => !user.syncedWithSenitron).length : tab.value === 'all' ?
+                          tableData.length : tableData.filter((user) => user.status === tab.value).length}
                     {/* {['active', 'confirmation_pending', 'inactive'].includes(tab.value)
                       ? tableData.filter((user) => user.status === tab.value).length
                       : tableData.length} */}

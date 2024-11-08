@@ -136,7 +136,7 @@ export function AnalyticsWebsiteVisits({
       <Card {...other}>
         <CardHeader title={title} subheader={subheader} />
         <Chart
-          type="bar"
+          type="donut"
           series={chart.series}
           options={chartOptions}
           height={364}

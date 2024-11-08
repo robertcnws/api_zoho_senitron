@@ -21,7 +21,7 @@ class SenitronStatus(models.Model):
 
 class SenitronItemAsset(models.Model):
     serial_number = models.CharField(max_length=50, blank=True, null=True)
-    item_number = models.CharField(max_length=100, unique=True)
+    item_number = models.CharField(max_length=100, blank=True, null=True)
     alt_serial = models.CharField(max_length=50, blank=True, null=True)
     first_seen = models.DateTimeField(blank=True, null=True)
     last_seen = models.DateTimeField(blank=True, null=True)
@@ -47,7 +47,7 @@ class SenitronItemAsset(models.Model):
     attr10 = models.CharField(max_length=255, blank=True, null=True)
     created_at = models.DateTimeField(blank=True, null=True)
     updated_at = models.DateTimeField(blank=True, null=True)
-    epc = models.CharField(max_length=255, unique=True)
+    epc = models.CharField(max_length=255, null=True, blank=True)
     text3 = models.TextField(blank=True, null=True)
     status = models.ForeignKey(SenitronStatus, on_delete=models.CASCADE, null=True, related_name='status')
     senitron_item = models.ForeignKey(SenitronItem, on_delete=models.CASCADE, null=True, related_name='senitron_item')
@@ -55,7 +55,7 @@ class SenitronItemAsset(models.Model):
     date_read = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
-        return f"Item {self.item_number} - Serial: {self.serial_number}"
+        return f"Item {self.item_number} - Serial: {self.serial_number} - EPC: {self.epc} - Status: {self.status.name} - Serial: {self.serial_number} - Last Seen: {self.last_seen}"
     
     
 class TimelineItem(models.Model):

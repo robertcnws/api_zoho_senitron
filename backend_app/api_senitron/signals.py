@@ -5,6 +5,7 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 import json
 
+
 @receiver(post_save, sender=SenitronItem)
 def senitron_inventory_item_saved(sender, instance, created, **kwargs):
     channel_layer = get_channel_layer()
@@ -21,6 +22,7 @@ def senitron_inventory_item_saved(sender, instance, created, **kwargs):
         }
     }
     async_to_sync(channel_layer.group_send)('senitron_inventory_items', event)
+    
 
 @receiver(post_delete, sender=SenitronItem)
 def senitron_inventory_item_deleted(sender, instance, **kwargs):
@@ -42,83 +44,108 @@ def senitron_inventory_item_deleted(sender, instance, **kwargs):
 @receiver(post_save, sender=SenitronItemAsset)
 def senitron_inventory_item_asset_saved(sender, instance, created, **kwargs):
     channel_layer = get_channel_layer()
+    
     event = {
         'type': 'send_senitron_item_asset_update',
         'message': {
             'type': 'created' if created else 'updated',
-            "item": {
-                "serialNumber": instance.serial_number,
-                "itemNumber": instance.item_number,
-                "altSerial": instance.alt_serial,
-                "firstSeen": instance.first_seen.isoformat() if instance.first_seen else None,
-                "lastSeen": instance.last_seen.isoformat() if instance.last_seen else None,
-                "lastSeenAntenna": instance.last_seen_antenna,
-                "lastZone": instance.last_zone,
-                "handheldReader": instance.handheld_reader,
-                "handheldLastSeen": instance.handheld_last_seen.isoformat() if instance.handheld_last_seen else None,
-                "staticZone": instance.static_zone,
-                "staticZoneLastUpdate": instance.static_zone_last_update.isoformat() if instance.static_zone_last_update else None,
-                "receivingDate": instance.receiving_date.isoformat() if instance.receiving_date else None,
-                "currentUnits": instance.current_units,
-                "storageUnit": instance.storage_unit,
-                "adjustQty": instance.adjust_qty,
-                "createdAt": instance.created_at.isoformat() if instance.created_at else None,
-                "updatedAt": instance.updated_at.isoformat() if instance.updated_at else None,
-                "epc": instance.epc,
-                "text3": instance.text3,
-                "senitronItem": {
-                    "itemNumber": instance.senitron_item.item_number,
-                    "tagsCount": instance.senitron_item.tags_count,
-                    "qty": instance.senitron_item.qty,
+            'item': {
+                'itemNumber': instance.item_number,
+                'count': SenitronItemAsset.objects.filter(item_number=instance.item_number).count(),
+                'senitronItem': {
+                    'itemNumber': instance.senitron_item.item_number if instance.senitron_item else None,
+                    'tagsCount': instance.senitron_item.tags_count if instance.senitron_item else None,
+                    'qty': instance.senitron_item.qty if instance.senitron_item else None,
                 },
-                "status": {
-                    "senitronId": instance.status.senitron_id,
-                    "name": instance.status.name,
-                },
+                'assets': []
             }
         }
     }
+    
+    assets = SenitronItemAsset.objects.filter(item_number=instance.item_number).select_related('status')
+
+    for asset in assets:
+        asset_data = {
+            'id': asset.id,
+            'serialNumber': asset.serial_number,
+            'altSerial': asset.alt_serial,
+            'firstSeen': asset.first_seen.isoformat() if asset.first_seen else None,
+            'lastSeen': asset.last_seen.isoformat() if asset.last_seen else None,
+            'lastSeenAntenna': asset.last_seen_antenna,
+            'lastZone': asset.last_zone,
+            'handheldReader': asset.handheld_reader,
+            'handheldLastSeen': asset.handheld_last_seen.isoformat() if asset.handheld_last_seen else None,
+            'staticZone': asset.static_zone,
+            'staticZoneLastUpdate': asset.static_zone_last_update.isoformat() if asset.static_zone_last_update else None,
+            'receivingDate': asset.receiving_date.isoformat() if asset.receiving_date else None,
+            'currentUnits': asset.current_units,
+            'storageUnit': asset.storage_unit,
+            'adjustQty': asset.adjust_qty,
+            'createdAt': asset.created_at.isoformat() if asset.created_at else None,
+            'updatedAt': asset.updated_at.isoformat() if asset.updated_at else None,
+            'epc': asset.epc,
+            'text3': asset.text3,
+            'status': {
+                'senitronId': asset.status.senitron_id if asset.status else None,
+                'name': asset.status.name if asset.status else None,
+            } if asset.status else None
+        }
+        event['message']['item']['assets'].append(asset_data)
+        
     async_to_sync(channel_layer.group_send)('senitron_inventory_items_assets', event)
+    
 
 @receiver(post_delete, sender=SenitronItemAsset)
 def senitron_inventory_item_asset_deleted(sender, instance, **kwargs):
     channel_layer = get_channel_layer()
+    
     event = {
         'type': 'send_senitron_item_asset_update',
         'message': {
             'type': 'deleted',
-            "item": {
-                "serialNumber": instance.serial_number,
-                "itemNumber": instance.item_number,
-                "altSerial": instance.alt_serial,
-                "firstSeen": instance.first_seen.isoformat() if instance.first_seen else None,
-                "lastSeen": instance.last_seen.isoformat() if instance.last_seen else None,
-                "lastSeenAntenna": instance.last_seen_antenna,
-                "lastZone": instance.last_zone,
-                "handheldReader": instance.handheld_reader,
-                "handheldLastSeen": instance.handheld_last_seen.isoformat() if instance.handheld_last_seen else None,
-                "staticZone": instance.static_zone,
-                "staticZoneLastUpdate": instance.static_zone_last_update.isoformat() if instance.static_zone_last_update else None,
-                "receivingDate": instance.receiving_date.isoformat() if instance.receiving_date else None,
-                "currentUnits": instance.current_units,
-                "storageUnit": instance.storage_unit,
-                "adjustQty": instance.adjust_qty,
-                "createdAt": instance.created_at.isoformat() if instance.created_at else None,
-                "updatedAt": instance.updated_at.isoformat() if instance.updated_at else None,
-                "epc": instance.epc,
-                "text3": instance.text3,
-                "senitronItem": {
-                    "itemNumber": instance.senitron_item.item_number,
-                    "tagsCount": instance.senitron_item.tags_count,
-                    "qty": instance.senitron_item.qty,
+            'item': {
+                'itemNumber': instance.item_number,
+                'count': SenitronItemAsset.objects.filter(item_number=instance.item_number).count(),
+                'senitronItem': {
+                    'itemNumber': instance.senitron_item.item_number if instance.senitron_item else None,
+                    'tagsCount': instance.senitron_item.tags_count if instance.senitron_item else None,
+                    'qty': instance.senitron_item.qty if instance.senitron_item else None,
                 },
-                "status": {
-                    "senitronId": instance.status.senitron_id,
-                    "name": instance.status.name,
-                },
+                'assets': []
             }
         }
     }
+    
+    assets = SenitronItemAsset.objects.filter(item_number=instance.item_number).select_related('status')
+
+    for asset in assets:
+        asset_data = {
+            'id': asset.id,
+            'serialNumber': asset.serial_number,
+            'altSerial': asset.alt_serial,
+            'firstSeen': asset.first_seen.isoformat() if asset.first_seen else None,
+            'lastSeen': asset.last_seen.isoformat() if asset.last_seen else None,
+            'lastSeenAntenna': asset.last_seen_antenna,
+            'lastZone': asset.last_zone,
+            'handheldReader': asset.handheld_reader,
+            'handheldLastSeen': asset.handheld_last_seen.isoformat() if asset.handheld_last_seen else None,
+            'staticZone': asset.static_zone,
+            'staticZoneLastUpdate': asset.static_zone_last_update.isoformat() if asset.static_zone_last_update else None,
+            'receivingDate': asset.receiving_date.isoformat() if asset.receiving_date else None,
+            'currentUnits': asset.current_units,
+            'storageUnit': asset.storage_unit,
+            'adjustQty': asset.adjust_qty,
+            'createdAt': asset.created_at.isoformat() if asset.created_at else None,
+            'updatedAt': asset.updated_at.isoformat() if asset.updated_at else None,
+            'epc': asset.epc,
+            'text3': asset.text3,
+            'status': {
+                'senitronId': asset.status.senitron_id if asset.status else None,
+                'name': asset.status.name if asset.status else None,
+            } if asset.status else None
+        }
+        event['message']['item']['assets'].append(asset_data)
+        
     async_to_sync(channel_layer.group_send)('senitron_inventory_items_assets', event)
     
     

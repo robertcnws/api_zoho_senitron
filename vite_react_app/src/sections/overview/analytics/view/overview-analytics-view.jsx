@@ -31,6 +31,7 @@ import { AnalyticsOrderTimeline } from '../analytics-order-timeline';
 import { AnalyticsWebsiteVisits } from '../analytics-website-visits';
 import { AnalyticsWidgetSummary } from '../analytics-widget-summary';
 import { ModalSublistItems } from './modal-sublist-items';
+import { AnalyticsCurrentVisits } from '../analytics-current-visits';
 
 
 
@@ -52,6 +53,7 @@ export function OverviewAnalyticsView() {
   const [itemsSynced, setItemsSynced] = useState(null);
   const [itemsMismatched, setItemsMismatched] = useState(null);
   const [itemsZohoSenitron, setItemsZohoSenitron] = useState(null);
+  const [itemsSenitronZoho, setItemsSenitronZoho] = useState(null);
   const [itemsZohoMismatched, setItemsZohoMismatched] = useState(null);
   const [percentage, setPercentage] = useState(null);
   const [totalZohoQty, setTotalZohoQty] = useState(null);
@@ -59,6 +61,7 @@ export function OverviewAnalyticsView() {
 
   const [categories, setCategories] = useState(null);
   const [series, setSeries] = useState(null);
+  const [seriesPieChart, setSeriesPieChart] = useState(null);
 
   const [openModal, setOpenModal] = useState(false);
   const [modalListItems, setModalListItems] = useState(null);
@@ -104,54 +107,36 @@ export function OverviewAnalyticsView() {
     return ranges.map(({ name, data }) => ({ name, data }));
   };
 
+
+  const processingNumbersPieChart = (arrayNumbers) => {
+    const ranges = [
+      { label: '100%', min: 100, max: Infinity, value: 0 },
+      { label: '90% - 100 %', min: 90, max: 100, value: 0 },
+      { label: '80% - 90%', min: 80, max: 90, value: 0 },
+      { label: '70% - 80%', min: 70, max: 80, value: 0 },
+      { label: '60% - 70%', min: 60, max: 70, value: 0 },
+      { label: '50% - 60%', min: 50, max: 60, value: 0 },
+      { label: '-50%', min: -Infinity, max: 50, value: 0 },
+    ];
+
+    arrayNumbers.forEach((number) => {
+      const rangeFound = ranges.find(
+        (range) => number >= range.min && number < range.max
+      );
+      if (rangeFound) {
+        rangeFound.value += 1;
+      }
+    });
+
+    const list = ranges.map(({ label, value }) => ({ label, value }));
+
+    return list;
+  };
+
   useEffect(() => {
     const usernameLogged = JSON.parse(localStorage.getItem('userLogged'));
     setUserLogged(usernameLogged);
   }, []);
-
-
-
-  // useEffect(() => {
-  //   const socket = new WebSocket(`wss://${CONFIG.apiHost}/${CONFIG.apiDomain}/ws/inventory_items/`);
-  //   socket.onmessage = (event) => {
-  //     const message = JSON.parse(event.data);
-  //     if (message.type === 'created' || message.type === 'updated') {
-  //       setItemsZohoData((prevData) => {
-  //         const existingItemIndex = prevData.findIndex(item => item.itemId === message.item.itemId);
-  //         if (existingItemIndex !== -1) {
-  //           const updatedData = [...prevData];
-  //           updatedData[existingItemIndex] = message.item;
-  //           return updatedData;
-  //         }
-  //         return [message.item, ...prevData];
-  //       });
-  //     }
-  //   };
-  //   return () => {
-  //     socket.close();
-  //   };
-  // }, []);
-
-  // useEffect(() => {
-  //   const socket = new WebSocket(`wss://${CONFIG.apiHost}/${CONFIG.apiDomain}/ws/senitron_timelines/`);
-  //   socket.onmessage = (event) => {
-  //     const message = JSON.parse(event.data);
-  //     if (message.type === 'created' || message.type === 'updated') {
-  //       setItemsTimelineData((prevData) => {
-  //         const existingItemIndex = prevData.findIndex(item => item.id === message.item.id);
-  //         if (existingItemIndex !== -1) {
-  //           const updatedData = [...prevData];
-  //           updatedData[existingItemIndex] = message.item;
-  //           return updatedData;
-  //         }
-  //         return [message.item, ...prevData];
-  //       });
-  //     }
-  //   };
-  //   return () => {
-  //     socket.close();
-  //   };
-  // }, []);
 
 
   useEffect(() => {
@@ -167,8 +152,9 @@ export function OverviewAnalyticsView() {
       setItemsSynced(iSynced);
       let tSenitronQty = 0;
       if (senitronItems) {
-        tSenitronQty = senitronItems.reduce((acc, senitronItem) => acc + senitronItem.senitronItem.qty, 0);
+        tSenitronQty = senitronItems.reduce((acc, senitronItem) => acc + senitronItem.count, 0);
         setTotalSenitronQty(tSenitronQty);
+
       }
       const tZohoQty = iSynced?.reduce((acc, item) => acc + item.stockOnHand, 0);
       setTotalZohoQty(tZohoQty);
@@ -184,7 +170,7 @@ export function OverviewAnalyticsView() {
     if (itemsZohoData && senitronItems) {
       const mismatchedItems = senitronItems.filter(senitronItem => {
         const item = itemsZohoData.find(it => it.itemId === senitronItem.itemNumber);
-        return item && item.stockOnHand !== senitronItem.senitronItem.qty;
+        return item && item.stockOnHand !== senitronItem.count;
       });
       setItemsMismatched(mismatchedItems);
       setItemsZohoMismatched(itemsZohoData.filter(item => {
@@ -197,22 +183,47 @@ export function OverviewAnalyticsView() {
 
   useEffect(() => {
     if (itemsZohoData && senitronItems) {
-      const zohoSenitronItems = itemsZohoData.filter(item => {
-        const senitronItem = senitronItems.find(sItem => sItem.itemNumber === item.itemId);
-        return senitronItem;
+      const zohoSenitronItems = itemsZohoData.map(item => {
+        const senitronItem = senitronItems.find((sItem) => String(sItem?.itemNumber) === String(item?.itemId)) || {};
+  
+        return {
+          ...item,
+          quantity: senitronItem.count || 0,
+          difference: parseInt(item.stockOnHand || '0', 10) - parseInt(senitronItem.count || '0', 10),
+          assets: senitronItem.assets || [],
+        };
       });
-      setItemsZohoSenitron(zohoSenitronItems);
+      const sortedItemsZohoSenitron = sortBySku(zohoSenitronItems);
+      setItemsZohoSenitron(sortedItemsZohoSenitron);
+  
+      const senitronZohoItems = senitronItems.map(item => {
+        const zohoItem = itemsZohoData.find((zItem) => String(zItem?.itemId) === String(item?.itemNumber)) || {};
+  
+        return {
+          ...item,
+          itemId: zohoItem.itemId || '',
+          sku: zohoItem.sku || '',
+          name: zohoItem.name || '',
+          stockOnHand: zohoItem.stockOnHand || 0,
+          quantity: item.count || 0,
+          syncedWithSenitron: zohoItem.syncedWithSenitron,
+          difference: parseInt(zohoItem.stockOnHand || '0', 10) - parseInt(item.count || '0', 10),
+        };
+      });
+      const sortedItemsSenitronZoho = sortBySku(senitronZohoItems);
+      setItemsSenitronZoho(sortedItemsSenitronZoho);
     }
   }, [itemsZohoData, senitronItems]);
+  
 
 
   useEffect(() => {
-    if (itemsZohoData && senitronItems) {
-      const itemsSync = itemsZohoData.filter(item => item.syncedWithSenitron);
+    if (itemsZohoSenitron && itemsSenitronZoho) {
+      const itemsSync = itemsZohoSenitron.filter(item => item.syncedWithSenitron);
       const sseries = itemsSync.map(item => {
-        const senitronItem = senitronItems?.find(sItem => sItem.itemNumber === item.itemId);
+        const senitronItem = itemsSenitronZoho?.find(sItem => sItem.itemNumber === item.itemId);
         const zohoQty = item?.stockOnHand || 0;
-        const senitronQty = senitronItem?.senitronItem.qty || 0;
+        const senitronQty = senitronItem?.count || 0;
         const max = Math.max(zohoQty, senitronQty);
         const min = Math.min(zohoQty, senitronQty);
         const match = Math.floor((min / max) * 100) || 0;
@@ -221,9 +232,10 @@ export function OverviewAnalyticsView() {
       const sseriesAvg = processingNumbers(sseries);
       setSeries(sseriesAvg);
       setCategories(['Items']);
+      setSeriesPieChart(processingNumbersPieChart(sseries));
     }
 
-  }, [itemsZohoData, senitronItems]);
+  }, [itemsZohoSenitron, itemsSenitronZoho]);
 
 
   useEffect(() => {
@@ -259,25 +271,14 @@ export function OverviewAnalyticsView() {
                     .post(`${CONFIG.apiUrl}/api_zoho/load/inventory_items/`)
                     .then(() => {
                       axios
-                        .post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_items/`)
+                        .post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_item_assets/`)
                         .then(() => {
-                          axios
-                            .post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_item_assets/`)
-                            .then(() => {
-                              console.log('Zoho Inventory item fetched');
-                              console.log('Senitron Inventory item fetched');
-                            })
-                            .catch((err) => {
-                              console.error('Error fetching senitron inventory item asset:', err);
-                              setError('There was an error fetching senitron inventory item asset.');
-                            })
-                            .finally(() => {
-                              setLoading(false);
-                            });
+                          console.log('Zoho Inventory item fetched');
+                          console.log('Senitron Inventory item fetched');
                         })
                         .catch((err) => {
-                          console.error('Error fetching senitron inventory item:', err);
-                          setError('There was an error fetching senitron inventory item.');
+                          console.error('Error fetching senitron inventory item asset:', err);
+                          setError('There was an error fetching senitron inventory item asset.');
                         })
                         .finally(() => {
                           setLoading(false);
@@ -287,112 +288,133 @@ export function OverviewAnalyticsView() {
                       console.error('Error fetching inventory item:', err);
                       setError('There was an error fetching the inventory item.');
                     })
-                    .finally(() => {
-                      setLoading(false);
-                    });
                 }}>
-                <Iconify icon="solar:refresh-bold" /> Update from Zoho & Senitron
-              </Label>
-            </Stack>
-          </Typography>
-        </Grid>
-      </Grid>
-
-      <Grid container spacing={3}>
-        <Grid xs={12} sm={6} md={3}>
-          <AnalyticsWidgetSummary
-            sx={{ cursor: 'pointer' }}
-            title="Items Synced"
-            percent={2.6}
-            total={itemsSynced?.length}
-            icon={
-              <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-synced.svg`} />
-            }
-            chart={{
-              categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
-              series: [22, 8, 35, 50, 82, 84, 77, 12],
-            }}
-            onClick={() => {
-              setOpenModal(true)
-              setModalListItems(itemsSynced)
-              setModalTitle(`Items Synced (${itemsSynced?.length})`)
-              setModalButtonColor('#4CAF50')
-            }}
-          />
+                  <Iconify icon="solar:refresh-bold" /> Update from Zoho & Senitron
+                </Label>
+              </Stack>
+            </Typography>
+          </Grid>
         </Grid>
 
-        <Grid xs={12} sm={6} md={3}>
-          <AnalyticsWidgetSummary
-            sx={{ cursor: 'pointer' }}
-            title="Items from Zoho"
-            percent={-0.1}
-            total={items?.length}
-            color="secondary"
-            icon={
-              <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-zoho.svg`} />
-            }
-            chart={{
-              categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
-              series: [56, 47, 40, 62, 73, 30, 23, 54],
-            }}
-            onClick={() => {
-              setOpenModal(true)
-              setModalListItems(items)
-              setModalTitle(`Items from Zoho (${items?.length})`)
-              setModalButtonColor('info.main')
-            }}
-          />
-        </Grid>
+        <Grid container spacing={3}>
 
-        <Grid xs={12} sm={6} md={3}>
-          <AnalyticsWidgetSummary
-            sx={{ cursor: 'pointer' }}
-            title="Items from Senitron"
-            percent={2.8}
-            total={senitronItems?.length}
-            color="warning"
-            icon={
-              <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-senitron.svg`} />
-            }
-            chart={{
-              categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
-              series: [40, 70, 50, 28, 70, 75, 7, 64],
-            }}
-            onClick={() => {
-              setOpenModal(true)
-              setModalListItems(itemsZohoSenitron)
-              setModalTitle(`Items from Sentitron (${itemsZohoSenitron?.length})`)
-              setModalButtonColor('#FF9800')
-            }}
-          />
-        </Grid>
+          <Grid xs={12} sm={6} md={2.4}>
+            <AnalyticsWidgetSummary
+              sx={{ cursor: 'pointer' }}
+              title="Items from Senitron"
+              percent={2.8}
+              total={itemsSenitronZoho?.length}
+              color="warning"
+              icon={
+                <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-senitron.svg`} />
+              }
+              chart={{
+                categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
+                series: [40, 70, 50, 28, 70, 75, 7, 64],
+              }}
+              onClick={() => {
+                setOpenModal(true)
+                setModalListItems(itemsSenitronZoho)
+                setModalTitle(`Items from Sentitron (${itemsSenitronZoho?.length})`)
+                setModalButtonColor('#FF9800')
+              }}
+            />
+          </Grid>
 
-        <Grid xs={12} sm={6} md={3}>
-          <AnalyticsWidgetSummary
-            sx={{ cursor: 'pointer' }}
-            title="Mismatched Synced Items"
-            percent={3.6}
-            total={itemsMismatched?.length}
-            color="error"
-            icon={
-              <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-mismatch.svg`} />
-            }
-            chart={{
-              categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
-              series: [56, 30, 23, 54, 47, 40, 62, 73],
-            }}
-            onClick={() => {
-              setOpenModal(true)
-              setModalListItems(itemsZohoMismatched)
-              setModalTitle(`Mismatched Synced Items (${itemsMismatched?.length})`)
-              setModalButtonColor('#F44336')
-            }}
-          />
-        </Grid>
+          <Grid xs={12} sm={6} md={2.4}>
+            <AnalyticsWidgetSummary
+              sx={{ cursor: 'pointer' }}
+              title="Items SKU Matched"
+              percent={2.6}
+              total={itemsZohoSenitron?.filter(it => it.syncedWithSenitron).length}
+              icon={
+                <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-synced.svg`} />
+              }
+              chart={{
+                categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
+                series: [22, 8, 35, 50, 82, 84, 77, 12],
+              }}
+              onClick={() => {
+                setOpenModal(true)
+                setModalListItems(itemsZohoSenitron?.filter(it => it.syncedWithSenitron))
+                setModalTitle(`Items SKU Matched (${itemsZohoSenitron?.filter(it => it.syncedWithSenitron).length})`)
+                setModalButtonColor('#4CAF50')
+              }}
+            />
+          </Grid>
 
-        {percentage && (
-          <Grid xs={12} md={6} lg={4}>
-            {/* <AnalyticsCurrentVisits
+          <Grid xs={12} sm={6} md={2.4}>
+            <AnalyticsWidgetSummary
+              sx={{ cursor: 'pointer' }}
+              title="Items Assets 100 %"
+              percent={-0.1}
+              total={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron).length}
+              color="secondary"
+              icon={
+                <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-zoho.svg`} />
+              }
+              chart={{
+                categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
+                series: [56, 47, 40, 62, 73, 30, 23, 54],
+              }}
+              onClick={() => {
+                setOpenModal(true)
+                setModalListItems(itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron))
+                setModalTitle(`Items Assets 100 % (${itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron).length})`)
+                setModalButtonColor('info.main')
+              }}
+            />
+          </Grid>
+
+          <Grid xs={12} sm={6} md={2.4}>
+            <AnalyticsWidgetSummary
+              sx={{ cursor: 'pointer' }}
+              title="Items On Hand Over"
+              percent={3.6}
+              total={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0).length}
+              color="error"
+              icon={
+                <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-mismatch.svg`} />
+              }
+              chart={{
+                categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
+                series: [56, 30, 23, 54, 47, 40, 62, 73],
+              }}
+              onClick={() => {
+                setOpenModal(true)
+                setModalListItems(itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0))
+                setModalTitle(`Items On Hand Over (${itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0).length})`)
+                setModalButtonColor('#F44336')
+              }}
+            />
+          </Grid>
+
+          <Grid xs={12} sm={5} md={2.4}>
+            <AnalyticsWidgetSummary
+              sx={{ cursor: 'pointer' }}
+              title="Items Quantity Over"
+              percent={3.6}
+              total={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0).length}
+              color="info"
+              icon={
+                <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-front-3.svg`} />
+              }
+              chart={{
+                categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
+                series: [56, 30, 23, 54, 47, 40, 62, 73],
+              }}
+              onClick={() => {
+                setOpenModal(true)
+                setModalListItems(itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0))
+                setModalTitle(`Items Quantity Over (${itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0).length})`)
+                setModalButtonColor('#F44336')
+              }}
+            />
+          </Grid>
+
+          {percentage && (
+            <Grid xs={12} md={6} lg={4}>
+              {/* <AnalyticsCurrentVisits
               title="Current visits"
               chart={{
                 series: [
@@ -403,77 +425,97 @@ export function OverviewAnalyticsView() {
                 ],
               }}
             /> */}
-            <Card>
-              <CardHeader title="Total Matched Items" />
-              <Stack direction="column" sx={{ p: 0, textAlign: 'center' }} alignItems="center">
-                {percentage > 0 ? (
-                  <>
-                    <MatchGauge percentage={percentage} />
-                    <Box sx={{ mt: 0, p: 0 }}>
-                      <TableContainer>
-                        <Table size='small'>
-                          <TableBody>
-                            <TableRow>
-                              <TableCell>Total Zoho Quantity:</TableCell>
-                              <TableCell><b>{totalZohoQty}</b></TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell>Total Senitron Quantity:</TableCell>
-                              <TableCell><b>{totalSenitronQty}</b></TableCell>
-                            </TableRow>
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
-                    </Box>
-                  </>
-                ) : (
-                  <TableContainer sx={{ maxHeight: 350 }}>
-                    <Table size='medium' stickyHeader>
-                      <TableBody>
-                        <TableNoData notFound={percentage > 0} />
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                )}
-              </Stack>
-            </Card>
-          </Grid>
-        )}
+              <Card>
+                <CardHeader title="Total Matched Items" />
+                <Stack direction="column" sx={{ p: 0, textAlign: 'center' }} alignItems="center">
+                  {percentage > 0 ? (
+                    <>
+                      <MatchGauge percentage={percentage} />
+                      <Box sx={{ mt: 0, p: 0 }}>
+                        <TableContainer>
+                          <Table size='small'>
+                            <TableBody>
+                              <TableRow>
+                                <TableCell>Total Zoho Quantity:</TableCell>
+                                <TableCell><b>{totalZohoQty}</b></TableCell>
+                              </TableRow>
+                              <TableRow>
+                                <TableCell>Total Senitron Quantity:</TableCell>
+                                <TableCell><b>{totalSenitronQty}</b></TableCell>
+                              </TableRow>
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                      </Box>
+                    </>
+                  ) : (
+                    <TableContainer sx={{ maxHeight: 350 }}>
+                      <Table size='medium' stickyHeader>
+                        <TableBody>
+                          <TableNoData notFound={percentage > 0} />
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  )}
+                </Stack>
+              </Card>
+            </Grid>
+          )}
 
-        {series && (
-          <Grid xs={12} md={6} lg={4}>
-            <AnalyticsWebsiteVisits
-              title="Quantity Match"
-              subheader="Number of items by percentage range"
-              element="items"
-              chart={{
-                categories: categories || ['Items'],
-                series: series || [{ name: 'Items', data: [0] }],
-              }}
-              openModal={openModal}
-              setOpenModal={setOpenModal}
-              modalTitle={modalTitle}
-              setModalTitle={setModalTitle}
-              modalDataFiltered={modalListItems}
-              setModalDataFiltered={setModalListItems}
-              modalButtonColor={modalButtonColor}
-              setModalButtonColor={setModalButtonColor}
-              zohoItems={itemsZohoData}
-              senitronItems={senitronItems}
-              handleViewRow={handleViewRow}
-              handleFilterName={handleFilterName}
-              filters={filters}
-            />
-          </Grid>
-        )}
+          {series && (
+            <Grid xs={12} md={6} lg={4}>
+              {/* <AnalyticsWebsiteVisits
+                title="Quantity Match"
+                subheader="Number of items by percentage range"
+                element="items"
+                chart={{
+                  categories: categories || ['Items'],
+                  series: series || [{ name: 'Items', data: [0] }],
+                }}
+                openModal={openModal}
+                setOpenModal={setOpenModal}
+                modalTitle={modalTitle}
+                setModalTitle={setModalTitle}
+                modalDataFiltered={modalListItems}
+                setModalDataFiltered={setModalListItems}
+                modalButtonColor={modalButtonColor}
+                setModalButtonColor={setModalButtonColor}
+                zohoItems={itemsZohoData}
+                senitronItems={senitronItems}
+                handleViewRow={handleViewRow}
+                handleFilterName={handleFilterName}
+                filters={filters}
+              /> */}
+              <AnalyticsCurrentVisits title="Quantity Match"
+                subheader="Number of items by percentage range"
+                element="items"
+                chart={{
+                  series: seriesPieChart || [{ label: 'Items', value: 0 }],
+                }}
+                openModal={openModal}
+                setOpenModal={setOpenModal}
+                modalTitle={modalTitle}
+                setModalTitle={setModalTitle}
+                modalDataFiltered={modalListItems}
+                setModalDataFiltered={setModalListItems}
+                modalButtonColor={modalButtonColor}
+                setModalButtonColor={setModalButtonColor}
+                zohoItems={itemsZohoSenitron}
+                senitronItems={itemsSenitronZoho}
+                handleViewRow={handleViewRow}
+                handleFilterName={handleFilterName}
+                filters={filters}
+              />
+            </Grid>
+          )}
 
-        {timelineItems && (
-          <Grid xs={12} md={6} lg={4}>
-            <AnalyticsOrderTimeline title="Items timeline" list={itemsTimelineData || timelineItems} onViewDetails={handleViewRow} />
-          </Grid>
-        )}
+          {timelineItems && (
+            <Grid xs={12} md={6} lg={4}>
+              <AnalyticsOrderTimeline title="Items timeline" list={itemsTimelineData || timelineItems} onViewDetails={handleViewRow} />
+            </Grid>
+          )}
 
-        {/* <Grid xs={12} md={6} lg={8}>
+          {/* <Grid xs={12} md={6} lg={8}>
           <AnalyticsConversionRates
             title="Conversion rates"
             subheader="(+43%) than last year"
@@ -487,7 +529,7 @@ export function OverviewAnalyticsView() {
           />
         </Grid> */}
 
-        {/* <Grid xs={12} md={6} lg={4}>
+          {/* <Grid xs={12} md={6} lg={4}>
           <AnalyticsCurrentSubject
             title="Current subject"
             chart={{
@@ -501,22 +543,22 @@ export function OverviewAnalyticsView() {
           />
         </Grid> */}
 
-        <Grid xs={12} md={12} lg={12}>
-          {/* <AnalyticsNews title="News" list={_analyticPosts} /> */}
-          <ItemListShortView />
-        </Grid>
+          <Grid xs={12} md={12} lg={12}>
+            {/* <AnalyticsNews title="News" list={_analyticPosts} /> */}
+            <ItemListShortView />
+          </Grid>
 
 
 
-        {/* <Grid xs={12} md={6} lg={4}>
+          {/* <Grid xs={12} md={6} lg={4}>
           <AnalyticsTrafficBySite title="Traffic by site" list={_analyticTraffic} />
         </Grid>
 
         <Grid xs={12} md={6} lg={8}>
           <AnalyticsTasks title="Tasks" list={_analyticTasks} />
         </Grid> */}
-      </Grid>
-    </DashboardContent >
+        </Grid>
+      </DashboardContent >
 
       <ModalSublistItems
         openModal={openModal}
@@ -541,9 +583,24 @@ function applyFilter({ inputData, filters }) {
     inputData = inputData?.filter(
       (item) => item.name.trim().toLowerCase().indexOf(name.trim().toLowerCase()) !== -1 ||
         item.sku.trim().toLowerCase().indexOf(name.trim().toLowerCase()) !== -1 ||
-        item.itemId.trim().toLowerCase().indexOf(name.trim().toLowerCase()) !== -1
+        item.itemId.trim().toLowerCase().indexOf(name.trim().toLowerCase()) !== -1 ||
+        item.itemNumber.trim().toLowerCase().indexOf(name.trim().toLowerCase()) !== -1
     );
   }
 
   return inputData;
+}
+
+
+function sortBySku(items) {
+  return items.sort((a, b) => {
+    const skuA = a.sku || '';
+    const skuB = b.sku || '';
+
+    const isSkuAEmpty = !skuA.trim();
+    const isSkuBEmpty = !skuB.trim();
+
+    return isSkuAEmpty && !isSkuBEmpty ? 1 : !isSkuAEmpty && isSkuBEmpty ? -1 : isSkuAEmpty && isSkuBEmpty ? 0 : skuA.localeCompare(skuB);
+
+  });
 }

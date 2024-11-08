@@ -97,47 +97,44 @@ def create_inventory_item_asset_instance(logger, data):
     try:
         status, _ = SenitronStatus.objects.update_or_create(
             name=status_json.get('name'), senitron_id=status_json.get('id')
-        )
-        senitron_item = SenitronItem.objects.filter(item_number=item_number).first()
-        if not senitron_item:
-            senitron_item = create_inventory_item_instance(logger, {'item_number': item_number, 'tags_count': 0, 'qty': 0})
-        asset, _ = SenitronItemAsset.objects.update_or_create(
-            item_number=item_number,
-            defaults={
-                'serial_number': serial_number,
-                'alt_serial': alt_serial,
-                'first_seen': aware_first_seen,
-                'last_seen': aware_last_seen,
-                'last_seen_antenna': last_seen_antenna,
-                'last_zone': last_zone,
-                'handheld_reader': handheld_reader,
-                'handheld_last_seen': aware_handheld_last_seen,
-                'static_zone': static_zone,
-                'static_zone_last_update': aware_static_zone_last_update,
-                'receiving_date': aware_receiving_date,
-                'current_units': current_units,
-                'storage_unit': storage_unit,
-                'adjust_qty': adjust_qty,
-                'attr1': attr1,
-                'attr2': attr2,
-                'attr3': attr3,
-                'attr4': attr4,
-                'attr5': attr5,
-                'attr6': attr6,
-                'attr7': attr7,
-                'attr8': attr8,
-                'attr9': attr9,
-                'attr10': attr10,
-                'created_at': aware_created_at,
-                'updated_at': aware_updated_at,
-                'epc': epc,
-                'text3': text3,
-                'status': status,
-                'senitron_item': senitron_item,
-                'read': True,
-                'date_read': timezone.now()
-            }
-        )
+        ) 
+        senitron_item = SenitronItem.objects.filter(item_number=item_number).first() or None
+        
+        asset = SenitronItemAsset.objects.create(
+                    item_number=item_number,
+                    serial_number=serial_number,
+                    alt_serial=alt_serial,
+                    first_seen=aware_first_seen,
+                    last_seen=aware_last_seen,
+                    last_seen_antenna=last_seen_antenna,
+                    last_zone=last_zone,
+                    handheld_reader=handheld_reader,
+                    handheld_last_seen=aware_handheld_last_seen,
+                    static_zone=static_zone,
+                    static_zone_last_update=aware_static_zone_last_update,
+                    receiving_date=aware_receiving_date,
+                    current_units=current_units,
+                    storage_unit=storage_unit,
+                    adjust_qty=adjust_qty,
+                    attr1=attr1,
+                    attr2=attr2,
+                    attr3=attr3,
+                    attr4=attr4,
+                    attr5=attr5,
+                    attr6=attr6,
+                    attr7=attr7,
+                    attr8=attr8,
+                    attr9=attr9,
+                    attr10=attr10,
+                    created_at=aware_created_at,
+                    updated_at=aware_updated_at,
+                    epc=epc,
+                    text3=text3,
+                    status=status,
+                    senitron_item=senitron_item,
+                    read=False,
+                    date_read=None
+            )
         return asset
     except IntegrityError:
         logger.error(f"Integrity error for item_number={item_number}. Skipping.")

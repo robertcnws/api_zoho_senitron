@@ -19,7 +19,8 @@ export function ItemTableFiltersResult({ filters, onResetPage, totalResults, sx 
 
   const handleRemoveSynced = useCallback(
     (inputValue) => {
-      const newValue = filters.state.syncedWithSenitron.filter((item) => item !== inputValue);
+      const value = inputValue === 'Tracked Inventory' ? 'synced' : inputValue === 'Not Tracked Inventory' ? 'not_synced' : inputValue;
+      const newValue = filters.state.syncedWithSenitron.filter((item) => item !== value);
 
       onResetPage();
       filters.setState({ syncedWithSenitron: newValue });
@@ -30,6 +31,7 @@ export function ItemTableFiltersResult({ filters, onResetPage, totalResults, sx 
   const handleReset = useCallback(() => {
     onResetPage();
     filters.onResetState();
+    filters.setState({ status: 'all' });
   }, [filters, onResetPage]);
 
   return (
@@ -37,13 +39,13 @@ export function ItemTableFiltersResult({ filters, onResetPage, totalResults, sx 
       <FiltersBlock label="Status:" isShow={filters.state.status !== 'all'}>
         <Chip
           {...chipProps}
-          label={filters.state.status}
+          label={filters.state.status === 'synced' ? 'Tracked Inventory' : filters.state.status === 'not_synced' ? 'Not Tracked Inventory' : filters.state.status}
           onDelete={handleRemoveStatus}
           sx={{ textTransform: 'capitalize' }}
         />
       </FiltersBlock>
 
-      <FiltersBlock label="Synced With Senitron:" isShow={!!filters.state.syncedWithSenitron.length}>
+      <FiltersBlock label="Tracked Inventory:" isShow={!!filters.state.syncedWithSenitron.length}>
         {filters.state.syncedWithSenitron.map((item) => (
           <Chip {...chipProps} key={item} label={item} onDelete={() => handleRemoveSynced(item)} />
         ))}

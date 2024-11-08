@@ -319,13 +319,22 @@ def load_inventory_items(request):
         logger.error(f"Error connecting to Zoho API: {str(e)}")
         return JsonResponse({'error': f"Error connecting to Zoho API (Load Items): {str(e)}"}, status=500)
     
-    params = {
-        'organization_id': app_config.zoho_org_id,
-        'page': 1,
-        'per_page': 200,
-    }
+    data = json.loads(request.body) if request.body else {}
+    item_number = None
+    
+    if data.get('item_number'):
+        item_number = data.get('item_number')
+        params = {
+            'organization_id': app_config.zoho_org_id,
+        }
+    else:
+        params = {
+            'organization_id': app_config.zoho_org_id,
+            'per_page': 200,
+            'page': 1
+        }
 
-    url = settings.ZOHO_INVENTORY_ITEMS_URL
+    url = settings.ZOHO_INVENTORY_ITEMS_URL if not item_number else f"{settings.ZOHO_INVENTORY_ITEMS_URL}/{item_number}"
     items_to_get = []
     session = requests.Session()
 
@@ -343,15 +352,33 @@ def load_inventory_items(request):
         except requests.RequestException as e:
             logger.error(f"Error fetching page {page}: {e}")
             return [], 0
-
-    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        initial_items, total_pages = fetch_page_data(1)
-        items_to_get.extend(initial_items)
-        futures = {executor.submit(fetch_page_data, page): page for page in range(2, total_pages + 1)}
-        for future in as_completed(futures):
-            page_items, _ = future.result()
-            items_to_get.extend(page_items)
-
+        
+    def fetch_single_data():
+        try:
+            response = session.get(url, headers=headers, params=params)
+            if response.status_code == 401:
+                new_token = refresh_zoho_access_token()
+                headers['Authorization'] = f'Zoho-oauthtoken {new_token}'
+                response = session.get(url, headers=headers, params=params)
+            response.raise_for_status()
+            data = response.json()
+            return data.get('item', {})
+        except requests.RequestException as e:
+            logger.error(f"Error fetching data single item: {e}")
+            return {}
+        
+    if not item_number:
+        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+            initial_items, total_pages = fetch_page_data(1)
+            items_to_get.extend(initial_items)
+            futures = {executor.submit(fetch_page_data, page): page for page in range(2, total_pages + 1)}
+            for future in as_completed(futures):
+                page_items, _ = future.result()
+                items_to_get.extend(page_items)
+                
+    else:
+        items_to_get.append(fetch_single_data())
+        
     item_ids = [item['item_id'] for item in items_to_get]
     existing_items = ZohoInventoryItem.objects.filter(item_id__in=item_ids)
     existing_items_ids = set(existing_items.values_list('item_id', flat=True))
@@ -442,6 +469,7 @@ def fetch_sales_order_details(item, session, headers):
     except Exception as e:
         logger.error(f"Error fetching details for sales order {item['salesorder_id']}: {e}")
         return None
+    
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -542,7 +570,7 @@ def load_inventory_sales_orders(request):
 @permission_classes([AllowAny]) 
 def sync_with_senitron(request):
     data = json.loads(request.body) if request.body else {}
-    print('Data', data)
+    # print('Data', data)
     for item in data:
         try:
             zoho_item = ZohoInventoryItem.objects.filter(item_id=item['itemId']).first()

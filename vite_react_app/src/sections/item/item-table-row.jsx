@@ -12,10 +12,13 @@ import IconButton from '@mui/material/IconButton';
 
 import { useBoolean } from 'src/hooks/use-boolean';
 
+import { fDateTime } from 'src/utils/format-time';
+
 import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
 import { ConfirmDialog } from 'src/components/custom-dialog';
 import { usePopover, CustomPopover } from 'src/components/custom-popover';
+import { Collapse, Paper, Table, TableBody, TableContainer, TableHead } from '@mui/material';
 
 // ----------------------------------------------------------------------
 
@@ -25,13 +28,15 @@ export function ItemTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
 
   const confirm = useBoolean();
 
+  const collapse = useBoolean();
+
   const popover = usePopover();
 
   const quickEdit = useBoolean();
 
   return (
     <>
-      <TableRow hover selected={selected} aria-checked={selected} tabIndex={-1} sx={{ cursor: 'pointer'}}>
+      <TableRow hover selected={selected} aria-checked={selected} tabIndex={-1} sx={{ cursor: 'pointer' }}>
 
         <TableCell padding="checkbox">
           <Checkbox id={row.itemId} checked={selected} onClick={onSelectRow} />
@@ -76,7 +81,7 @@ export function ItemTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
             sx={{ cursor: 'pointer' }}
             variant="soft"
             color={
-              (row.difference === 0 ? 'success' : row.difference > 0 ? 'warning' : 'error' )
+              (row.difference === 0 ? 'success' : row.difference > 0 ? 'warning' : 'error')
             }
           >
             {row.difference}
@@ -87,23 +92,30 @@ export function ItemTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
             sx={{ cursor: 'pointer' }}
             variant="soft"
             color={
-              (row.syncedWithSenitron && 'info' || 'error' )
+              (row.syncedWithSenitron && 'info' || 'error')
             }
           >
             {row.syncedWithSenitron ? 'Yes' : 'No'}
           </Label>
         </TableCell>
-
-        <TableCell>
+        <TableCell align="right" sx={{ px: 1, whiteSpace: 'nowrap' }}>
           <Stack direction="row" alignItems="center">
-            {/* <Tooltip title="Quick Edit" placement="top" arrow>
+            {row.assets.length > 0 ? (
               <IconButton
-                color={quickEdit.value ? 'inherit' : 'default'}
-                onClick={quickEdit.onTrue}
+                color={collapse.value ? 'inherit' : 'default'}
+                onClick={collapse.onToggle}
+                sx={{ ...(collapse.value && { bgcolor: 'action.hover' }) }}
               >
-                <Iconify icon="solar:pen-bold" />
+                <Iconify icon={collapse.value ? "eva:arrow-ios-upward-fill" : "eva:arrow-ios-downward-fill"} />
               </IconButton>
-            </Tooltip> */}
+            ) : (
+              <Label
+                variant="soft"
+                color="warning"
+              >
+                No items
+              </Label>
+            )}
 
             <IconButton color={popover.open ? 'inherit' : 'default'} onClick={popover.onOpen}>
               <Iconify icon="eva:more-vertical-fill" />
@@ -111,6 +123,55 @@ export function ItemTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
           </Stack>
         </TableCell>
       </TableRow>
+
+      <TableRow key='collapse-assets'>
+        <TableCell sx={{ p: 0, border: 'none' }} colSpan={9}>
+          <Collapse
+            in={collapse.value}
+            timeout="auto"
+            unmountOnExit
+            sx={{ bgcolor: 'background.neutral' }}
+          >
+            <Paper sx={{ m: 1.5 }}>
+              {/* <Label color='info'>Assets</Label> */}
+              <Stack spacing={2} direction="row" alignItems="center">
+                <TableContainer sx={{ height: '400px' }}>
+                  <Table stickyHeader>
+                    <TableBody>
+                      {row.assets.filter((item) => item.lastSeenAntenna && item.lastZone && item.text3)
+                        .map((item, index) => (
+                          <TableRow key={`${item.id}-${index}-${item.serialNumber}`}>
+                            <TableCell>
+                              <Label color='default'>Antenna</Label><br />
+                              {item.lastSeenAntenna}
+                            </TableCell>
+                            <TableCell>
+                              <Label color='default'>Serial</Label><br />
+                              {item.serialNumber}
+                            </TableCell>
+                            <TableCell>
+                              <Label color='default'>Last Zone</Label><br />
+                              {item.lastZone}
+                            </TableCell>
+                            <TableCell>
+                              <Label color='default'>Info</Label><br />
+                              {item.text3}
+                            </TableCell>
+                            <TableCell>
+                              <Label color='default'>Last Seen</Label><br />
+                              {item.lastSeen ? fDateTime(item.lastSeen) : `Updated:  ${fDateTime(item.updatedAt)}`}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Stack>
+            </Paper>
+          </Collapse>
+        </TableCell>
+      </TableRow>
+
 
       <CustomPopover
         open={popover.open}

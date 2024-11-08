@@ -19,6 +19,7 @@ import { useRouter } from 'src/routes/hooks';
 import { useBoolean } from 'src/hooks/use-boolean';
 import { useSetState } from 'src/hooks/use-set-state';
 
+
 import { varAlpha } from 'src/theme/styles';
 import { DashboardContent } from 'src/layouts/dashboard';
 import { ITEM_STATUS_SHORT_OPTIONS, ITEM_SYNC_OPTIONS, useItemsQuery, useSenitronItemsQuery } from 'src/_mock/_items';
@@ -29,7 +30,6 @@ import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
 import { ConfirmDialog } from 'src/components/custom-dialog';
-import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
 import { LoadingContext } from 'src/auth/context/loading-context';
 
@@ -52,8 +52,8 @@ import { ItemTableFiltersResult } from '../item-table-filters-result';
 // ----------------------------------------------------------------------
 
 const STATUS_OPTIONS = [{ value: 'all', label: 'All Items' }, ...ITEM_STATUS_SHORT_OPTIONS].concat([
-    { value: 'synced', label: 'Items Synced Senitron' },
-    { value: 'not_synced', label: 'Items Not Synced Senitron' },
+    { value: 'synced', label: 'Tracked Inventory Items' },
+    { value: 'not_synced', label: 'Not Tracked Inventory Items' },
 ]);
 
 // ----------------------------------------------------------------------
@@ -69,7 +69,7 @@ export function ItemListShortView() {
         { id: 'stockOnHand', label: 'On Hand', width: isMobile ? 50 : 100 },
         { id: 'quantity', label: 'Sen. Qty', width: isMobile ? 50 : 100 },
         { id: 'difference', label: 'Difference', width: isMobile ? 50 : 100 },
-        { id: 'syncedWithSenitron', label: 'Synced', width: 50 },
+        { id: 'syncedWithSenitron', label: 'Tracked', width: 50 },
         { id: '', width: 50 },
     ];
 
@@ -113,8 +113,9 @@ export function ItemListShortView() {
                 return {
                     ...item,
                     syncedWithSenitron: !!senitronItem,
-                    quantity: senitronItem?.senitronItem.qty || 0,
-                    difference: parseInt(item.stockOnHand, 10) - parseInt(senitronItem?.senitronItem.qty || 0, 10),
+                    quantity: senitronItem?.count || 0,
+                    difference: parseInt(item.stockOnHand, 10) - parseInt(senitronItem?.count || 0, 10),
+                    assets: senitronItem?.assets || [],
                 };
             });
             setTableData(rData);
@@ -124,7 +125,7 @@ export function ItemListShortView() {
             }));
             axios.post(`${CONFIG.apiUrl}/api_zoho/sync/senitron/`, payload)
                 .then(() => {
-                    console.log('Inventory items synced with Senitron');
+                    console.log('Inventory items tracked with Senitron');
                 })
                 .catch((err) => {
                     console.error('Error syncing inventory items:', err);

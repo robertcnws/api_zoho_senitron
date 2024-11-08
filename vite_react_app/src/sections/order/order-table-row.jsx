@@ -117,7 +117,7 @@ export function OrderTableRow({ row, selected, onViewRow, onSelectRow, onDeleteR
             onClick={collapse.onToggle}
             sx={{ ...(collapse.value && { bgcolor: 'action.hover' }) }}
           >
-            <Iconify icon="eva:arrow-ios-downward-fill" />
+            <Iconify icon={collapse.value ? "eva:arrow-ios-upward-fill" : "eva:arrow-ios-downward-fill"} />
           </IconButton>
         ) : (
           <Label

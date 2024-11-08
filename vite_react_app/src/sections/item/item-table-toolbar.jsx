@@ -156,25 +156,14 @@ export function ItemTableToolbar({ filters, onResetPage, options }) {
               setLoading(true);
               setComponent('senitron items');
               axios
-                .post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_items/`)
+                .post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_item_assets/`)
                 .then(() => {
-                  axios
-                    .post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_item_assets/`)
-                    .then(() => {
-                      console.log('Zoho Inventory items fetched');
-                      console.log('Senitron Inventory items fetched');
-                    })
-                    .catch((err) => {
-                      console.error('Error fetching senitron inventory items assets:', err);
-                      setError('There was an error fetching senitron inventory items assets.');
-                    })
-                    .finally(() => {
-                      setLoading(false);
-                    });
+                  console.log('Zoho Inventory items fetched');
+                  console.log('Senitron Inventory items fetched');
                 })
                 .catch((err) => {
-                  console.error('Error fetching senitron inventory items:', err);
-                  setError('There was an error fetching senitron inventory items.');
+                  console.error('Error fetching senitron inventory items assets:', err);
+                  setError('There was an error fetching senitron inventory items assets.');
                 })
                 .finally(() => {
                   setLoading(false);

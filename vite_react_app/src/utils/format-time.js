@@ -1,11 +1,15 @@
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 
 // ----------------------------------------------------------------------
 
 dayjs.extend(duration);
 dayjs.extend(relativeTime);
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 /**
  * Docs: https://day.js.org/docs/en/display/format
@@ -32,14 +36,14 @@ export function today(format) {
 
 /** output: Apr 17 2022 12:00 am
  */
-export function fDateTime(date, format) {
+export function fDateTime(date, format, timeZone = 'UTC') {
   if (!date) {
     return null;
   }
 
   const isValid = dayjs(date).isValid();
 
-  return isValid ? dayjs(date).format(format ?? formatStr.dateTime) : 'Invalid time value';
+  return isValid ? dayjs(date).tz(timeZone).format(format ?? formatStr.dateTime) : 'Invalid time value';
 }
 
 // ----------------------------------------------------------------------
