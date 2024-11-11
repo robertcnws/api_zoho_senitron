@@ -96,8 +96,8 @@ export function AnalyticsWidgetSummary({
         <Box sx={{ flexGrow: 1, minWidth: 112 }}>
           <Box sx={{ mb: 1, typography: 'subtitle2' }}>{title}</Box>
           <Box sx={{ typography: 'h4' }}>{fShortenNumber(total)}</Box>
-          <Box sx={{ fontSize: '12px' }}>Quantity: <b>{quantity}</b></Box>
-          <Box sx={{ fontSize: '12px' }}>Stock On Hand: <b>{stockOnHand}</b></Box>
+          <Box sx={{ fontSize: '12px' }}>Quantity: <b>{quantity || 0}</b></Box>
+          <Box sx={{ fontSize: '12px' }}>Stock On Hand: <b>{stockOnHand || 0}</b></Box>
         </Box>
 
         <Chart
