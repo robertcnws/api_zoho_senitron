@@ -304,6 +304,8 @@ export function OverviewAnalyticsView() {
               title="Items from Senitron"
               percent={2.8}
               total={itemsSenitronZoho?.length}
+              quantity={itemsSenitronZoho?.reduce((acc, item) => acc + item.quantity, 0)}
+              stockOnHand={itemsSenitronZoho?.reduce((acc, item) => acc + item.stockOnHand, 0)}
               color="warning"
               icon={
                 <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-senitron.svg`} />
@@ -327,6 +329,8 @@ export function OverviewAnalyticsView() {
               title="Items SKU Matched"
               percent={2.6}
               total={itemsZohoSenitron?.filter(it => it.syncedWithSenitron).length}
+              quantity={itemsZohoSenitron?.filter(it => it.syncedWithSenitron).reduce((acc, item) => acc + item.quantity, 0)}
+              stockOnHand={itemsZohoSenitron?.filter(it => it.syncedWithSenitron).reduce((acc, item) => acc + item.stockOnHand, 0)}
               icon={
                 <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-synced.svg`} />
               }
@@ -349,6 +353,8 @@ export function OverviewAnalyticsView() {
               title="Items Assets 100 %"
               percent={-0.1}
               total={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron).length}
+              quantity={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron).reduce((acc, it) => acc + it.quantity, 0)}
+              stockOnHand={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron).reduce((acc, it) => acc + it.stockOnHand, 0)}
               color="secondary"
               icon={
                 <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-zoho.svg`} />
@@ -372,6 +378,8 @@ export function OverviewAnalyticsView() {
               title="Items On Hand Over"
               percent={3.6}
               total={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0).length}
+              quantity={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0).reduce((acc, it) => acc + it.quantity, 0)}
+              stockOnHand={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0).reduce((acc, it) => acc + it.stockOnHand, 0)}
               color="error"
               icon={
                 <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-mismatch.svg`} />
@@ -395,6 +403,8 @@ export function OverviewAnalyticsView() {
               title="Items Quantity Over"
               percent={3.6}
               total={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0).length}
+              quantity={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0).reduce((acc, it) => acc + it.quantity, 0)}
+              stockOnHand={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0).reduce((acc, it) => acc + it.stockOnHand, 0)}
               color="info"
               icon={
                 <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-front-3.svg`} />
