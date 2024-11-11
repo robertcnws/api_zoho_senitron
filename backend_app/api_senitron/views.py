@@ -5,10 +5,12 @@ from django.db import transaction
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from .models import SenitronItem, SenitronItemAsset, TimelineItem
+from .models import SenitronItem, SenitronItemAsset, TimelineItem, SenitronStatus
 from api_zoho.models import ZohoInventoryItem
 from .manage_instances import create_inventory_item_instance, create_inventory_item_asset_instance
 from datetime import datetime
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 
 import requests
 import logging
@@ -20,9 +22,23 @@ import aiohttp
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-MAX_WORKERS = 5
+MAX_WORKERS = 10
 BATCH_SIZE = 500
 REQUEST_TIMEOUT = 10
+
+def create_session():
+    session = requests.Session()
+    retries = Retry(
+        total=5,
+        backoff_factor=1,
+        status_forcelist=[502, 503, 504],
+        allowed_methods=["GET", "POST"]
+    )
+    adapter = HTTPAdapter(max_retries=retries)
+    session.mount('http://', adapter)
+    session.mount('https://', adapter)
+    return session
+
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -118,6 +134,7 @@ def load_senitron_inventory_items(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def load_senitron_inventory_item_assets(request):
+    
     data = json.loads(request.body) if request.body else {}
     params = {
         'api_key': settings.API_KEY_SENITRON,
@@ -132,10 +149,22 @@ def load_senitron_inventory_item_assets(request):
             filter_kwargs['item_number'] = data['item_number']
         deleted_count, _ = SenitronItemAsset.objects.filter(**filter_kwargs).delete()
         logger.info(f"Deleted {deleted_count} SenitronItemAsset records with read=True")
-
-    url = settings.API_SENITRON_ASSETS_URL
-    session = requests.Session()
     
+    existing_statuses = SenitronStatus.objects.all()
+    status_cache = {(status.name, status.senitron_id): status for status in existing_statuses}
+    
+    item_numbers = set()
+    
+    for item in data.get('assets', []):
+        if 'item_number' in item:
+            item_numbers.add(item['item_number'])
+    
+    existing_items = SenitronItem.objects.filter(item_number__in=item_numbers)
+    item_cache = {item.item_number: item for item in existing_items}
+    
+    url = settings.API_SENITRON_ASSETS_URL
+    session = create_session()
+
     def fetch_and_save_page(page):
         page_params = params.copy()
         page_params['page'] = page
@@ -144,40 +173,32 @@ def load_senitron_inventory_item_assets(request):
             response.raise_for_status()
             items = response.json().get('assets', [])
             
-            if items:
-                save_items(items, data.get('item_number'))
-            return items
+            assets = []
+            for item_data in items:
+                asset = create_inventory_item_asset_instance(logger, item_data, status_cache, item_cache)
+                if asset:
+                    assets.append(asset)
+            
+            if assets:
+                with transaction.atomic():
+                    SenitronItemAsset.objects.bulk_create(assets, batch_size=BATCH_SIZE, ignore_conflicts=True)
+            
+            return len(items) > 0
         except requests.RequestException as e:
             logger.error(f"Error fetching page {page}: {e}")
-            return []
+            return False
     
     page = 1
-    while True:
-        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+    has_more = True
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        while has_more:
             futures = {executor.submit(fetch_and_save_page, p): p for p in range(page, page + MAX_WORKERS)}
-            results = [future.result() for future in as_completed(futures)]
-        
-        if all(not result for result in results):
-            break
+            has_more = False  
 
-        page += MAX_WORKERS
-
+            for future in as_completed(futures):
+                page_result = future.result()
+                if page_result:
+                    has_more = True  
+            page += MAX_WORKERS
+    
     return JsonResponse({'message': 'Senitron Items Assets loaded successfully'}, status=200)
-
-
-def save_items(items, item_number):
-    
-    if item_number:
-        items = [item for item in items if item.get('item_number') == item_number]
-
-    new_items = []
-    for item in items:
-        try:
-            new_item = create_inventory_item_asset_instance(logger, item)
-            new_items.append(new_item)
-        except Exception as e:
-            logger.error(f"Error processing item {item.get('id')}: {e}")
-    
-    if new_items:
-        with transaction.atomic():
-            SenitronItemAsset.objects.bulk_create(new_items, batch_size=BATCH_SIZE, ignore_conflicts=True)
