@@ -198,7 +198,7 @@ export const CustomFooter = () => {
             color="text.secondary"
             sx={{ fontSize: '12px', fontWeight: 'bold' }}
           >
-            © {currentYear} API Zoho Senitron. New Window System. All rights reserved.
+            © {currentYear} Warehouse Management System. New Window System. All rights reserved.
           </Typography>
         </Grid>
         

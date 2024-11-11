@@ -306,7 +306,7 @@ export function OverviewAnalyticsView() {
               total={itemsSenitronZoho?.length}
               quantity={itemsSenitronZoho?.reduce((acc, item) => acc + item.quantity, 0)}
               stockOnHand={itemsSenitronZoho?.reduce((acc, item) => acc + item.stockOnHand, 0)}
-              color="warning"
+              color="info"
               icon={
                 <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-senitron.svg`} />
               }
@@ -318,7 +318,7 @@ export function OverviewAnalyticsView() {
                 setOpenModal(true)
                 setModalListItems(itemsSenitronZoho)
                 setModalTitle(`Items from Sentitron (${itemsSenitronZoho?.length})`)
-                setModalButtonColor('#FF9800')
+                setModalButtonColor('#0dcaf0')
               }}
             />
           </Grid>
@@ -331,6 +331,7 @@ export function OverviewAnalyticsView() {
               total={itemsZohoSenitron?.filter(it => it.syncedWithSenitron).length}
               quantity={itemsZohoSenitron?.filter(it => it.syncedWithSenitron).reduce((acc, item) => acc + item.quantity, 0)}
               stockOnHand={itemsZohoSenitron?.filter(it => it.syncedWithSenitron).reduce((acc, item) => acc + item.stockOnHand, 0)}
+              color="success"
               icon={
                 <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-synced.svg`} />
               }
@@ -342,7 +343,7 @@ export function OverviewAnalyticsView() {
                 setOpenModal(true)
                 setModalListItems(itemsZohoSenitron?.filter(it => it.syncedWithSenitron))
                 setModalTitle(`Items SKU Matched (${itemsZohoSenitron?.filter(it => it.syncedWithSenitron).length})`)
-                setModalButtonColor('#4CAF50')
+                setModalButtonColor('success.main')
               }}
             />
           </Grid>
@@ -367,7 +368,7 @@ export function OverviewAnalyticsView() {
                 setOpenModal(true)
                 setModalListItems(itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron))
                 setModalTitle(`Items Assets 100 % (${itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron).length})`)
-                setModalButtonColor('info.main')
+                setModalButtonColor('#8E33FF')
               }}
             />
           </Grid>
@@ -405,7 +406,7 @@ export function OverviewAnalyticsView() {
               total={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0).length}
               quantity={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0).reduce((acc, it) => acc + it.quantity, 0)}
               stockOnHand={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0).reduce((acc, it) => acc + it.stockOnHand, 0)}
-              color="info"
+              color="warning"
               icon={
                 <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-front-3.svg`} />
               }
@@ -417,7 +418,7 @@ export function OverviewAnalyticsView() {
                 setOpenModal(true)
                 setModalListItems(itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0))
                 setModalTitle(`Items Quantity Over (${itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0).length})`)
-                setModalButtonColor('#F44336')
+                setModalButtonColor('warning.main')
               }}
             />
           </Grid>

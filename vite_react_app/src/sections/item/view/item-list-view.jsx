@@ -69,7 +69,7 @@ export function ItemListView() {
     { id: 'stockOnHand', label: 'On Hand', width: isMobile ? 50 : 100 },
     { id: 'quantity', label: 'Sen. Qty', width: isMobile ? 50 : 100 },
     { id: 'difference', label: 'Difference', width: isMobile ? 50 : 100 },
-    { id: 'syncedWithSenitron', label: 'Synced', width: 50 },
+    { id: 'syncedWithSenitron', label: 'Tracked', width: 50 },
     { id: '', width: 50 },
   ];
 
