@@ -38,6 +38,9 @@ export function SignOutButton({ onClose, ...other }) {
       await checkUserSession?.();
 
       onClose?.();
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('userLogged');
       router.refresh();
     } catch (error) {
       console.error(error);
@@ -50,6 +53,9 @@ export function SignOutButton({ onClose, ...other }) {
       await signOutAuth0();
 
       onClose?.();
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('userLogged');
       router.refresh();
     } catch (error) {
       console.error(error);

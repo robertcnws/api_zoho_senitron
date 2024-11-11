@@ -172,6 +172,7 @@ def load_senitron_inventory_item_assets(request):
             response = session.get(url, params=page_params, timeout=REQUEST_TIMEOUT)
             response.raise_for_status()
             items = response.json().get('assets', [])
+            items = [item for item in items if item.get('item_number') == page_params['item_number'] in item_numbers] if 'item_number' in page_params else items
             
             assets = []
             for item_data in items:

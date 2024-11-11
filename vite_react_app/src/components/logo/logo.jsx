@@ -205,9 +205,11 @@ export const Logo = forwardRef(
         {...other}
       >
         {/* {isSingle ? singleLogo : fullLogo} */}
-        <img src="/logo/logo.png" alt="logo" />
+        {localStorage.getItem('userLogged') !== null && (
+          <img src="/logo/logo.png" alt="logo" />
+        )}
       </Box>
-      
+
     );
   }
 );

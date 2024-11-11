@@ -80,6 +80,7 @@ export function AuthSplitLayout({ sx, section, children, header }) {
           title={section?.title}
           layoutQuery={layoutQuery}
           imgUrl={section?.imgUrl}
+          // imgUrl='/logo/logo.png'
           method={CONFIG.auth.method}
           subtitle={section?.subtitle}
           methods={[
@@ -110,8 +111,9 @@ export function AuthSplitLayout({ sx, section, children, header }) {
             },
           ]}
         />
+
         <Content layoutQuery={layoutQuery}>{children}</Content>
       </Main>
-    </LayoutSection>
+    </LayoutSection >
   );
 }
