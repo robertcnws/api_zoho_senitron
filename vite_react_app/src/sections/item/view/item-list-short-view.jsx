@@ -116,7 +116,7 @@ export function ItemListShortView() {
                     ...item,
                     syncedWithSenitron: !!senitronItem,
                     quantity: senitronItem?.count || 0,
-                    difference: parseInt(item.stockOnHand, 10) - parseInt(senitronItem?.count || 0, 10),
+                    difference: parseInt(senitronItem?.count || '0', 10) - parseInt(item.stockOnHand || '0', 10),
                     assets: senitronItem?.assets || [],
                 };
             });
