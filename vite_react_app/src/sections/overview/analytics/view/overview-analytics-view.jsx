@@ -377,7 +377,7 @@ export function OverviewAnalyticsView() {
           <Grid xs={12} sm={6} md={3}>
             <AnalyticsWidgetSummary
               sx={{ cursor: 'pointer' }}
-              title="SKU with missing Items"
+              title="SKU Missing Items"
               percent={3.6}
               total={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron).length}
               quantity={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron).reduce((acc, it) => acc + it.quantity, 0)}
@@ -402,7 +402,7 @@ export function OverviewAnalyticsView() {
           <Grid xs={12} sm={5} md={3}>
             <AnalyticsWidgetSummary
               sx={{ cursor: 'pointer' }}
-              title="SKU with excess Items"
+              title="SKU Excess Items"
               percent={3.6}
               total={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron).length}
               quantity={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron).reduce((acc, it) => acc + it.quantity, 0)}
