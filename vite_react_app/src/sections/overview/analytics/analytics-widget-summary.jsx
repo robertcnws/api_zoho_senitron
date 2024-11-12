@@ -95,7 +95,9 @@ export function AnalyticsWidgetSummary({
       >
         <Box sx={{ flexGrow: 1, minWidth: 112 }}>
           <Box sx={{ mb: 1, typography: 'subtitle2' }}>{title}</Box>
-          <Box sx={{ typography: 'h4' }}>{fShortenNumber(total)}</Box>
+          <Box sx={{ typography: 'h4' }}>{fShortenNumber(total)}
+            {quantity !== stockOnHand && <span style={{ fontSize: '11px' }}> (Errors: {Math.abs(quantity - stockOnHand)})</span>}
+          </Box>
           <Box sx={{ fontSize: '12px' }}>RFID Count: <b>{quantity || 0}</b></Box>
           <Box sx={{ fontSize: '12px' }}>Qty On Hand: <b>{stockOnHand || 0}</b></Box>
         </Box>

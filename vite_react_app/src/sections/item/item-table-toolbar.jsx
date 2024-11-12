@@ -13,10 +13,11 @@ import { CONFIG } from 'src/config-global';
 import axios from 'axios';
 import { LoadingContext } from 'src/auth/context/loading-context';
 import { Checkbox, FormControl, InputLabel, OutlinedInput, Select } from '@mui/material';
+import { generatePrintablePDF } from 'src/utils/printable-pdf';
 
 // ----------------------------------------------------------------------
 
-export function ItemTableToolbar({ filters, onResetPage, options }) {
+export function ItemTableToolbar({ filters, onResetPage, options, dataFiltered, title }) {
   const popover = usePopover();
 
   const { setLoading, setError, setComponent } = useContext(LoadingContext);
@@ -105,6 +106,7 @@ export function ItemTableToolbar({ filters, onResetPage, options }) {
           <MenuItem
             onClick={() => {
               popover.onClose();
+              generatePrintablePDF({ data: dataFiltered, title });
             }}
           >
             <Iconify icon="solar:printer-minimalistic-bold" />

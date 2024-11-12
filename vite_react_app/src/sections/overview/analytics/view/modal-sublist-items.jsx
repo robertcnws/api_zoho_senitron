@@ -3,6 +3,7 @@ import { Iconify } from 'src/components/iconify';
 import { ConfirmDialog } from 'src/components/custom-dialog';
 import { Label } from "src/components/label";
 import { alpha, useTheme } from '@mui/material/styles';
+import { generatePrintablePDF } from 'src/utils/printable-pdf';
 
 export function ModalSublistItems({ openModal, setOpenModal, modalDataFiltered, modalTitle, modalButtonColor, filters, handleFilterName, handleViewRow, ...other }) {
 
@@ -35,6 +36,7 @@ export function ModalSublistItems({ openModal, setOpenModal, modalDataFiltered, 
               color="inherit"
               variant="outlined"
               startIcon={<Iconify icon="solar:printer-minimalistic-bold" />}
+              onClick={() => {generatePrintablePDF({ data: modalDataFiltered, title: modalTitle })}}
             >
               Print
             </Button>
@@ -46,7 +48,7 @@ export function ModalSublistItems({ openModal, setOpenModal, modalDataFiltered, 
                   <TableCell>No.</TableCell>
                   <TableCell sx={{ width: 300 }}>SKU</TableCell>
                   <TableCell sx={{ width: 500 }}>Name</TableCell>
-                  <TableCell sx={{ width: 200 }}>Q. On Hand</TableCell>
+                  <TableCell sx={{ width: 200 }}>On Hand</TableCell>
                   <TableCell sx={{ width: 200 }}>RFID Count</TableCell>
                   <TableCell sx={{ width: 200 }}>Difference</TableCell>
                   <TableCell sx={{ width: 200 }}>Actions</TableCell>

@@ -66,9 +66,11 @@ export function ItemListShortView() {
 
     const TABLE_HEAD = [
         { id: 'sku', label: 'SKU', width: isMobile ? 30 : 80 },
-        { id: 'name', label: 'Name', width: isMobile ? 50 : 220 },
+        ...(!isMobile ? [
+            { id: 'name', label: 'Name', width: isMobile ? 50 : 220 },
+        ] : []),
         { id: 'status', label: 'Status', width: isMobile ? 50 : 100 },
-        { id: 'stockOnHand', label: 'Q. On Hand', width: isMobile ? 50 : 100 },
+        { id: 'stockOnHand', label: 'On Hand', width: isMobile ? 50 : 100 },
         { id: 'quantity', label: 'RFID Count', width: isMobile ? 50 : 100 },
         { id: 'difference', label: 'Difference', width: isMobile ? 50 : 100 },
         { id: 'syncedWithSenitron', label: 'Tracked', width: 50 },
@@ -297,6 +299,14 @@ export function ItemListShortView() {
                     filters={filters}
                     onResetPage={table.onResetPage}
                     options={{ values: ITEM_SYNC_OPTIONS.map((option) => option.label) }}
+                    dataFiltered={dataFiltered}
+                    title={filters.state.status === 'all' ? 'All SKUs' :
+                        filters.state.status === 'synced' ? 'SKU Tracked' :
+                            filters.state.status === 'matched_100' ? 'SKU Matched 100%' :
+                                filters.state.status === 'excess_items' ? 'SKU with excess items' :
+                                    filters.state.status === 'missing_items' ? 'SKU with missing items' :
+                                        filters.state.status
+                    }
                 />
 
                 {canReset && (

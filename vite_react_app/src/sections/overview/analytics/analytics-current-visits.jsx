@@ -63,7 +63,7 @@ export function AnalyticsCurrentVisits({
             sku: zItem.sku,
             stockOnHand: zItem.stockOnHand,
             quantity: sItem.senitronItem.qty,
-            difference: Math.abs(zItem.stockOnHand - sItem.senitronItem.qty),
+            difference: parseInt(sItem.senitronItem.qty, 10) - parseInt(zItem.stockOnHand, 10),
             percentage: match,
           });
         }

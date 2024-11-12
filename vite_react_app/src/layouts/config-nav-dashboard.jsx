@@ -63,7 +63,7 @@ export const navData = [
     subheader: 'Management',
     items: [
       {
-        title: 'Item',
+        title: 'SKUs',
         path: paths.dashboard.item.root,
         icon: ICONS.item,
         children: [

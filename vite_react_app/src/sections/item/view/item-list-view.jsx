@@ -51,7 +51,7 @@ import { ItemTableFiltersResult } from '../item-table-filters-result';
 
 // ----------------------------------------------------------------------
 
-const STATUS_OPTIONS = [...ITEM_STATUS_OPTIONS].concat([
+const STATUS_OPTIONS = [{ value: 'all', label: 'All SKUs' }, ...ITEM_STATUS_OPTIONS].concat([
   { value: 'synced', label: 'SKU Tracked' },
   { value: 'matched_100', label: 'SKU Matched 100%' },
   { value: 'excess_items', label: 'SKU with excess items' },
@@ -66,7 +66,9 @@ export function ItemListView() {
 
   const TABLE_HEAD = [
     { id: 'sku', label: 'SKU', width: isMobile ? 30 : 80 },
-    { id: 'name', label: 'Name', width: isMobile ? 50 : 220 },
+    ...(!isMobile ? [
+      { id: 'name', label: 'Name', width: isMobile ? 50 : 220 },
+    ] : []),
     { id: 'status', label: 'Status', width: isMobile ? 50 : 100 },
     { id: 'stockOnHand', label: 'On Hand', width: isMobile ? 50 : 100 },
     { id: 'quantity', label: 'Sen. Qty', width: isMobile ? 50 : 100 },
@@ -87,7 +89,7 @@ export function ItemListView() {
 
   const [tableData, setTableData] = useState([]);
 
-  const filters = useSetState({ name: '', syncedWithSenitron: [], status: localStorage.getItem('itemStatus') || 'synced' });
+  const filters = useSetState({ name: '', syncedWithSenitron: [], status: localStorage.getItem('itemStatus') || 'all' });
 
 
   useEffect(() => {
@@ -174,7 +176,7 @@ export function ItemListView() {
   const dataInPage = rowInPage(dataFiltered, table.page, table.rowsPerPage);
 
   const canReset =
-    !!filters.state.name || filters.state.status !== 'synced' || filters.state.syncedWithSenitron.length > 0;
+    !!filters.state.name || filters.state.status !== 'all' || filters.state.syncedWithSenitron.length > 0;
 
   const notFound = (!dataFiltered.length && canReset) || !dataFiltered.length;
 
@@ -276,15 +278,15 @@ export function ItemListView() {
             { name: 'Item', href: paths.dashboard.item.root },
             { name: 'List' },
           ]}
-          action={
-            <Button
-              color="inherit"
-              variant="outlined"
-              startIcon={<Iconify icon="solar:printer-minimalistic-bold" />}
-            >
-              Print
-            </Button>
-          }
+          // action={
+          //   <Button
+          //     color="inherit"
+          //     variant="outlined"
+          //     startIcon={<Iconify icon="solar:printer-minimalistic-bold" />}
+          //   >
+          //     Print
+          //   </Button>
+          // }
           sx={{ mb: { xs: 3, md: 5 } }}
         />
 
@@ -307,7 +309,7 @@ export function ItemListView() {
                 icon={
                   <Label
                     variant={
-                      ((tab.value === 'synced' || tab.value === filters.state.status) && 'filled') ||
+                      ((tab.value === 'all' || tab.value === filters.state.status) && 'filled') ||
                       'soft'
                     }
                     color={
@@ -342,6 +344,14 @@ export function ItemListView() {
             filters={filters}
             onResetPage={table.onResetPage}
             options={{ values: ITEM_SYNC_OPTIONS.map((option) => option.label) }}
+            dataFiltered={dataFiltered}
+            title={filters.state.status === 'all' ? 'All SKUs' :
+              filters.state.status === 'synced' ? 'SKU Tracked' :
+                filters.state.status === 'matched_100' ? 'SKU Matched 100%' :
+                  filters.state.status === 'excess_items' ? 'SKU with excess items' :
+                    filters.state.status === 'missing_items' ? 'SKU with missing items' :
+                      filters.state.status
+            }
           />
 
           {canReset && (

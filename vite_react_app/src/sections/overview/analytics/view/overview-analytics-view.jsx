@@ -58,6 +58,8 @@ export function OverviewAnalyticsView() {
   const [percentage, setPercentage] = useState(null);
   const [totalZohoQty, setTotalZohoQty] = useState(null);
   const [totalSenitronQty, setTotalSenitronQty] = useState(null);
+  const [totalErrors, setTotalErrors] = useState(null);
+  const [totalRFIDCorrect, setTotalRFIDCorrect] = useState(null);
 
   const [categories, setCategories] = useState(null);
   const [series, setSeries] = useState(null);
@@ -158,10 +160,10 @@ export function OverviewAnalyticsView() {
       }
       const tZohoQty = iSynced?.reduce((acc, item) => acc + item.stockOnHand, 0);
       setTotalZohoQty(tZohoQty);
-      const max = Math.max(tZohoQty, tSenitronQty);
-      const min = Math.min(tZohoQty, tSenitronQty);
-      const match = Math.floor((min / max) * 100) || 0;
-      setPercentage(match);
+      // const max = Math.max(tZohoQty, tSenitronQty);
+      // const min = Math.min(tZohoQty, tSenitronQty);
+      // const match = Math.floor((min / max) * 100) || 0;
+      // setPercentage(match);
     }
   }, [itemsZohoData, senitronItems]);
 
@@ -185,7 +187,7 @@ export function OverviewAnalyticsView() {
     if (itemsZohoData && senitronItems) {
       const zohoSenitronItems = itemsZohoData.map(item => {
         const senitronItem = senitronItems.find((sItem) => String(sItem?.itemNumber) === String(item?.itemId)) || {};
-  
+
         return {
           ...item,
           quantity: senitronItem.count || 0,
@@ -195,10 +197,10 @@ export function OverviewAnalyticsView() {
       });
       const sortedItemsZohoSenitron = sortBySku(zohoSenitronItems);
       setItemsZohoSenitron(sortedItemsZohoSenitron);
-  
+
       const senitronZohoItems = senitronItems.map(item => {
         const zohoItem = itemsZohoData.find((zItem) => String(zItem?.itemId) === String(item?.itemNumber)) || {};
-  
+
         return {
           ...item,
           itemId: zohoItem.itemId || '',
@@ -214,7 +216,7 @@ export function OverviewAnalyticsView() {
       setItemsSenitronZoho(sortedItemsSenitronZoho);
     }
   }, [itemsZohoData, senitronItems]);
-  
+
 
 
   useEffect(() => {
@@ -243,6 +245,36 @@ export function OverviewAnalyticsView() {
       setItemsTimelineData(timelineItems);
     }
   }, [timelineItems]);
+
+
+  useEffect(() => {
+    const errors = Math.abs(
+      parseInt(itemsZohoSenitron?.filter(
+        it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron).reduce(
+          (acc, it) => acc + it.quantity, 0
+        ), 10) - parseInt(itemsZohoSenitron?.filter(
+          it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron).reduce(
+            (acc, it) => acc + it.stockOnHand, 0), 10)
+    ) + Math.abs(
+      parseInt(itemsZohoSenitron?.filter(
+        it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron).reduce(
+          (acc, it) => acc + it.quantity, 0
+        ), 10) - parseInt(itemsZohoSenitron?.filter(
+          it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron
+        ).reduce(
+          (acc, it) => acc + it.stockOnHand, 0
+        ), 10)
+    );
+
+    const tSenitronQty = itemsZohoSenitron?.filter(it => it.syncedWithSenitron).reduce((acc, item) => acc + item.quantity, 0);
+
+    const tOnHand = itemsZohoSenitron?.filter(it => it.syncedWithSenitron).reduce((acc, item) => acc + item.stockOnHand, 0);
+
+    setTotalErrors(errors);
+    setTotalRFIDCorrect(tSenitronQty - errors);
+    setPercentage(Math.floor(((tSenitronQty - errors) / tOnHand) * 100) || 0);
+
+  }, [itemsZohoSenitron]);
 
 
   const handleViewRow = useCallback(
@@ -369,7 +401,7 @@ export function OverviewAnalyticsView() {
                 setModalListItems(itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron))
                 setModalTitle(`SKU Matched 100% (${itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron).length})`)
                 // setModalButtonColor('#8E33FF')
-                setModalButtonColor('info.main')  
+                setModalButtonColor('info.main')
               }}
             />
           </Grid>
@@ -448,12 +480,16 @@ export function OverviewAnalyticsView() {
                           <Table size='small'>
                             <TableBody>
                               <TableRow>
-                                <TableCell>Total Qty On Hand:</TableCell>
-                                <TableCell><b>{totalZohoQty}</b></TableCell>
+                                <TableCell>Total On Hand:</TableCell>
+                                <TableCell><b>{totalZohoQty || 0}</b></TableCell>
+                                <TableCell>Total Errors:</TableCell>
+                                <TableCell><b>{totalErrors || 0}</b></TableCell>
                               </TableRow>
                               <TableRow>
                                 <TableCell>Total RFID Count:</TableCell>
-                                <TableCell><b>{totalSenitronQty}</b></TableCell>
+                                <TableCell><b>{totalSenitronQty || 0}</b></TableCell>
+                                <TableCell>Total RFID Correct:</TableCell>
+                                <TableCell><b>{totalSenitronQty - totalErrors || 0}</b></TableCell>
                               </TableRow>
                             </TableBody>
                           </Table>
