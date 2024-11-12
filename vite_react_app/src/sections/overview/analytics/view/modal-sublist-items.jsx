@@ -15,8 +15,8 @@ export function ModalSublistItems({ openModal, setOpenModal, modalDataFiltered, 
       title={modalTitle}
       maxWidth='lg'
       content={
-        <Box sx={{ width: '100%', bgcolor: 'background.paper', p: 2 }}>
-          <Stack direction="row" alignItems="center" spacing={2} flexGrow={1} sx={{ width: 1 }}>
+        <Box sx={{ width: '100%', bgcolor: 'background.paper', p: 1 }}>
+          <Stack direction="row" alignItems="center" spacing={1} flexGrow={1} sx={{ width: 1 }}>
             <TextField
               fullWidth
               value={filters.state.name}
@@ -30,6 +30,14 @@ export function ModalSublistItems({ openModal, setOpenModal, modalDataFiltered, 
                 ),
               }}
             />
+            <Button
+              style={{ height: '50px' }}
+              color="inherit"
+              variant="outlined"
+              startIcon={<Iconify icon="solar:printer-minimalistic-bold" />}
+            >
+              Print
+            </Button>
           </Stack>
           <TableContainer sx={{ maxHeight: 440 }}>
             <Table size='small' stickyHeader>
@@ -38,9 +46,9 @@ export function ModalSublistItems({ openModal, setOpenModal, modalDataFiltered, 
                   <TableCell>No.</TableCell>
                   <TableCell sx={{ width: 300 }}>SKU</TableCell>
                   <TableCell sx={{ width: 500 }}>Name</TableCell>
-                  <TableCell sx={{ width: 200 }}>On Hand</TableCell>
-                  <TableCell sx={{ width: 200 }}>Quantity</TableCell>
-                  <TableCell sx={{ width: 200 }}>Diff</TableCell>
+                  <TableCell sx={{ width: 200 }}>Q. On Hand</TableCell>
+                  <TableCell sx={{ width: 200 }}>RFID Count</TableCell>
+                  <TableCell sx={{ width: 200 }}>Difference</TableCell>
                   <TableCell sx={{ width: 200 }}>Actions</TableCell>
                 </TableRow>
               </TableHead>

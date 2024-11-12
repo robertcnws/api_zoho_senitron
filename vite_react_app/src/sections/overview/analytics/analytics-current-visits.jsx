@@ -95,12 +95,12 @@ export function AnalyticsCurrentVisits({
           const list = handleViewSublists(dataPointIndex);
     
           setModalTitle(
-            dataPointIndex === 0 ? `${list.length} Items (Quantity Matched 100 %)` :
-              dataPointIndex === 1 ? `${list.length} Items (Quantity Matched between 90 % and 100 %)` :
-                dataPointIndex === 2 ? `${list.length} Items (Quantity Matched between 80 % and 90 %)` :
-                  dataPointIndex === 3 ? `${list.length} Items (Quantity Matched between 70 % and 80 %)` :
-                    dataPointIndex === 4 ? `${list.length} Items (Quantity Matched between 60 % and 70 %)` :
-                      dataPointIndex === 5 ? `${list.length} Items (Quantity Matched between 50 % and 60 %)` : `${list.length} Items (Quantity Matched less than 50 %)`
+            dataPointIndex === 0 ? `${list.length} SKUs (RFID and SKU Count Matched 100 %)` :
+              dataPointIndex === 1 ? `${list.length} SKUs (RFID and SKU Count Matched between 90 % and 100 %)` :
+                dataPointIndex === 2 ? `${list.length} SKUs (RFID and SKU Count Matched between 80 % and 90 %)` :
+                  dataPointIndex === 3 ? `${list.length} SKUs (RFID and SKU Count Matched between 70 % and 80 %)` :
+                    dataPointIndex === 4 ? `${list.length} SKUs (RFID and SKU Count Matched between 60 % and 70 %)` :
+                      dataPointIndex === 5 ? `${list.length} SKUs (RFID and SKU Count Matched between 50 % and 60 %)` : `${list.length} SKUs (RFID and SKU Count Matched less than 50 %)`
           );
     
           setModalButtonColor(

@@ -206,7 +206,7 @@ export const Logo = forwardRef(
       >
         {/* {isSingle ? singleLogo : fullLogo} */}
         {/* {localStorage.getItem('userLogged') !== null && ( */}
-        <img src="/logo/logo-red.png" alt="logo" style={{ width: '70%'}}/>
+        <img src="/logo/logo-red.png" alt="logo" style={{ width: '50%', height: '70%'}}/>
         {/* )} */}
       </Box>
 

@@ -118,6 +118,7 @@ export const ITEM_STATUS_OPTIONS = [
 ];
 
 export const ITEM_STATUS_SHORT_OPTIONS = [
+  // { value: 'all', label: 'All Items' }, 
   // { value: 'active', label: 'Items Active' },
   // { value: 'confirmation_pending', label: 'Items in Confirmation Pending' },
   // { value: 'inactive', label: 'Items Inactive' },

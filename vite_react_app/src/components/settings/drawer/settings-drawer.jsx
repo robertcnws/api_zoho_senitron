@@ -119,7 +119,8 @@ export function SettingsDrawer({
       value={settings.primaryColor}
       onClickOption={(newValue) => settings.onUpdateField('primaryColor', newValue)}
       options={[
-        { name: 'default', value: COLORS.primary.main },
+        // { name: 'default', value: COLORS.primary.main },
+        { name: 'default', value: PRIMARY_COLOR.red.main },
         { name: 'cyan', value: PRIMARY_COLOR.cyan.main },
         { name: 'purple', value: PRIMARY_COLOR.purple.main },
         { name: 'blue', value: PRIMARY_COLOR.blue.main },

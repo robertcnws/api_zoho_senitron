@@ -192,7 +192,7 @@ export const CustomFooter = () => {
       }}
     >
       <Grid container spacing={2} justifyContent="center">
-        <Grid item xs={12} sm={6}>
+        <Grid item xs={12} sm={12}>
           <Typography
             variant="body2"
             color="text.secondary"
@@ -202,7 +202,7 @@ export const CustomFooter = () => {
           </Typography>
         </Grid>
         
-        <Grid item xs={12} sm={6}>
+        {/* <Grid item xs={12} sm={6}>
           <Stack
             direction="row"
             spacing={1}
@@ -219,7 +219,7 @@ export const CustomFooter = () => {
               </IconButton>
             ))}
           </Stack>
-        </Grid>
+        </Grid> */}
       </Grid>
     </Box>
   )

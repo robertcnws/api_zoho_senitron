@@ -51,9 +51,11 @@ import { ItemTableFiltersResult } from '../item-table-filters-result';
 
 // ----------------------------------------------------------------------
 
-const STATUS_OPTIONS = [{ value: 'all', label: 'All' }, ...ITEM_STATUS_OPTIONS].concat([
-  { value: 'synced', label: 'Tracked Inventory Items' },
-  { value: 'not_synced', label: 'Not Tracked Inventory Items' },
+const STATUS_OPTIONS = [...ITEM_STATUS_OPTIONS].concat([
+  { value: 'synced', label: 'SKU Tracked' },
+  { value: 'matched_100', label: 'SKU Matched 100%' },
+  { value: 'excess_items', label: 'SKU with excess items' },
+  { value: 'missing_items', label: 'SKU with missing items' },
 ]);
 
 // ----------------------------------------------------------------------
@@ -85,7 +87,7 @@ export function ItemListView() {
 
   const [tableData, setTableData] = useState([]);
 
-  const filters = useSetState({ name: '', syncedWithSenitron: [], status: localStorage.getItem('itemStatus') || 'all' });
+  const filters = useSetState({ name: '', syncedWithSenitron: [], status: localStorage.getItem('itemStatus') || 'synced' });
 
 
   useEffect(() => {
@@ -172,7 +174,7 @@ export function ItemListView() {
   const dataInPage = rowInPage(dataFiltered, table.page, table.rowsPerPage);
 
   const canReset =
-    !!filters.state.name || filters.state.status !== 'all' || filters.state.syncedWithSenitron.length > 0;
+    !!filters.state.name || filters.state.status !== 'synced' || filters.state.syncedWithSenitron.length > 0;
 
   const notFound = (!dataFiltered.length && canReset) || !dataFiltered.length;
 
@@ -274,16 +276,15 @@ export function ItemListView() {
             { name: 'Item', href: paths.dashboard.item.root },
             { name: 'List' },
           ]}
-          // action={
-          //   <Button
-          //     component={RouterLink}
-          //     href={paths.dashboard.user.new}
-          //     variant="contained"
-          //     startIcon={<Iconify icon="mingcute:add-line" />}
-          //   >
-          //     New user
-          //   </Button>
-          // }
+          action={
+            <Button
+              color="inherit"
+              variant="outlined"
+              startIcon={<Iconify icon="solar:printer-minimalistic-bold" />}
+            >
+              Print
+            </Button>
+          }
           sx={{ mb: { xs: 3, md: 5 } }}
         />
 
@@ -306,23 +307,28 @@ export function ItemListView() {
                 icon={
                   <Label
                     variant={
-                      ((tab.value === 'all' || tab.value === filters.state.status) && 'filled') ||
+                      ((tab.value === 'synced' || tab.value === filters.state.status) && 'filled') ||
                       'soft'
                     }
                     color={
-                      (tab.value === 'active' && 'success') ||
-                      (tab.value === 'confirmation_pending' && 'warning') ||
-                      (tab.value === 'inactive' && 'error') ||
-                      (tab.value === 'synced' && 'info') ||
-                      (tab.value === 'not_synced' && 'default') ||
+                      (tab.value === 'synced' && 'success') ||
+                      (tab.value === 'missing_items' && 'warning') ||
+                      (tab.value === 'excess_items' && 'error') ||
+                      (tab.value === 'matched_100' && 'info') ||
                       'default'
                     }
                   >
                     {tab.value === 'synced' ?
-                      tableData.filter((user) => user.syncedWithSenitron).length :
-                      tab.value === 'not_synced' ?
-                        tableData.filter((user) => !user.syncedWithSenitron).length : tab.value === 'all' ?
-                          tableData.length : tableData.filter((user) => user.status === tab.value).length}
+                      tableData.filter((it) => it.syncedWithSenitron).length :
+                      tab.value === 'missing_items' ?
+                        tableData.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron).length :
+                        tab.value === 'excess_items' ?
+                          tableData.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron).length :
+                          tab.value === 'matched_100' ?
+                            tableData.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron).length :
+                            tab.value === 'all' ?
+                              tableData.length :
+                              tableData.filter((it) => it.status === tab.value).length}
                     {/* {['active', 'confirmation_pending', 'inactive'].includes(tab.value)
                       ? tableData.filter((user) => user.status === tab.value).length
                       : tableData.length} */}
@@ -482,12 +488,17 @@ function applyFilter({ inputData, comparator, filters }) {
   }
 
   if (status !== 'all') {
-    if (status !== 'synced' && status !== 'not_synced') {
-      inputData = inputData.filter((item) => item.status === status);
-    } else if (status === 'synced') {
+    // if (status !== 'synced' && status !== 'not_synced') {
+    //     inputData = inputData.filter((item) => item.status === status);
+    // } else 
+    if (status === 'synced') {
       inputData = inputData.filter((item) => item.syncedWithSenitron === true);
-    } else if (status === 'not_synced') {
-      inputData = inputData.filter((item) => item.syncedWithSenitron === false);
+    } else if (status === 'matched_100') {
+      inputData = inputData.filter(item => parseInt(item.stockOnHand, 10) - parseInt(item.quantity, 10) === 0 && item.syncedWithSenitron);
+    } else if (status === 'excess_items') {
+      inputData = inputData.filter(item => parseInt(item.stockOnHand, 10) - parseInt(item.quantity, 10) > 0 && item.syncedWithSenitron);
+    } else if (status === 'missing_items') {
+      inputData = inputData.filter(item => parseInt(item.stockOnHand, 10) - parseInt(item.quantity, 10) < 0 && item.syncedWithSenitron);
     }
   }
 

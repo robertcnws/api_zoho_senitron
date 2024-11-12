@@ -298,7 +298,7 @@ export function OverviewAnalyticsView() {
 
         <Grid container spacing={3}>
 
-          <Grid xs={12} sm={6} md={2.4}>
+          {/* <Grid xs={12} sm={6} md={2.4}>
             <AnalyticsWidgetSummary
               sx={{ cursor: 'pointer' }}
               title="Items from Senitron"
@@ -321,12 +321,12 @@ export function OverviewAnalyticsView() {
                 setModalButtonColor('#0dcaf0')
               }}
             />
-          </Grid>
+          </Grid> */}
 
-          <Grid xs={12} sm={6} md={2.4}>
+          <Grid xs={12} sm={6} md={3}>
             <AnalyticsWidgetSummary
               sx={{ cursor: 'pointer' }}
-              title="Items SKU Matched"
+              title="SKU Tracked"
               percent={2.6}
               total={itemsZohoSenitron?.filter(it => it.syncedWithSenitron).length}
               quantity={itemsZohoSenitron?.filter(it => it.syncedWithSenitron).reduce((acc, item) => acc + item.quantity, 0)}
@@ -342,21 +342,21 @@ export function OverviewAnalyticsView() {
               onClick={() => {
                 setOpenModal(true)
                 setModalListItems(itemsZohoSenitron?.filter(it => it.syncedWithSenitron))
-                setModalTitle(`Items SKU Matched (${itemsZohoSenitron?.filter(it => it.syncedWithSenitron).length})`)
+                setModalTitle(`SKU Tracked (${itemsZohoSenitron?.filter(it => it.syncedWithSenitron).length})`)
                 setModalButtonColor('success.main')
               }}
             />
           </Grid>
 
-          <Grid xs={12} sm={6} md={2.4}>
+          <Grid xs={12} sm={6} md={3}>
             <AnalyticsWidgetSummary
               sx={{ cursor: 'pointer' }}
-              title="Items Assets 100 %"
+              title="SKU Matched 100%"
               percent={-0.1}
               total={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron).length}
               quantity={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron).reduce((acc, it) => acc + it.quantity, 0)}
               stockOnHand={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron).reduce((acc, it) => acc + it.stockOnHand, 0)}
-              color="secondary"
+              color="info"
               icon={
                 <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-zoho.svg`} />
               }
@@ -367,20 +367,21 @@ export function OverviewAnalyticsView() {
               onClick={() => {
                 setOpenModal(true)
                 setModalListItems(itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron))
-                setModalTitle(`Items Assets 100 % (${itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron).length})`)
-                setModalButtonColor('#8E33FF')
+                setModalTitle(`SKU Matched 100% (${itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron).length})`)
+                // setModalButtonColor('#8E33FF')
+                setModalButtonColor('info.main')  
               }}
             />
           </Grid>
 
-          <Grid xs={12} sm={6} md={2.4}>
+          <Grid xs={12} sm={6} md={3}>
             <AnalyticsWidgetSummary
               sx={{ cursor: 'pointer' }}
-              title="Items On Hand Over"
+              title="SKU with missing Items"
               percent={3.6}
-              total={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0).length}
-              quantity={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0).reduce((acc, it) => acc + it.quantity, 0)}
-              stockOnHand={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0).reduce((acc, it) => acc + it.stockOnHand, 0)}
+              total={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron).length}
+              quantity={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron).reduce((acc, it) => acc + it.quantity, 0)}
+              stockOnHand={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron).reduce((acc, it) => acc + it.stockOnHand, 0)}
               color="error"
               icon={
                 <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-mismatch.svg`} />
@@ -391,21 +392,21 @@ export function OverviewAnalyticsView() {
               }}
               onClick={() => {
                 setOpenModal(true)
-                setModalListItems(itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0))
-                setModalTitle(`Items On Hand Over (${itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0).length})`)
+                setModalListItems(itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron))
+                setModalTitle(`SKU with missing Items (${itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron).length})`)
                 setModalButtonColor('#F44336')
               }}
             />
           </Grid>
 
-          <Grid xs={12} sm={5} md={2.4}>
+          <Grid xs={12} sm={5} md={3}>
             <AnalyticsWidgetSummary
               sx={{ cursor: 'pointer' }}
-              title="Items Quantity Over"
+              title="SKU with excess Items"
               percent={3.6}
-              total={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0).length}
-              quantity={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0).reduce((acc, it) => acc + it.quantity, 0)}
-              stockOnHand={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0).reduce((acc, it) => acc + it.stockOnHand, 0)}
+              total={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron).length}
+              quantity={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron).reduce((acc, it) => acc + it.quantity, 0)}
+              stockOnHand={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron).reduce((acc, it) => acc + it.stockOnHand, 0)}
               color="warning"
               icon={
                 <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-front-3.svg`} />
@@ -416,8 +417,8 @@ export function OverviewAnalyticsView() {
               }}
               onClick={() => {
                 setOpenModal(true)
-                setModalListItems(itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0))
-                setModalTitle(`Items Quantity Over (${itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0).length})`)
+                setModalListItems(itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron))
+                setModalTitle(`SKU with excess Items (${itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron).length})`)
                 setModalButtonColor('warning.main')
               }}
             />
@@ -437,7 +438,7 @@ export function OverviewAnalyticsView() {
               }}
             /> */}
               <Card>
-                <CardHeader title="Total Matched Items" />
+                <CardHeader title="SKU Tracked totals" />
                 <Stack direction="column" sx={{ p: 0, textAlign: 'center' }} alignItems="center">
                   {percentage > 0 ? (
                     <>
@@ -447,11 +448,11 @@ export function OverviewAnalyticsView() {
                           <Table size='small'>
                             <TableBody>
                               <TableRow>
-                                <TableCell>Total Zoho Quantity:</TableCell>
+                                <TableCell>Total Qty On Hand:</TableCell>
                                 <TableCell><b>{totalZohoQty}</b></TableCell>
                               </TableRow>
                               <TableRow>
-                                <TableCell>Total Senitron Quantity:</TableCell>
+                                <TableCell>Total RFID Count:</TableCell>
                                 <TableCell><b>{totalSenitronQty}</b></TableCell>
                               </TableRow>
                             </TableBody>
@@ -497,7 +498,7 @@ export function OverviewAnalyticsView() {
                 handleFilterName={handleFilterName}
                 filters={filters}
               /> */}
-              <AnalyticsCurrentVisits title="Quantity Match"
+              <AnalyticsCurrentVisits title="SKUs and RFID count match"
                 subheader="Number of items by percentage range"
                 element="items"
                 chart={{
@@ -594,8 +595,7 @@ function applyFilter({ inputData, filters }) {
     inputData = inputData?.filter(
       (item) => item.name.trim().toLowerCase().indexOf(name.trim().toLowerCase()) !== -1 ||
         item.sku.trim().toLowerCase().indexOf(name.trim().toLowerCase()) !== -1 ||
-        item.itemId.trim().toLowerCase().indexOf(name.trim().toLowerCase()) !== -1 ||
-        item.itemNumber.trim().toLowerCase().indexOf(name.trim().toLowerCase()) !== -1
+        item.itemId.trim().toLowerCase().indexOf(name.trim().toLowerCase()) !== -1
     );
   }
 

@@ -14,7 +14,7 @@ export function ItemTableFiltersResult({ filters, onResetPage, totalResults, sx 
 
   const handleRemoveStatus = useCallback(() => {
     onResetPage();
-    filters.setState({ status: 'all' });
+    filters.setState({ status: 'synced' });
   }, [filters, onResetPage]);
 
   const handleRemoveSynced = useCallback(
@@ -31,7 +31,7 @@ export function ItemTableFiltersResult({ filters, onResetPage, totalResults, sx 
   const handleReset = useCallback(() => {
     onResetPage();
     filters.onResetState();
-    filters.setState({ status: 'all' });
+    filters.setState({ status: 'synced' });
   }, [filters, onResetPage]);
 
   return (
