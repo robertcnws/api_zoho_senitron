@@ -57,8 +57,8 @@ export function ItemTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
         </TableCell> */}
 
         <TableCell sx={{ whiteSpace: 'nowrap' }} onClick={() => onViewRow(row.itemId)}>{row.sku}</TableCell>
-
-        <TableCell sx={{ whiteSpace: 'nowrap' }} onClick={() => onViewRow(row.itemId)}>{row.name}</TableCell>
+        
+        {!isMobile && <TableCell sx={{ whiteSpace: 'nowrap' }} onClick={() => onViewRow(row.itemId)}>{row.name}</TableCell>}
 
         <TableCell onClick={() => onViewRow(row.itemId)}>
           <Label

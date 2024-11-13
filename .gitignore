@@ -34,4 +34,7 @@
 /.vscode
 *.env
 
+*.crt
+*.pem   
+
 

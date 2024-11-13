@@ -1,3 +1,4 @@
+import React, { useContext } from 'react';
 import { Box, Button, TextField, Stack, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, InputAdornment } from "@mui/material";
 import { usePopover, CustomPopover } from 'src/components/custom-popover';
 import IconButton from '@mui/material/IconButton';
@@ -8,6 +9,7 @@ import { ConfirmDialog } from 'src/components/custom-dialog';
 import { Label } from "src/components/label";
 import { alpha, useTheme } from '@mui/material/styles';
 import { generatePrintablePDF } from 'src/utils/printable-pdf';
+import { LoadingContext } from 'src/auth/context/loading-context';
 import ExportCSV from "src/utils/export-csv";
 
 export function ModalSublistItems({ 
@@ -26,6 +28,7 @@ export function ModalSublistItems({
   const theme = useTheme();
   const popover = usePopover();
 
+  const { isMobile } = useContext(LoadingContext);
 
   return (
     <>
@@ -70,7 +73,7 @@ export function ModalSublistItems({
                   <TableRow>
                     <TableCell>No.</TableCell>
                     <TableCell sx={{ width: 300 }}>SKU</TableCell>
-                    <TableCell sx={{ width: 500 }}>Name</TableCell>
+                    {!isMobile && <TableCell sx={{ width: 500 }}>Name</TableCell>}
                     <TableCell sx={{ width: 200 }}>On Hand</TableCell>
                     <TableCell sx={{ width: 200 }}>RFID Count</TableCell>
                     <TableCell sx={{ width: 200 }}>Difference</TableCell>
@@ -86,7 +89,7 @@ export function ModalSublistItems({
                       <TableCell colSpan={!item.sku ? 2 : 0} sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }}>
                         {item.sku || (item.itemNumber ? `Item ID: ${item.itemNumber}` : `Item Name: ${item.name}`)}
                       </TableCell>
-                      {item.sku &&
+                      {!isMobile && item.sku &&
                         <TableCell>{item.name}</TableCell>
                       }
                       <TableCell sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }}>
