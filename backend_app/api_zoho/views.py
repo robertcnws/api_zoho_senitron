@@ -437,11 +437,7 @@ def load_inventory_items(request):
                         date_actual_stock_on_hand=new_item.last_modified_time or new_item.created_time,
                         zoho_item=new_item,
                         senitron_item=senitron_item,
-<<<<<<< HEAD
                         text=f"SKU: {new_item.sku or '-'} stock on hand changed from {int(prev_item.stock_on_hand)} to {int(new_item.stock_on_hand)}"
-=======
-                        text=f"SKU: {new_item.sku or '-'} (ID: {new_item.item_id}) stock on hand changed from {prev_item.stock_on_hand} to {new_item.stock_on_hand}"
->>>>>>> 59728d9a4d30ebe6067483c471a1d03414bd0d1c
                     )
                 )
         else:
@@ -455,11 +451,7 @@ def load_inventory_items(request):
                     date_actual_status_zoho=new_item.last_modified_time or new_item.created_time,
                     zoho_item=new_item,
                     senitron_item=senitron_item,
-<<<<<<< HEAD
                     text=f"SKU: {new_item.sku or '-'} created with status {new_item.status}"
-=======
-                    text=f"SKU: {new_item.sku or '-'} (ID: {new_item.item_id}) created with status {new_item.status}"
->>>>>>> 59728d9a4d30ebe6067483c471a1d03414bd0d1c
                 )
             )
 
