@@ -3,25 +3,19 @@ import { useMemo } from 'react';
 import axios from 'axios';
 import { CONFIG } from 'src/config-global';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { isValidPhoneNumber } from 'react-phone-number-input/input';
 
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Stack from '@mui/material/Stack';
-import Button from '@mui/material/Button';
-import Switch from '@mui/material/Switch';
 import Grid from '@mui/material/Unstable_Grid2';
-import Typography from '@mui/material/Typography';
 import LoadingButton from '@mui/lab/LoadingButton';
-import FormControlLabel from '@mui/material/FormControlLabel';
 
 import { paths } from 'src/routes/paths';
 import { useRouter } from 'src/routes/hooks';
 
-import { fData } from 'src/utils/format-number';
 
-import { Label } from 'src/components/label';
 import { toast } from 'src/components/snackbar';
 import { Form, Field, schemaHelper } from 'src/components/hook-form';
 import { MenuItem } from '@mui/material';
@@ -39,22 +33,22 @@ export function UserNewEditForm({ currentUser }) {
     //   message: { required_error: 'Avatar is required!' },
     // }),
     username: zod.string().min(1, { message: 'Username is required!' }),
-    firstName: zod.string().min(1, { message: 'First name is required!' }),
-    lastName: zod.string().min(1, { message: 'Last name is required!' }),
+    // firstName: zod.string().min(1, { message: 'First name is required!' }),
+    // lastName: zod.string().min(1, { message: 'Last name is required!' }),
     email: zod
       .string()
       .min(1, { message: 'Email is required!' })
       .email({ message: 'Email must be a valid email address!' }),
     phoneNumber: schemaHelper.phoneNumber({ isValidPhoneNumber }),
-    country: schemaHelper.objectOrNull({
-      message: { required_error: 'Country is required!' },
-    }),
-    address: zod.string().min(1, { message: 'Address is required!' }),
-    gender: zod.string().min(1, { message: 'Gender is required!' }),
-    state: zod.string().min(1, { message: 'State is required!' }),
-    city: zod.string().min(1, { message: 'City is required!' }),
+    // country: schemaHelper.objectOrNull({
+    //   message: { required_error: 'Country is required!' },
+    // }),
+    // address: zod.string().min(1, { message: 'Address is required!' }),
+    // gender: zod.string().min(1, { message: 'Gender is required!' }),
+    // state: zod.string().min(1, { message: 'State is required!' }),
+    // city: zod.string().min(1, { message: 'City is required!' }),
     role: zod.string().min(1, { message: 'Role is required!' }),
-    zipCode: zod.string().min(1, { message: 'Zip code is required!' }),
+    // zipCode: zod.string().min(1, { message: 'Zip code is required!' }),
     password: currentUser ? zod.string() : zod.string().min(1, { message: 'Password is required!' }),
     confirmPassword: currentUser ? zod.string() : zod.string().min(1, { message: 'Confirm Password is required!' }),
 
@@ -94,24 +88,19 @@ export function UserNewEditForm({ currentUser }) {
 
   const {
     reset,
-    watch,
-    control,
     handleSubmit,
     formState: { isSubmitting },
   } = methods;
 
-  const values = watch();
 
   const onSubmit = handleSubmit(async (data) => {
     
     try {
       const id = currentUser ? currentUser.id : 0;
-      const response = await axios.post(`${CONFIG.apiUrl}/api_zoho/manage_user/${id}/`, data);
-      console.log('Respuesta del servidor:', response.data);
+      await axios.post(`${CONFIG.apiUrl}/api_zoho/manage_user/${id}/`, data);
       reset();
       toast.success(currentUser ? 'Update success!' : 'Create success!');
       router.push(paths.dashboard.user.list);
-      console.info('DATA', data);
     } catch (error) {
       console.error(error);
     }
@@ -234,11 +223,11 @@ export function UserNewEditForm({ currentUser }) {
             >
               <Field.Text name="username" label="Username" />
               <Field.Text name="email" label="Email address" />
-              <Field.Text name="firstName" label="First name" />
-              <Field.Text name="lastName" label="Last name" />
+              {/* <Field.Text name="firstName" label="First name" />
+              <Field.Text name="lastName" label="Last name" /> */}
               <Field.Phone name="phoneNumber" label="Phone number" />
 
-              <Field.CountrySelect
+              {/* <Field.CountrySelect
                 fullWidth
                 name="country"
                 label="Country"
@@ -256,7 +245,7 @@ export function UserNewEditForm({ currentUser }) {
                 <MenuItem key="F" value="F">
                   Female
                 </MenuItem>
-              </Field.Select>
+              </Field.Select> */}
               <Field.Select name="role" label="Role">
                 <MenuItem key="Admin" value="Admin">
                   Admin

@@ -38,11 +38,11 @@ export function UserTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
 
         <TableCell sx={{ cursor: 'pointer' }}>
           <Stack spacing={2} direction="row" alignItems="center">
-            <Avatar alt={row.name} src={row.avatarUrl} />
+            <Avatar alt={row.username} src={row.avatarUrl} />
 
             <Stack sx={{ typography: 'body2', flex: '1 1 auto', alignItems: 'flex-start' }}>
               <Link color="inherit" onClick={quickEdit.onTrue} sx={{ cursor: 'pointer' }}>
-                {row.name}
+                {row.username}
               </Link>
               <Box component="span" sx={{ color: 'text.disabled' }}>
                 {row.email}

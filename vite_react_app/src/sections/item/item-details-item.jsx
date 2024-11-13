@@ -98,7 +98,7 @@ export function ItemDetailsItems({ item, senitronItem, setItem, setSenitronItem 
         )}
         <Grid container item xs={12}>
           <Grid item xs={3}>
-            <Box sx={{ color: 'text.secondary' }}>Stock On Hand (Zoho): </Box>
+            <Box sx={{ color: 'text.secondary' }}>On Hand: </Box>
           </Grid>
           <Grid item xs={9}>
             <Box sx={{ typography: 'subtitle2' }}>
@@ -109,7 +109,7 @@ export function ItemDetailsItems({ item, senitronItem, setItem, setSenitronItem 
         {currentSenitronItem?.count && (
           <Grid container item xs={12}>
             <Grid item xs={3}>
-              <Box sx={{ color: 'text.secondary' }}>Quantity (Senitron): </Box>
+              <Box sx={{ color: 'text.secondary' }}>RFID Count: </Box>
             </Grid>
             <Grid item xs={9}>
               <Box sx={{ typography: 'subtitle2' }}>
@@ -138,7 +138,7 @@ export function ItemDetailsItems({ item, senitronItem, setItem, setSenitronItem 
         {currentSenitronItem?.assets && (
           <Grid container item xs={12}>
             <Grid item xs={3}>
-              <Box sx={{ color: 'text.secondary' }}>Info (Senitron): </Box>
+              <Box sx={{ color: 'text.secondary' }}>Info Assets: </Box>
             </Grid>
             <Grid item xs={9}>
               <TableContainer sx={{ height: '400px' }}>

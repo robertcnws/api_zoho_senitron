@@ -58,6 +58,11 @@ const STATUS_OPTIONS = [...ITEM_STATUS_SHORT_OPTIONS].concat([
     { value: 'missing_items', label: 'SKU with missing items' },
 ]);
 
+const headersCSV = [
+    { label: 'SKU', key: 'sku' },
+    { label: 'Qty', key: 'stockOnHand' },
+]
+
 // ----------------------------------------------------------------------
 
 export function ItemListShortView() {
@@ -283,9 +288,7 @@ export function ItemListShortView() {
                                                 tableData.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron).length :
                                                 tab.value === 'matched_100' ?
                                                     tableData.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron).length :
-                                                    tab.value === 'all' ?
-                                                        tableData.length :
-                                                        tableData.filter((it) => it.status === tab.value).length}
+                                                    tableData.filter((it) => it.status === tab.value).length}
                                     {/* {['active', 'confirmation_pending', 'inactive'].includes(tab.value)
                       ? tableData.filter((user) => user.status === tab.value).length
                       : tableData.length} */}
@@ -300,12 +303,12 @@ export function ItemListShortView() {
                     onResetPage={table.onResetPage}
                     options={{ values: ITEM_SYNC_OPTIONS.map((option) => option.label) }}
                     dataFiltered={dataFiltered}
-                    title={filters.state.status === 'all' ? 'All SKUs' :
-                        filters.state.status === 'synced' ? 'SKU Tracked' :
-                            filters.state.status === 'matched_100' ? 'SKU Matched 100%' :
-                                filters.state.status === 'excess_items' ? 'SKU with excess items' :
-                                    filters.state.status === 'missing_items' ? 'SKU with missing items' :
-                                        filters.state.status
+                    headersCSV={headersCSV}
+                    title={filters.state.status === 'synced' ? 'SKU Tracked' :
+                        filters.state.status === 'matched_100' ? 'SKU Matched 100%' :
+                            filters.state.status === 'excess_items' ? 'SKU with excess items' :
+                                filters.state.status === 'missing_items' ? 'SKU with missing items' :
+                                    filters.state.status
                     }
                 />
 
@@ -450,20 +453,14 @@ function applyFilter({ inputData, comparator, filters }) {
                 item.stockOnHand.toString().indexOf(name.toLowerCase()) !== -1
         );
     }
-
-    if (status !== 'all') {
-        // if (status !== 'synced' && status !== 'not_synced') {
-        //     inputData = inputData.filter((item) => item.status === status);
-        // } else 
-        if (status === 'synced') {
-            inputData = inputData.filter((item) => item.syncedWithSenitron === true);
-        } else if (status === 'matched_100') {
-            inputData = inputData.filter(item => parseInt(item.stockOnHand, 10) - parseInt(item.quantity, 10) === 0 && item.syncedWithSenitron);
-        } else if (status === 'excess_items') {
-            inputData = inputData.filter(item => parseInt(item.stockOnHand, 10) - parseInt(item.quantity, 10) > 0 && item.syncedWithSenitron);
-        } else if (status === 'missing_items') {
-            inputData = inputData.filter(item => parseInt(item.stockOnHand, 10) - parseInt(item.quantity, 10) < 0 && item.syncedWithSenitron);
-        }
+    if (status === 'synced') {
+        inputData = inputData.filter((item) => item.syncedWithSenitron === true);
+    } else if (status === 'matched_100') {
+        inputData = inputData.filter(item => parseInt(item.stockOnHand, 10) - parseInt(item.quantity, 10) === 0 && item.syncedWithSenitron);
+    } else if (status === 'excess_items') {
+        inputData = inputData.filter(item => parseInt(item.stockOnHand, 10) - parseInt(item.quantity, 10) > 0 && item.syncedWithSenitron);
+    } else if (status === 'missing_items') {
+        inputData = inputData.filter(item => parseInt(item.stockOnHand, 10) - parseInt(item.quantity, 10) < 0 && item.syncedWithSenitron);
     }
 
     // if ()

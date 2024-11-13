@@ -31,7 +31,7 @@ export function ItemDetailsInfo({ item, senitronItem }) {
   const renderQty = (
     <>
       <CardHeader
-        title="Quantity Match"
+        title="% Matched"
       // action={
       //   <IconButton>
       //     <Iconify icon="solar:pen-bold" />
