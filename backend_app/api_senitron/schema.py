@@ -1,5 +1,5 @@
 import graphene
-from django.db.models import BigIntegerField, Subquery, OuterRef, Count, F
+from django.db.models import BigIntegerField, Subquery, OuterRef, Count, F, Q
 from django.db.models.functions import Cast, JSONObject, Coalesce
 from django.contrib.postgres.aggregates import ArrayAgg
 from graphene_django.types import DjangoObjectType
@@ -189,11 +189,17 @@ class Query(graphene.ObjectType):
         # ).select_related('senitron_item', 'status').order_by('-item_number_int')
         
     def resolve_all_timeline_items(self, info, **kwargs):
-        return TimelineItem.objects.all().order_by(
-            '-date_actual_quantity', 
-            '-date_actual_stock_on_hand', 
-            '-date_actual_status_senitron', 
-            '-date_actual_status_zoho'
-        )
+        return TimelineItem.objects.filter(
+             Q(zoho_item__sku__isnull=False) & ~Q(zoho_item__sku='') &
+                (~Q(text__icontains='stock on hand') | Q(date_actual_stock_on_hand__isnull=False)) &
+                (~Q(text__icontains='status') | Q(date_actual_status_zoho__isnull=False))
+            ).annotate(
+                order_date=Coalesce(
+                    F('date_actual_stock_on_hand'),
+                    F('date_actual_status_zoho'),
+                    F('date_actual_quantity'),
+                    F('date_actual_status_senitron')
+                )
+            ).order_by('-order_date')
 
 schema = graphene.Schema(query=Query)

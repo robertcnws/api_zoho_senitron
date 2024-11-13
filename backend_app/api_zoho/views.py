@@ -19,6 +19,8 @@ from datetime import datetime as dt
 from concurrent.futures import as_completed, ThreadPoolExecutor
 from django.contrib.auth import authenticate, login as auth_login
 from django.forms.models import model_to_dict
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 import logging
 
 logging.basicConfig(level=logging.DEBUG)
@@ -311,143 +313,165 @@ MAX_WORKERS = 20
 @permission_classes([AllowAny])
 def load_inventory_items(request):
     app_config = AppConfig.objects.first()
-    logger.debug(app_config)
+    logger.debug(f"AppConfig: {app_config}")
 
     try:
         headers = config_headers(request)
     except Exception as e:
         logger.error(f"Error connecting to Zoho API: {str(e)}")
         return JsonResponse({'error': f"Error connecting to Zoho API (Load Items): {str(e)}"}, status=500)
-    
+
     data = json.loads(request.body) if request.body else {}
-    item_number = None
-    
-    if data.get('item_number'):
-        item_number = data.get('item_number')
+    item_number = data.get('item_number')
+
+    if item_number:
         params = {
             'organization_id': app_config.zoho_org_id,
         }
+        url = f"{settings.ZOHO_INVENTORY_ITEMS_URL}/{item_number}"
     else:
         params = {
             'organization_id': app_config.zoho_org_id,
             'per_page': 200,
             'page': 1
         }
+        url = settings.ZOHO_INVENTORY_ITEMS_URL
 
-    url = settings.ZOHO_INVENTORY_ITEMS_URL if not item_number else f"{settings.ZOHO_INVENTORY_ITEMS_URL}/{item_number}"
     items_to_get = []
-    session = requests.Session()
 
-    def fetch_page_data(page):
-        try:
-            params['page'] = page
-            response = session.get(url, headers=headers, params=params)
-            if response.status_code == 401:
-                new_token = refresh_zoho_access_token()
-                headers['Authorization'] = f'Zoho-oauthtoken {new_token}'
-                response = session.get(url, headers=headers, params=params)
-            response.raise_for_status()
-            data = response.json()
-            return data.get('items', []), data.get('total_pages', 1)
-        except requests.RequestException as e:
-            logger.error(f"Error fetching page {page}: {e}")
-            return [], 0
-        
-    def fetch_single_data():
-        try:
-            response = session.get(url, headers=headers, params=params)
-            if response.status_code == 401:
-                new_token = refresh_zoho_access_token()
-                headers['Authorization'] = f'Zoho-oauthtoken {new_token}'
-                response = session.get(url, headers=headers, params=params)
-            response.raise_for_status()
-            data = response.json()
-            return data.get('item', {})
-        except requests.RequestException as e:
-            logger.error(f"Error fetching data single item: {e}")
-            return {}
-        
-    if not item_number:
-        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-            initial_items, total_pages = fetch_page_data(1)
-            items_to_get.extend(initial_items)
-            futures = {executor.submit(fetch_page_data, page): page for page in range(2, total_pages + 1)}
-            for future in as_completed(futures):
-                page_items, _ = future.result()
+    retry_strategy = Retry(
+        total=3,
+        status_forcelist=[429, 500, 502, 503, 504],
+        allowed_methods=["GET", "POST"]
+    )
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+
+    with requests.Session() as session:
+        session.mount("https://", adapter)
+        session.mount("http://", adapter)
+
+        def fetch_page(single_url, single_headers, single_params):
+            try:
+                response = session.get(single_url, headers=single_headers, params=single_params)
+                if response.status_code == 401:
+                    new_token = refresh_zoho_access_token()
+                    single_headers['Authorization'] = f'Zoho-oauthtoken {new_token}'
+                    response = session.get(single_url, headers=single_headers, params=single_params)
+                response.raise_for_status()
+                data = response.json()
+                items = data.get('items', [])
+                page_context = data.get('page_context', {})
+                has_more_page = page_context.get('has_more_page', False)
+                return items, has_more_page
+            except requests.RequestException as e:
+                logger.error(f"Error fetching data: {e}")
+                return [], False
+
+        def fetch_single(single_url, single_headers, single_params):
+            try:
+                response = session.get(single_url, headers=single_headers, params=single_params)
+                if response.status_code == 401:
+                    new_token = refresh_zoho_access_token()
+                    single_headers['Authorization'] = f'Zoho-oauthtoken {new_token}'
+                    response = session.get(single_url, headers=single_headers, params=single_params)
+                response.raise_for_status()
+                data = response.json()
+                return data.get('item', {})
+            except requests.RequestException as e:
+                logger.error(f"Error fetching single item: {e}")
+                return {}
+
+        if not item_number:
+            page = 1
+            has_more_page = True
+            while has_more_page:
+                current_params = params.copy()
+                current_params['page'] = page
+                page_items, has_more_page = fetch_page(url, headers.copy(), current_params)
                 items_to_get.extend(page_items)
-                
-    else:
-        items_to_get.append(fetch_single_data())
-        
+                page += 1
+        else:
+            single_item = fetch_single(url, headers.copy(), params.copy())
+            if single_item:
+                items_to_get.append(single_item)
+
+    logger.debug(f"Total items fetched: {len(items_to_get)}")
+
     item_ids = [item['item_id'] for item in items_to_get]
     existing_items = ZohoInventoryItem.objects.filter(item_id__in=item_ids)
-    existing_items_ids = set(existing_items.values_list('item_id', flat=True))
+    existing_items_map = {item.item_id: item for item in existing_items}
 
     new_items = []
     items_to_update = []
+    timeline_items = []
 
-    for data in items_to_get:
-        new_item = create_inventory_item_instance(logger, data)
-        prev_item = existing_items.get(item_id=new_item.item_id) if existing_items else None
-        senitron_item = SenitronItem.objects.filter(item_number=data['item_id']).first()
-        if new_item.item_id in existing_items_ids:
+    for data_item in items_to_get:
+        new_item = create_inventory_item_instance(logger, data_item)
+        prev_item = existing_items_map.get(new_item.item_id)
+        senitron_item = SenitronItem.objects.filter(item_number=new_item.item_id).first()
+
+        if prev_item:
             items_to_update.append(new_item)
+
             if prev_item.status != new_item.status:
-                TimelineItem.objects.create(
-                    item_number=new_item.item_id, 
-                    previous_status_zoho=prev_item.status,
-                    date_previous_status_zoho=prev_item.last_modified_time if prev_item.last_modified_time else prev_item.created_time,
-                    actual_status_zoho=new_item.status,
-                    date_actual_status_zoho=new_item.last_modified_time if new_item.last_modified_time else new_item.created_time,
-                    zoho_item=new_item,
-                    senitron_item=senitron_item if senitron_item else None,
-                    text=f"Zoho Item (SKU: {new_item.sku or '-'}, ID: {new_item.item_id}) zoho status changed from {prev_item.status} to {new_item.status}"
-                ).save()
+                timeline_items.append(
+                    TimelineItem(
+                        item_number=new_item.item_id,
+                        previous_status_zoho=prev_item.status,
+                        date_previous_status_zoho=prev_item.last_modified_time or prev_item.created_time,
+                        actual_status_zoho=new_item.status,
+                        date_actual_status_zoho=new_item.last_modified_time or new_item.created_time,
+                        zoho_item=new_item,
+                        senitron_item=senitron_item,
+                        text=f"SKU: {new_item.sku or '-'} status changed from {prev_item.status} to {new_item.status}"
+                    )
+                )
+
             if int(prev_item.stock_on_hand) != int(new_item.stock_on_hand):
-                TimelineItem.objects.create(
-                    item_number=new_item.item_id, 
-                    previous_stock_on_hand=prev_item.stock_on_hand,
-                    date_previous_stock_on_hand=prev_item.last_modified_time if prev_item.last_modified_time else prev_item.created_time,
-                    actual_stock_on_hand=new_item.stock_on_hand,
-                    date_actual_stock_on_hand=new_item.last_modified_time if new_item.last_modified_time else new_item.created_time,
-                    zoho_item=new_item,
-                    senitron_item=senitron_item if senitron_item else None,
-                    text=f"Zoho Item (SKU: {new_item.sku or '-'}, ID: {new_item.item_id}) stock on hand changed from {prev_item.stock_on_hand} to {new_item.stock_on_hand}"
-                ).save()
+                timeline_items.append(
+                    TimelineItem(
+                        item_number=new_item.item_id,
+                        previous_stock_on_hand=prev_item.stock_on_hand,
+                        date_previous_stock_on_hand=prev_item.last_modified_time or prev_item.created_time,
+                        actual_stock_on_hand=new_item.stock_on_hand,
+                        date_actual_stock_on_hand=new_item.last_modified_time or new_item.created_time,
+                        zoho_item=new_item,
+                        senitron_item=senitron_item,
+                        text=f"SKU: {new_item.sku or '-'} stock on hand changed from {int(prev_item.stock_on_hand)} to {int(new_item.stock_on_hand)}"
+                    )
+                )
         else:
             new_items.append(new_item)
-            TimelineItem.objects.create(
-                item_number=new_item.item_id,
-                actual_stock_on_hand=new_item.stock_on_hand,
-                date_actual_stock_on_hand=new_item.last_modified_time if new_item.last_modified_time else new_item.created_time,
-                actual_status_zoho=new_item.status,
-                date_actual_status_zoho=new_item.last_modified_time if new_item.last_modified_time else new_item.created_time,
-                zoho_item=new_item,
-                senitron_item=senitron_item if senitron_item else None,
-                text=f"Zoho Item (SKU: {new_item.sku or '-'}, ID: {new_item.item_id}) created with status {new_item.status}"
-            ).save()
-    
-    with transaction.atomic():
-        if new_items:
-            ZohoInventoryItem.objects.bulk_create(new_items, batch_size=200, ignore_conflicts=True)
-        if items_to_update:
-            ZohoInventoryItem.objects.bulk_update(
-                items_to_update,
-                fields=[
-                    'group_id', 'group_name', 'name', 'status', 'source', 'is_linked_with_zohocrm',
-                    'item_type', 'description', 'rate', 'is_taxable', 'tax_id', 'tax_name', 
-                    'tax_percentage', 'purchase_description', 'purchase_rate', 'is_combo_product', 
-                    'product_type', 'attribute_id1', 'attribute_name1', 'reorder_level', 
-                    'stock_on_hand', 'available_stock', 'actual_available_stock', 'sku', 
-                    'upc', 'ean', 'isbn', 'part_number', 'attribute_option_id1', 
-                    'attribute_option_name1', 'image_name', 'image_type', 'created_time', 
-                    'last_modified_time', 'hsn_or_sac', 'sat_item_key_code', 'unitkey_code'
-                ],
-                batch_size=200
+            timeline_items.append(
+                TimelineItem(
+                    item_number=new_item.item_id,
+                    actual_stock_on_hand=new_item.stock_on_hand,
+                    date_actual_stock_on_hand=new_item.last_modified_time or new_item.created_time,
+                    actual_status_zoho=new_item.status,
+                    date_actual_status_zoho=new_item.last_modified_time or new_item.created_time,
+                    zoho_item=new_item,
+                    senitron_item=senitron_item,
+                    text=f"SKU: {new_item.sku or '-'} created with status {new_item.status}"
+                )
             )
 
+    with transaction.atomic():
+        if new_items:
+            ZohoInventoryItem.objects.bulk_create(new_items, batch_size=200)
+        if items_to_update:
+            fields_to_update = [
+                'status', 'stock_on_hand', 'last_modified_time'
+            ]
+            ZohoInventoryItem.objects.bulk_update(
+                items_to_update,
+                fields=fields_to_update,
+                batch_size=200
+            )
+        if timeline_items:
+            TimelineItem.objects.bulk_create(timeline_items, batch_size=200)
+
+    logger.info(f"Items processed successfully: {len(new_items)} created, {len(items_to_update)} updated")
     return JsonResponse({'message': 'Items loaded successfully'}, status=200)
-    
     
 
 #############################################

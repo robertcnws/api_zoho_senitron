@@ -25,21 +25,21 @@ import { Label } from 'src/components/label';
 // ----------------------------------------------------------------------
 
 export const UserQuickEditSchema = zod.object({
-  firstName: zod.string().min(1, { message: 'First name is required!' }),
-  lastName: zod.string().min(1, { message: 'Last name is required!' }),
+  // firstName: zod.string().min(1, { message: 'First name is required!' }),
+  // lastName: zod.string().min(1, { message: 'Last name is required!' }),
   email: zod
     .string()
     .min(1, { message: 'Email is required!' })
     .email({ message: 'Email must be a valid email address!' }),
   phoneNumber: schemaHelper.phoneNumber({ isValidPhoneNumber }),
-  country: schemaHelper.objectOrNull({
-    message: { required_error: 'Country is required!' },
-  }),
-  state: zod.string().min(1, { message: 'State is required!' }),
-  city: zod.string().min(1, { message: 'City is required!' }),
-  address: zod.string().min(1, { message: 'Address is required!' }),
-  zipCode: zod.string().min(1, { message: 'Zip code is required!' }),
-  company: zod.string().min(1, { message: 'Company is required!' }),
+  // country: schemaHelper.objectOrNull({
+  //   message: { required_error: 'Country is required!' },
+  // }),
+  // state: zod.string().min(1, { message: 'State is required!' }),
+  // city: zod.string().min(1, { message: 'City is required!' }),
+  // address: zod.string().min(1, { message: 'Address is required!' }),
+  // zipCode: zod.string().min(1, { message: 'Zip code is required!' }),
+  // company: zod.string().min(1, { message: 'Company is required!' }),
   role: zod.string().min(1, { message: 'Role is required!' }),
   // Not required
   status: zod.string(),
@@ -164,12 +164,12 @@ export function UserQuickEditForm({ currentUser, open, onClose }) {
             {/* <Box sx={{ display: { xs: 'none', sm: 'block' } }} /> */}
             <Field.Text name="email" label="Email address" />
 
-            <Field.Text name="firstName" label="First name" />
-            <Field.Text name="lastName" label="Last name" />
+            {/* <Field.Text name="firstName" label="First name" />
+            <Field.Text name="lastName" label="Last name" /> */}
             
             <Field.Phone name="phoneNumber" label="Phone number" />
 
-            <Field.CountrySelect
+            {/* <Field.CountrySelect
               fullWidth
               name="country"
               label="Country"
@@ -187,7 +187,7 @@ export function UserQuickEditForm({ currentUser, open, onClose }) {
                 <MenuItem key="F" value="F">
                   Female
                 </MenuItem>
-            </Field.Select>
+            </Field.Select> */}
             <Field.Select name="role" label="Role">
                 <MenuItem key="Admin" value="Admin">
                   Admin

@@ -18,6 +18,7 @@ export function AnalyticsCurrentVisits({
   openModal,
   setOpenModal,
   modalTitle,
+  headersCSV,
   setModalTitle,
   modalDataFiltered,
   setModalDataFiltered,
@@ -95,12 +96,12 @@ export function AnalyticsCurrentVisits({
           const list = handleViewSublists(dataPointIndex);
     
           setModalTitle(
-            dataPointIndex === 0 ? `${list.length} SKUs (RFID and SKU Count Matched 100 %)` :
-              dataPointIndex === 1 ? `${list.length} SKUs (RFID and SKU Count Matched between 90 % and 100 %)` :
-                dataPointIndex === 2 ? `${list.length} SKUs (RFID and SKU Count Matched between 80 % and 90 %)` :
-                  dataPointIndex === 3 ? `${list.length} SKUs (RFID and SKU Count Matched between 70 % and 80 %)` :
-                    dataPointIndex === 4 ? `${list.length} SKUs (RFID and SKU Count Matched between 60 % and 70 %)` :
-                      dataPointIndex === 5 ? `${list.length} SKUs (RFID and SKU Count Matched between 50 % and 60 %)` : `${list.length} SKUs (RFID and SKU Count Matched less than 50 %)`
+            dataPointIndex === 0 ? `SKUs with RFID and SKU Count Matched 100 %` :
+              dataPointIndex === 1 ? `SKUs with RFID and SKU Count Matched between 90 % and 100 %` :
+                dataPointIndex === 2 ? `SKUs with RFID and SKU Count Matched between 80 % and 90 %` :
+                  dataPointIndex === 3 ? `SKUs with RFID and SKU Count Matched between 70 % and 80 %` :
+                    dataPointIndex === 4 ? `SKUs with RFID and SKU Count Matched between 60 % and 70 %` :
+                      dataPointIndex === 5 ? `SKUs with RFID and SKU Count Matched between 50 % and 60 %` : `SKUs with RFID and SKU Count Matched less than 50 %`
           );
     
           setModalButtonColor(
@@ -120,7 +121,7 @@ export function AnalyticsCurrentVisits({
     ...chart.options,
   });
 
-  const handleViewSublists = (seriesIndex) => modalDataFiltered.filter((item) =>
+  const handleViewSublists = (seriesIndex) => modalDataFiltered?.filter((item) =>
     seriesIndex === 0 ? item.percentage === 100 :
       seriesIndex === 1 ? item.percentage >= 90 && item.percentage < 100 :
         seriesIndex === 2 ? item.percentage >= 80 && item.percentage < 90 :
@@ -157,6 +158,7 @@ export function AnalyticsCurrentVisits({
         setOpenModal={setOpenModal}
         modalDataFiltered={modalDataFiltered}
         modalTitle={modalTitle}
+        headersCSV={headersCSV}
         modalButtonColor={modalButtonColor}
         filters={filters}
         handleFilterName={handleFilterName}

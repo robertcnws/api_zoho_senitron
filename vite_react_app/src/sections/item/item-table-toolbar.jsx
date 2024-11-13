@@ -14,10 +14,11 @@ import axios from 'axios';
 import { LoadingContext } from 'src/auth/context/loading-context';
 import { Checkbox, FormControl, InputLabel, OutlinedInput, Select } from '@mui/material';
 import { generatePrintablePDF } from 'src/utils/printable-pdf';
+import ExportCSV from 'src/utils/export-csv';
 
 // ----------------------------------------------------------------------
 
-export function ItemTableToolbar({ filters, onResetPage, options, dataFiltered, title }) {
+export function ItemTableToolbar({ filters, onResetPage, options, dataFiltered, headersCSV, title }) {
   const popover = usePopover();
 
   const { setLoading, setError, setComponent } = useContext(LoadingContext);
@@ -118,17 +119,9 @@ export function ItemTableToolbar({ filters, onResetPage, options, dataFiltered, 
               popover.onClose();
             }}
           >
-            <Iconify icon="solar:import-bold" />
-            Import
-          </MenuItem>
-
-          <MenuItem
-            onClick={() => {
-              popover.onClose();
-            }}
-          >
-            <Iconify icon="solar:export-bold" />
-            Export
+            {/* <Iconify icon="solar:export-bold" />
+            Export CSV */}
+            <ExportCSV data={dataFiltered} headers={headersCSV} buttonText="Export CSV" docName={title} />
           </MenuItem>
           <MenuItem
             onClick={() => {

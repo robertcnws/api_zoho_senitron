@@ -58,6 +58,11 @@ const STATUS_OPTIONS = [{ value: 'all', label: 'All SKUs' }, ...ITEM_STATUS_OPTI
   { value: 'missing_items', label: 'SKU with missing items' },
 ]);
 
+const headersCSV = [
+  { label: 'SKU', key: 'sku' },
+  { label: 'Qty', key: 'stockOnHand' },
+]
+
 // ----------------------------------------------------------------------
 
 export function ItemListView() {
@@ -345,6 +350,7 @@ export function ItemListView() {
             onResetPage={table.onResetPage}
             options={{ values: ITEM_SYNC_OPTIONS.map((option) => option.label) }}
             dataFiltered={dataFiltered}
+            headersCSV={headersCSV}
             title={filters.state.status === 'all' ? 'All SKUs' :
               filters.state.status === 'synced' ? 'SKU Tracked' :
                 filters.state.status === 'matched_100' ? 'SKU Matched 100%' :

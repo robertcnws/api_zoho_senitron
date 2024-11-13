@@ -33,6 +33,11 @@ import { AnalyticsWidgetSummary } from '../analytics-widget-summary';
 import { ModalSublistItems } from './modal-sublist-items';
 import { AnalyticsCurrentVisits } from '../analytics-current-visits';
 
+const headersCSV = [
+  { label: 'SKU', key: 'sku' },
+  { label: 'Qty', key: 'stockOnHand' },
+]
+
 
 
 // ----------------------------------------------------------------------
@@ -374,7 +379,7 @@ export function OverviewAnalyticsView() {
               onClick={() => {
                 setOpenModal(true)
                 setModalListItems(itemsZohoSenitron?.filter(it => it.syncedWithSenitron))
-                setModalTitle(`SKU Tracked (${itemsZohoSenitron?.filter(it => it.syncedWithSenitron).length})`)
+                setModalTitle(`SKUs Tracked`)
                 setModalButtonColor('success.main')
               }}
             />
@@ -399,7 +404,7 @@ export function OverviewAnalyticsView() {
               onClick={() => {
                 setOpenModal(true)
                 setModalListItems(itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron))
-                setModalTitle(`SKU Matched 100% (${itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron).length})`)
+                setModalTitle(`SKUs Matched 100%`)
                 // setModalButtonColor('#8E33FF')
                 setModalButtonColor('info.main')
               }}
@@ -425,7 +430,7 @@ export function OverviewAnalyticsView() {
               onClick={() => {
                 setOpenModal(true)
                 setModalListItems(itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron))
-                setModalTitle(`SKU with missing Items (${itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron).length})`)
+                setModalTitle(`SKUs with missing Items`)
                 setModalButtonColor('#F44336')
               }}
             />
@@ -450,7 +455,7 @@ export function OverviewAnalyticsView() {
               onClick={() => {
                 setOpenModal(true)
                 setModalListItems(itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron))
-                setModalTitle(`SKU with excess Items (${itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron).length})`)
+                setModalTitle(`SKUs with excess Items`)
                 setModalButtonColor('warning.main')
               }}
             />
@@ -480,16 +485,24 @@ export function OverviewAnalyticsView() {
                           <Table size='small'>
                             <TableBody>
                               <TableRow>
-                                <TableCell>Total On Hand:</TableCell>
+                                <TableCell>On Hand:</TableCell>
                                 <TableCell><b>{totalZohoQty || 0}</b></TableCell>
-                                <TableCell>Total Errors:</TableCell>
-                                <TableCell><b>{totalErrors || 0}</b></TableCell>
+                                <TableCell>RFID Count:</TableCell>
+                                <TableCell><b>{totalSenitronQty || 0}</b></TableCell>
                               </TableRow>
                               <TableRow>
-                                <TableCell>Total RFID Count:</TableCell>
-                                <TableCell><b>{totalSenitronQty || 0}</b></TableCell>
-                                <TableCell>Total RFID Correct:</TableCell>
-                                <TableCell><b>{totalSenitronQty - totalErrors || 0}</b></TableCell>
+                                <TableCell sx={{ fontSize: '11px'}}>RFID Correct:</TableCell>
+                                <TableCell sx={{ fontSize: '11px'}}>
+                                  <Label color='success' sx={{ fontSize: '10px'}}>
+                                    <b>{totalSenitronQty - totalErrors || 0}</b>
+                                  </Label>
+                                </TableCell>
+                                <TableCell sx={{ fontSize: '11px'}}>Mismatchs:</TableCell>
+                                <TableCell sx={{ fontSize: '11px'}}>
+                                  <Label color='error' sx={{ fontSize: '10px'}}>
+                                    <b>{totalErrors || 0}</b>
+                                  </Label>
+                                </TableCell>
                               </TableRow>
                             </TableBody>
                           </Table>
@@ -543,6 +556,7 @@ export function OverviewAnalyticsView() {
                 openModal={openModal}
                 setOpenModal={setOpenModal}
                 modalTitle={modalTitle}
+                headersCSV={headersCSV}
                 setModalTitle={setModalTitle}
                 modalDataFiltered={modalListItems}
                 setModalDataFiltered={setModalListItems}
@@ -613,6 +627,7 @@ export function OverviewAnalyticsView() {
         setOpenModal={setOpenModal}
         modalDataFiltered={modalDataFiltered}
         modalTitle={modalTitle}
+        headersCSV={headersCSV}
         modalButtonColor={modalButtonColor}
         filters={filters}
         handleFilterName={handleFilterName}

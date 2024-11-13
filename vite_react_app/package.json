@@ -91,6 +91,7 @@
     "nprogress": "^0.2.0",
     "react": "^18.3.1",
     "react-apexcharts": "^1.4.1",
+    "react-csv": "^2.2.2",
     "react-dom": "^18.3.1",
     "react-dropzone": "^14.2.3",
     "react-gauge-chart": "^0.5.1",
