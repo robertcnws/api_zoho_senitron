@@ -25,7 +25,7 @@ export function AnalyticsOrderTimeline({ title, subheader, list, onViewDetails, 
         id: item.itemNumber,
         title: item.text,
         time: item.text.includes('stock on hand') ? item.dateActualStockOnHand :
-          item.text.includes('zoho status') ? item.dateActualStatusZoho :
+          item.text.includes('status') ? item.dateActualStatusZoho :
             item.text.includes('quantity') ? item.dateActualQuantity :
               item.text.includes('created') && item.text.includes('Senitron') ? item.dateActualQuantity :
                 item.text.includes('created') && item.text.includes('Zoho') ? item.dateActualStockOnHand : item.dateActualStatusSenitron,
