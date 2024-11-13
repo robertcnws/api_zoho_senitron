@@ -36,7 +36,7 @@ export function today(format) {
 
 /** output: Apr 17 2022 12:00 am
  */
-export function fDateTime(date, format, timeZone = 'UTC') {
+export function fDateTime(date, format, timeZone = dayjs.tz.guess()) {
   if (!date) {
     return null;
   }

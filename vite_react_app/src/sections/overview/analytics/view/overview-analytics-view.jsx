@@ -5,12 +5,13 @@ import axios from 'axios';
 import { LoadingContext } from 'src/auth/context/loading-context';
 import { Iconify } from 'src/components/iconify';
 import { Label } from 'src/components/label';
-import { Box, Card, CardHeader, Stack, Table, TableBody, TableCell, TableContainer, TableRow } from '@mui/material';
+import { Alert, Box, Card, CardHeader, Stack, Table, TableBody, TableCell, TableContainer, TableRow, CircularProgress } from '@mui/material';
 import { paths } from 'src/routes/paths';
 import { useRouter } from 'src/routes/hooks';
 import { useSetState } from 'src/hooks/use-set-state';
 import MatchGauge from 'src/components/chart/gauge-chart';
 import { TableNoData } from 'src/components/table';
+import { keyframes } from '@mui/system';
 
 
 import { CONFIG } from 'src/config-global';
@@ -37,6 +38,15 @@ const headersCSV = [
   { label: 'SKU', key: 'sku' },
   { label: 'Qty', key: 'stockOnHand' },
 ]
+
+const spin = keyframes`
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+`;
 
 
 
@@ -291,51 +301,98 @@ export function OverviewAnalyticsView() {
     [router]
   );
 
+  // if (!itemsZohoSenitron || !itemsSenitronZoho || !itemsTimelineData ||
+  //   !itemsZohoData || !seriesPieChart ||
+  //   totalZohoQty === null || totalSenitronQty === null || totalErrors === null) {
+  // setLoading(true);
+  // setComponent('Loading Dashboard Analytics Data...');
+  //   return null;
+  // }
+
+  // setLoading(false);
+  // setComponent(null);
 
   return (
     <>
-      <DashboardContent maxWidth="xl">
-        <Grid container spacing={3}>
-          <Grid xs={12} sm={10} md={10}>
-            <Typography variant="h4" sx={{ mb: { xs: 3, md: 5 } }}>
-              Hi {userLogged?.data.first_name || userLogged?.data.firstName} {userLogged?.data.last_name || userLogged?.data.lastName}, Welcome back 👋
-              <br />
-              <Stack direction="row" alignItems="center" sx={{ cursor: 'pointer' }}>
-                <Label sx={{ cursor: 'pointer', border: '1px solid #ddd' }} color='warning' onClick={() => {
-                  setComponent('Zoho & Senitron Last Info');
-                  setLoading(true);
-                  axios
-                    .post(`${CONFIG.apiUrl}/api_zoho/load/inventory_items/`)
-                    .then(() => {
+      {!itemsZohoSenitron || !itemsSenitronZoho || !itemsTimelineData ||
+        !itemsZohoData || !seriesPieChart ||
+        totalZohoQty === null || totalSenitronQty === null || totalErrors === null ? (
+        <>
+          <DashboardContent maxWidth="xl">
+            <Card
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                // minHeight: '60vh',
+                background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+                boxShadow: 3,
+                borderRadius: 2,
+              }}
+            >
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  // minHeight: '60vh',
+                  background: 'transparent',
+                  padding: 4,
+                }}
+              >
+                <CircularProgress size={40} color="primary" />
+                <Typography variant="h6" sx={{ mt: 3, color: 'text.secondary' }}>
+                  Cargando Datos de Analytics del Dashboard...
+                </Typography>
+              </Box>
+            </Card>
+          </DashboardContent>
+        </>
+      ) : (
+        <>
+          <DashboardContent maxWidth="xl">
+            <Grid container spacing={3}>
+              <Grid xs={12} sm={10} md={10}>
+                <Typography variant="h4" sx={{ mb: { xs: 3, md: 5 } }}>
+                  Hi {userLogged?.data.first_name || userLogged?.data.firstName} {userLogged?.data.last_name || userLogged?.data.lastName}, Welcome back 👋
+                  <br />
+                  <Stack direction="row" alignItems="center" sx={{ cursor: 'pointer' }}>
+                    <Label sx={{ cursor: 'pointer', border: '1px solid #ddd' }} color='warning' onClick={() => {
+                      setLoading(true);
+                      setComponent('Zoho & Senitron Last Info');
                       axios
-                        .post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_item_assets/`)
+                        .post(`${CONFIG.apiUrl}/api_zoho/load/inventory_items/`)
                         .then(() => {
-                          console.log('Zoho Inventory item fetched');
-                          console.log('Senitron Inventory item fetched');
+                          axios
+                            .post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_item_assets/`)
+                            .then(() => {
+                              console.log('Zoho Inventory item fetched');
+                              console.log('Senitron Inventory item fetched');
+                            })
+                            .catch((err) => {
+                              console.error('Error fetching senitron inventory item asset:', err);
+                              setError('There was an error fetching senitron inventory item asset.');
+                            })
+                            .finally(() => {
+                              setLoading(false);
+                            });
                         })
                         .catch((err) => {
-                          console.error('Error fetching senitron inventory item asset:', err);
-                          setError('There was an error fetching senitron inventory item asset.');
+                          console.error('Error fetching inventory item:', err);
+                          setError('There was an error fetching the inventory item.');
                         })
-                        .finally(() => {
-                          setLoading(false);
-                        });
-                    })
-                    .catch((err) => {
-                      console.error('Error fetching inventory item:', err);
-                      setError('There was an error fetching the inventory item.');
-                    })
-                }}>
-                  <Iconify icon="solar:refresh-bold" /> Update from Zoho & Senitron
-                </Label>
-              </Stack>
-            </Typography>
-          </Grid>
-        </Grid>
+                    }}>
+                      <Iconify icon="solar:refresh-bold" /> Update from Zoho & Senitron
+                    </Label>
+                  </Stack>
+                </Typography >
+              </Grid >
+            </Grid >
 
-        <Grid container spacing={3}>
+            <Grid container spacing={3}>
 
-          {/* <Grid xs={12} sm={6} md={2.4}>
+              {/* <Grid xs={12} sm={6} md={2.4}>
             <AnalyticsWidgetSummary
               sx={{ cursor: 'pointer' }}
               title="Items from Senitron"
@@ -360,110 +417,110 @@ export function OverviewAnalyticsView() {
             />
           </Grid> */}
 
-          <Grid xs={12} sm={6} md={3}>
-            <AnalyticsWidgetSummary
-              sx={{ cursor: 'pointer' }}
-              title="SKU Tracked"
-              percent={2.6}
-              total={itemsZohoSenitron?.filter(it => it.syncedWithSenitron).length}
-              quantity={itemsZohoSenitron?.filter(it => it.syncedWithSenitron).reduce((acc, item) => acc + item.quantity, 0)}
-              stockOnHand={itemsZohoSenitron?.filter(it => it.syncedWithSenitron).reduce((acc, item) => acc + item.stockOnHand, 0)}
-              color="success"
-              icon={
-                <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-synced.svg`} />
-              }
-              chart={{
-                categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
-                series: [22, 8, 35, 50, 82, 84, 77, 12],
-              }}
-              onClick={() => {
-                setOpenModal(true)
-                setModalListItems(itemsZohoSenitron?.filter(it => it.syncedWithSenitron))
-                setModalTitle(`SKUs Tracked`)
-                setModalButtonColor('success.main')
-              }}
-            />
-          </Grid>
+              <Grid xs={12} sm={6} md={3}>
+                <AnalyticsWidgetSummary
+                  sx={{ cursor: 'pointer' }}
+                  title="SKU Tracked"
+                  percent={2.6}
+                  total={itemsZohoSenitron?.filter(it => it.syncedWithSenitron).length}
+                  quantity={itemsZohoSenitron?.filter(it => it.syncedWithSenitron).reduce((acc, item) => acc + item.quantity, 0)}
+                  stockOnHand={itemsZohoSenitron?.filter(it => it.syncedWithSenitron).reduce((acc, item) => acc + item.stockOnHand, 0)}
+                  color="success"
+                  icon={
+                    <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-synced.svg`} />
+                  }
+                  chart={{
+                    categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
+                    series: [22, 8, 35, 50, 82, 84, 77, 12],
+                  }}
+                  onClick={() => {
+                    setOpenModal(true)
+                    setModalListItems(itemsZohoSenitron?.filter(it => it.syncedWithSenitron))
+                    setModalTitle(`SKUs Tracked`)
+                    setModalButtonColor('success.main')
+                  }}
+                />
+              </Grid>
 
-          <Grid xs={12} sm={6} md={3}>
-            <AnalyticsWidgetSummary
-              sx={{ cursor: 'pointer' }}
-              title="SKU Matched 100%"
-              percent={-0.1}
-              total={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron).length}
-              quantity={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron).reduce((acc, it) => acc + it.quantity, 0)}
-              stockOnHand={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron).reduce((acc, it) => acc + it.stockOnHand, 0)}
-              color="info"
-              icon={
-                <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-zoho.svg`} />
-              }
-              chart={{
-                categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
-                series: [56, 47, 40, 62, 73, 30, 23, 54],
-              }}
-              onClick={() => {
-                setOpenModal(true)
-                setModalListItems(itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron))
-                setModalTitle(`SKUs Matched 100%`)
-                // setModalButtonColor('#8E33FF')
-                setModalButtonColor('info.main')
-              }}
-            />
-          </Grid>
+              <Grid xs={12} sm={6} md={3}>
+                <AnalyticsWidgetSummary
+                  sx={{ cursor: 'pointer' }}
+                  title="SKU Matched 100%"
+                  percent={-0.1}
+                  total={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron).length}
+                  quantity={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron).reduce((acc, it) => acc + it.quantity, 0)}
+                  stockOnHand={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron).reduce((acc, it) => acc + it.stockOnHand, 0)}
+                  color="info"
+                  icon={
+                    <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-zoho.svg`} />
+                  }
+                  chart={{
+                    categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
+                    series: [56, 47, 40, 62, 73, 30, 23, 54],
+                  }}
+                  onClick={() => {
+                    setOpenModal(true)
+                    setModalListItems(itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron))
+                    setModalTitle(`SKUs Matched 100%`)
+                    // setModalButtonColor('#8E33FF')
+                    setModalButtonColor('info.main')
+                  }}
+                />
+              </Grid>
 
-          <Grid xs={12} sm={6} md={3}>
-            <AnalyticsWidgetSummary
-              sx={{ cursor: 'pointer' }}
-              title="SKU Missing Items"
-              percent={3.6}
-              total={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron).length}
-              quantity={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron).reduce((acc, it) => acc + it.quantity, 0)}
-              stockOnHand={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron).reduce((acc, it) => acc + it.stockOnHand, 0)}
-              color="error"
-              icon={
-                <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-mismatch.svg`} />
-              }
-              chart={{
-                categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
-                series: [56, 30, 23, 54, 47, 40, 62, 73],
-              }}
-              onClick={() => {
-                setOpenModal(true)
-                setModalListItems(itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron))
-                setModalTitle(`SKUs with missing Items`)
-                setModalButtonColor('#F44336')
-              }}
-            />
-          </Grid>
+              <Grid xs={12} sm={6} md={3}>
+                <AnalyticsWidgetSummary
+                  sx={{ cursor: 'pointer' }}
+                  title="SKU Missing Items"
+                  percent={3.6}
+                  total={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron).length}
+                  quantity={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron).reduce((acc, it) => acc + it.quantity, 0)}
+                  stockOnHand={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron).reduce((acc, it) => acc + it.stockOnHand, 0)}
+                  color="error"
+                  icon={
+                    <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-mismatch.svg`} />
+                  }
+                  chart={{
+                    categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
+                    series: [56, 30, 23, 54, 47, 40, 62, 73],
+                  }}
+                  onClick={() => {
+                    setOpenModal(true)
+                    setModalListItems(itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron))
+                    setModalTitle(`SKUs with missing Items`)
+                    setModalButtonColor('#F44336')
+                  }}
+                />
+              </Grid>
 
-          <Grid xs={12} sm={5} md={3}>
-            <AnalyticsWidgetSummary
-              sx={{ cursor: 'pointer' }}
-              title="SKU Excess Items"
-              percent={3.6}
-              total={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron).length}
-              quantity={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron).reduce((acc, it) => acc + it.quantity, 0)}
-              stockOnHand={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron).reduce((acc, it) => acc + it.stockOnHand, 0)}
-              color="warning"
-              icon={
-                <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-front-3.svg`} />
-              }
-              chart={{
-                categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
-                series: [56, 30, 23, 54, 47, 40, 62, 73],
-              }}
-              onClick={() => {
-                setOpenModal(true)
-                setModalListItems(itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron))
-                setModalTitle(`SKUs with excess Items`)
-                setModalButtonColor('warning.main')
-              }}
-            />
-          </Grid>
+              <Grid xs={12} sm={5} md={3}>
+                <AnalyticsWidgetSummary
+                  sx={{ cursor: 'pointer' }}
+                  title="SKU Excess Items"
+                  percent={3.6}
+                  total={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron).length}
+                  quantity={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron).reduce((acc, it) => acc + it.quantity, 0)}
+                  stockOnHand={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron).reduce((acc, it) => acc + it.stockOnHand, 0)}
+                  color="warning"
+                  icon={
+                    <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-front-3.svg`} />
+                  }
+                  chart={{
+                    categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
+                    series: [56, 30, 23, 54, 47, 40, 62, 73],
+                  }}
+                  onClick={() => {
+                    setOpenModal(true)
+                    setModalListItems(itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron))
+                    setModalTitle(`SKUs with excess Items`)
+                    setModalButtonColor('warning.main')
+                  }}
+                />
+              </Grid>
 
-          {percentage && (
-            <Grid xs={12} md={6} lg={4}>
-              {/* <AnalyticsCurrentVisits
+              {percentage && (
+                <Grid xs={12} md={6} lg={4}>
+                  {/* <AnalyticsCurrentVisits
               title="Current visits"
               chart={{
                 series: [
@@ -474,58 +531,58 @@ export function OverviewAnalyticsView() {
                 ],
               }}
             /> */}
-              <Card>
-                <CardHeader title="SKU Tracked totals" />
-                <Stack direction="column" sx={{ p: 0, textAlign: 'center' }} alignItems="center">
-                  {percentage > 0 ? (
-                    <>
-                      <MatchGauge percentage={percentage} />
-                      <Box sx={{ mt: 0, p: 0 }}>
-                        <TableContainer>
-                          <Table size='small'>
+                  <Card>
+                    <CardHeader title="SKU Tracked totals" />
+                    <Stack direction="column" sx={{ p: 0, textAlign: 'center' }} alignItems="center">
+                      {percentage > 0 ? (
+                        <>
+                          <MatchGauge percentage={percentage} />
+                          <Box sx={{ mt: 0, p: 0 }}>
+                            <TableContainer>
+                              <Table size='small'>
+                                <TableBody>
+                                  <TableRow>
+                                    <TableCell>On Hand:</TableCell>
+                                    <TableCell><b>{totalZohoQty || 0}</b></TableCell>
+                                    <TableCell>RFID Count:</TableCell>
+                                    <TableCell><b>{totalSenitronQty || 0}</b></TableCell>
+                                  </TableRow>
+                                  <TableRow>
+                                    <TableCell sx={{ fontSize: '11px' }}>RFID Correct:</TableCell>
+                                    <TableCell sx={{ fontSize: '11px' }}>
+                                      <Label color='success' sx={{ fontSize: '10px' }}>
+                                        <b>{totalSenitronQty - totalErrors || 0}</b>
+                                      </Label>
+                                    </TableCell>
+                                    <TableCell sx={{ fontSize: '11px' }}>Mismatchs:</TableCell>
+                                    <TableCell sx={{ fontSize: '11px' }}>
+                                      <Label color='error' sx={{ fontSize: '10px' }}>
+                                        <b>{totalErrors || 0}</b>
+                                      </Label>
+                                    </TableCell>
+                                  </TableRow>
+                                </TableBody>
+                              </Table>
+                            </TableContainer>
+                          </Box>
+                        </>
+                      ) : (
+                        <TableContainer sx={{ maxHeight: 350 }}>
+                          <Table size='medium' stickyHeader>
                             <TableBody>
-                              <TableRow>
-                                <TableCell>On Hand:</TableCell>
-                                <TableCell><b>{totalZohoQty || 0}</b></TableCell>
-                                <TableCell>RFID Count:</TableCell>
-                                <TableCell><b>{totalSenitronQty || 0}</b></TableCell>
-                              </TableRow>
-                              <TableRow>
-                                <TableCell sx={{ fontSize: '11px'}}>RFID Correct:</TableCell>
-                                <TableCell sx={{ fontSize: '11px'}}>
-                                  <Label color='success' sx={{ fontSize: '10px'}}>
-                                    <b>{totalSenitronQty - totalErrors || 0}</b>
-                                  </Label>
-                                </TableCell>
-                                <TableCell sx={{ fontSize: '11px'}}>Mismatchs:</TableCell>
-                                <TableCell sx={{ fontSize: '11px'}}>
-                                  <Label color='error' sx={{ fontSize: '10px'}}>
-                                    <b>{totalErrors || 0}</b>
-                                  </Label>
-                                </TableCell>
-                              </TableRow>
+                              <TableNoData notFound={percentage > 0} />
                             </TableBody>
                           </Table>
                         </TableContainer>
-                      </Box>
-                    </>
-                  ) : (
-                    <TableContainer sx={{ maxHeight: 350 }}>
-                      <Table size='medium' stickyHeader>
-                        <TableBody>
-                          <TableNoData notFound={percentage > 0} />
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  )}
-                </Stack>
-              </Card>
-            </Grid>
-          )}
+                      )}
+                    </Stack>
+                  </Card>
+                </Grid>
+              )}
 
-          {series && (
-            <Grid xs={12} md={6} lg={4}>
-              {/* <AnalyticsWebsiteVisits
+              {series && (
+                <Grid xs={12} md={6} lg={4}>
+                  {/* <AnalyticsWebsiteVisits
                 title="Quantity Match"
                 subheader="Number of items by percentage range"
                 element="items"
@@ -547,37 +604,37 @@ export function OverviewAnalyticsView() {
                 handleFilterName={handleFilterName}
                 filters={filters}
               /> */}
-              <AnalyticsCurrentVisits title="SKUs and RFID count match"
-                subheader="Number of items by percentage range"
-                element="items"
-                chart={{
-                  series: seriesPieChart || [{ label: 'Items', value: 0 }],
-                }}
-                openModal={openModal}
-                setOpenModal={setOpenModal}
-                modalTitle={modalTitle}
-                headersCSV={headersCSV}
-                setModalTitle={setModalTitle}
-                modalDataFiltered={modalListItems}
-                setModalDataFiltered={setModalListItems}
-                modalButtonColor={modalButtonColor}
-                setModalButtonColor={setModalButtonColor}
-                zohoItems={itemsZohoSenitron}
-                senitronItems={itemsSenitronZoho}
-                handleViewRow={handleViewRow}
-                handleFilterName={handleFilterName}
-                filters={filters}
-              />
-            </Grid>
-          )}
+                  <AnalyticsCurrentVisits title="SKUs and RFID count match"
+                    subheader="Number of items by percentage range"
+                    element="items"
+                    chart={{
+                      series: seriesPieChart || [{ label: 'Items', value: 0 }],
+                    }}
+                    openModal={openModal}
+                    setOpenModal={setOpenModal}
+                    modalTitle={modalTitle}
+                    headersCSV={headersCSV}
+                    setModalTitle={setModalTitle}
+                    modalDataFiltered={modalListItems}
+                    setModalDataFiltered={setModalListItems}
+                    modalButtonColor={modalButtonColor}
+                    setModalButtonColor={setModalButtonColor}
+                    zohoItems={itemsZohoSenitron}
+                    senitronItems={itemsSenitronZoho}
+                    handleViewRow={handleViewRow}
+                    handleFilterName={handleFilterName}
+                    filters={filters}
+                  />
+                </Grid>
+              )}
 
-          {timelineItems && (
-            <Grid xs={12} md={6} lg={4}>
-              <AnalyticsOrderTimeline title="Items timeline" list={itemsTimelineData || timelineItems} onViewDetails={handleViewRow} />
-            </Grid>
-          )}
+              {timelineItems && (
+                <Grid xs={12} md={6} lg={4}>
+                  <AnalyticsOrderTimeline title="Items timeline" list={itemsTimelineData || timelineItems} onViewDetails={handleViewRow} />
+                </Grid>
+              )}
 
-          {/* <Grid xs={12} md={6} lg={8}>
+              {/* <Grid xs={12} md={6} lg={8}>
           <AnalyticsConversionRates
             title="Conversion rates"
             subheader="(+43%) than last year"
@@ -591,7 +648,7 @@ export function OverviewAnalyticsView() {
           />
         </Grid> */}
 
-          {/* <Grid xs={12} md={6} lg={4}>
+              {/* <Grid xs={12} md={6} lg={4}>
           <AnalyticsCurrentSubject
             title="Current subject"
             chart={{
@@ -605,35 +662,36 @@ export function OverviewAnalyticsView() {
           />
         </Grid> */}
 
-          <Grid xs={12} md={12} lg={12}>
-            {/* <AnalyticsNews title="News" list={_analyticPosts} /> */}
-            <ItemListShortView />
-          </Grid>
+              <Grid xs={12} md={12} lg={12}>
+                {/* <AnalyticsNews title="News" list={_analyticPosts} /> */}
+                <ItemListShortView />
+              </Grid>
 
 
 
-          {/* <Grid xs={12} md={6} lg={4}>
+              {/* <Grid xs={12} md={6} lg={4}>
           <AnalyticsTrafficBySite title="Traffic by site" list={_analyticTraffic} />
         </Grid>
 
         <Grid xs={12} md={6} lg={8}>
           <AnalyticsTasks title="Tasks" list={_analyticTasks} />
         </Grid> */}
-        </Grid>
-      </DashboardContent >
+            </Grid>
+          </DashboardContent >
 
-      <ModalSublistItems
-        openModal={openModal}
-        setOpenModal={setOpenModal}
-        modalDataFiltered={modalDataFiltered}
-        modalTitle={modalTitle}
-        headersCSV={headersCSV}
-        modalButtonColor={modalButtonColor}
-        filters={filters}
-        handleFilterName={handleFilterName}
-        handleViewRow={handleViewRow}
-      />
-
+          <ModalSublistItems
+            openModal={openModal}
+            setOpenModal={setOpenModal}
+            modalDataFiltered={modalDataFiltered}
+            modalTitle={modalTitle}
+            headersCSV={headersCSV}
+            modalButtonColor={modalButtonColor}
+            filters={filters}
+            handleFilterName={handleFilterName}
+            handleViewRow={handleViewRow}
+          />
+        </>
+      )}
     </>
   );
 }

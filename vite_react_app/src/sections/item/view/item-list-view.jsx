@@ -264,11 +264,13 @@ export function ItemListView() {
   if (!tableData || tableData.length === 0) {
     return (
       <DashboardContent>
-        <Box display="flex" alignItems="center" mb={5}>
-          <Alert severity="warning" sx={{ borderRadius: 0 }}>
-            <Typography>No items found</Typography>
-          </Alert>
-        </Box>
+        <Card>
+          <Box sx={{ width: '100%'}}>
+            <Alert severity="warning" sx={{ borderRadius: 0 }}>
+              <Typography>Loading SKUs data...</Typography>
+            </Alert>
+          </Box>
+        </Card>
       </DashboardContent>
     );
   }

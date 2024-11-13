@@ -23,7 +23,7 @@ export default function BackdropBackground({ loading, error, setError, component
                     <>
                         <CircularProgress color="inherit" />
                         <Typography variant="h6" style={{ marginTop: '16px' }}>
-                            Fetching {component} updates...
+                            {component.includes('Loading') ? component : `Fetching ${component} updates...`}
                         </Typography>
                     </>
                 ) : (

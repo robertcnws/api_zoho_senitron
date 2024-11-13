@@ -17,12 +17,12 @@ export function ItemDetailsInfo({ item, senitronItem }) {
 
   useEffect(() => {
     if (item && senitronItem) {
-      let max = Math.max(parseFloat(item.stockOnHand), parseFloat(senitronItem.senitronItem.qty));
-      let min = Math.min(parseFloat(item.stockOnHand), parseFloat(senitronItem.senitronItem.qty));
+      let max = Math.max(parseFloat(item.stockOnHand), parseFloat(senitronItem.count));
+      let min = Math.min(parseFloat(item.stockOnHand), parseFloat(senitronItem.count));
       let match = Math.floor((min / max) * 100);
       setPercentageQty(match);
-      max = Math.max(parseFloat(item.stockOnHand), parseFloat(senitronItem.senitronItem.tagsCount));
-      min = Math.min(parseFloat(item.stockOnHand), parseFloat(senitronItem.senitronItem.tagsCount));
+      max = Math.max(parseFloat(item.stockOnHand), parseFloat(senitronItem.count));
+      min = Math.min(parseFloat(item.stockOnHand), parseFloat(senitronItem.count));
       match = Math.floor((min / max) * 100);
       setPercentageTags(match);
     }
