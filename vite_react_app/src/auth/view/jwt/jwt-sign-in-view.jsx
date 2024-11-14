@@ -1,5 +1,5 @@
 import { z as zod } from 'zod';
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
@@ -9,6 +9,8 @@ import Alert from '@mui/material/Alert';
 import IconButton from '@mui/material/IconButton';
 import LoadingButton from '@mui/lab/LoadingButton';
 import InputAdornment from '@mui/material/InputAdornment';
+
+import { LoadingContext } from 'src/auth/context/loading-context';
 
 import { paths } from 'src/routes/paths';
 import { useRouter } from 'src/routes/hooks';
@@ -22,6 +24,7 @@ import { Form, Field } from 'src/components/hook-form';
 import { useAuthContext } from '../../hooks';
 import { FormHead } from '../../components/form-head';
 import { signInWithPassword, signInWithUsernameAndPassword } from '../../context/jwt';
+
 
 // ----------------------------------------------------------------------
 
@@ -43,6 +46,8 @@ export const SignInSchema = zod.object({
 
 export function JwtSignInView() {
   const router = useRouter();
+
+  const { isMobile } = useContext(LoadingContext);
 
   const { checkUserSession } = useAuthContext();
 
@@ -129,34 +134,36 @@ export function JwtSignInView() {
 
   return (
     <>
-      <FormHead
-        title="Sign in to your account"
-        // description={
-        //   <>
-        //     {`Don’t have an account? `}
-        //     <Link component={RouterLink} href={paths.auth.jwt.signUp} variant="subtitle2">
-        //       Get started
-        //     </Link>
-        //   </>
-        // }
-        sx={{ textAlign: { xs: 'center', md: 'left' } }}
-      />
+      <Box sx={{ mt: isMobile ? 10 : 0}}>
+        <FormHead
+          title="Sign in to your account"
+          // description={
+          //   <>
+          //     {`Don’t have an account? `}
+          //     <Link component={RouterLink} href={paths.auth.jwt.signUp} variant="subtitle2">
+          //       Get started
+          //     </Link>
+          //   </>
+          // }
+          sx={{ textAlign: { xs: 'center', md: 'left' } }}
+        />
 
-      {/* <Alert severity="info" sx={{ mb: 3 }}>
+        {/* <Alert severity="info" sx={{ mb: 3 }}>
         Use <strong>{defaultValues.email}</strong>
         {' with password '}
         <strong>{defaultValues.password}</strong>
       </Alert> */}
 
-      {!!errorMsg && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {errorMsg}
-        </Alert>
-      )}
+        {!!errorMsg && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {errorMsg}
+          </Alert>
+        )}
 
-      <Form methods={methods} onSubmit={onSubmit}>
-        {renderForm}
-      </Form>
+        <Form methods={methods} onSubmit={onSubmit}>
+          {renderForm}
+        </Form>
+      </Box>
     </>
   );
 }
