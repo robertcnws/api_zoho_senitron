@@ -41,7 +41,9 @@ export function AuthSplitLayout({ sx, section, children, header }) {
             leftArea: (
               <>
                 {/* -- Logo -- */}
-                <Logo />
+                <Box sx={{ display: 'flex', alignItems: 'center', mt: 15 }}>
+                  <Logo isSingle={false} sx={{ width: '400px', height: 'auto' }} />
+                </Box>
               </>
             ),
             rightArea: (

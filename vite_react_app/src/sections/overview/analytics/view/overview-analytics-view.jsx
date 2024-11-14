@@ -58,7 +58,7 @@ const spin = keyframes`
 
 export function OverviewAnalyticsView() {
 
-  const { setLoading, setError, setComponent } = useContext(LoadingContext);
+  const { setLoading, setError, setComponent, isMobile } = useContext(LoadingContext);
 
   const router = useRouter();
 
@@ -291,7 +291,7 @@ export function OverviewAnalyticsView() {
 
     setTotalErrors(errors);
     setTotalRFIDCorrect(tSenitronQty - errors);
-    setPercentage(Math.floor(((tSenitronQty - errors) / tOnHand) * 100) || 0);
+    setPercentage(Math.floor(((tOnHand - errors) / tOnHand) * 100) || 0);
 
   }, [itemsZohoSenitron]);
 
@@ -575,10 +575,10 @@ export function OverviewAnalyticsView() {
                                     <TableCell><b>{totalSenitronQty || 0}</b></TableCell>
                                   </TableRow>
                                   <TableRow>
-                                    <TableCell sx={{ fontSize: '11px' }}>RFID Correct:</TableCell>
+                                    <TableCell sx={{ fontSize: '11px' }}>Correct:</TableCell>
                                     <TableCell sx={{ fontSize: '11px' }}>
                                       <Label color='success' sx={{ fontSize: '10px' }}>
-                                        <b>{totalSenitronQty - totalErrors || 0}</b>
+                                        <b>{totalZohoQty - totalErrors || 0}</b>
                                       </Label>
                                     </TableCell>
                                     <TableCell sx={{ fontSize: '11px' }}>Mismatchs:</TableCell>
@@ -597,7 +597,7 @@ export function OverviewAnalyticsView() {
                         <TableContainer sx={{ maxHeight: 350 }}>
                           <Table size='medium' stickyHeader>
                             <TableBody>
-                              <TableNoData notFound={percentage > 0} />
+                              <TableNoData notFound={percentage <= 0} />
                             </TableBody>
                           </Table>
                         </TableContainer>
@@ -657,7 +657,7 @@ export function OverviewAnalyticsView() {
 
               {timelineItems && (
                 <Grid xs={12} md={6} lg={4}>
-                  <AnalyticsOrderTimeline title="Items timeline" list={itemsTimelineData || timelineItems} onViewDetails={handleViewRow} />
+                  <AnalyticsOrderTimeline title="Items timeline" list={itemsTimelineData || timelineItems} isMobile={isMobile} onViewDetails={handleViewRow} />
                 </Grid>
               )}
 

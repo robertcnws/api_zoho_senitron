@@ -114,14 +114,19 @@ export function DashboardLayout({ sx, children, header, data }) {
                 />
                 {/* -- Logo -- */}
                 {isNavHorizontal && (
-                  <Logo
-                    sx={{
-                      display: 'none',
-                      [theme.breakpoints.up(layoutQuery)]: {
-                        display: 'inline-flex',
-                      },
-                    }}
-                  />
+                  <Box sx={{ display: 'flex', alignItems: 'center'}}>
+                    <Logo isSingle={false} sx={{ width: '200px', height: 'auto' }} />
+                  </Box>
+                  // <Logo
+                  //   isSingle={false}
+                  //   sx={{
+                  //     width: '500px',
+                  //     display: 'none',
+                  //     [theme.breakpoints.up(layoutQuery)]: {
+                  //       display: 'inline-flex',
+                  //     },
+                  //   }}
+                  // />
                 )}
                 {/* -- Divider -- */}
                 {isNavHorizontal && (

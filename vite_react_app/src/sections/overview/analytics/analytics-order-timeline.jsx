@@ -11,12 +11,16 @@ import TimelineConnector from '@mui/lab/TimelineConnector';
 import TimelineItem, { timelineItemClasses } from '@mui/lab/TimelineItem';
 
 import { fDateTime } from 'src/utils/format-time';
+import { TableNoData } from 'src/components/table';
+import { Table, TableBody, TableContainer } from '@mui/material';
 
 // ----------------------------------------------------------------------
 
-export function AnalyticsOrderTimeline({ title, subheader, list, onViewDetails, ...other }) {
+export function AnalyticsOrderTimeline({ title, subheader, list, isMobile, onViewDetails, ...other }) {
 
   const [timelineItems, setTimelineItems] = React.useState(null);
+
+  const [notFound, setNotFound] = React.useState(null);
 
   useEffect(() => {
     const newItems = [];
@@ -36,26 +40,56 @@ export function AnalyticsOrderTimeline({ title, subheader, list, onViewDetails, 
       newItems.push(newItem);
     });
     setTimelineItems(newItems);
+    setNotFound(list?.length === 0);
   }, [list]);
 
   return (
     <Card {...other}>
       <CardHeader title={title} subheader={subheader} />
       <Box sx={{ maxHeight: 390, overflowY: 'auto' }}>
-        <Timeline
-          sx={{
-            m: 0,
-            p: 3,
-            [`& .${timelineItemClasses.root}:before`]: {
-              flex: 0,
-              padding: 0,
-            },
-          }}
-        >
-          {timelineItems?.map((item, index) => (
-            <Item key={`${item.id}-${index}`} item={item} lastItem={index === list.length - 1} onViewDetails={onViewDetails} />
-          ))}
-        </Timeline>
+        {timelineItems?.length > 0 ? (
+          <Timeline
+            sx={{
+              m: 0,
+              p: 3,
+              [`& .${timelineItemClasses.root}:before`]: {
+                flex: 0,
+                padding: 0,
+              },
+            }}
+          >
+            {timelineItems?.map((item, index) => (
+              <Item key={`${item.id}-${index}`} item={item} lastItem={index === list.length - 1} onViewDetails={onViewDetails} />
+            ))}
+          </Timeline>
+        ) : (
+          <Box
+            sx={{
+              flexGrow: 1,
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              width: '100%',
+            }}
+          >
+            <TableContainer>
+              <Table>
+                <TableBody>
+                  <TableNoData
+                    notFound={notFound}
+                    sx={{
+                      width: '100%',
+                      height: '110%',
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}
+                  />
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Box>
+        )}
       </Box>
     </Card>
   );
