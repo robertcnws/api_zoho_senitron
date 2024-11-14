@@ -57,7 +57,7 @@ export function Section({
         </Box> */}
         
         <Typography variant="h4" sx={{ textAlign: 'center' }}>
-          {title || 'Warehouse Management System'}
+          {title || ''}
         </Typography>
 
         {/* {subtitle && (
