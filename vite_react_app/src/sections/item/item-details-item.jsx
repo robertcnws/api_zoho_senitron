@@ -18,7 +18,7 @@ import { CONFIG } from 'src/config-global';
 
 // ----------------------------------------------------------------------
 
-export function ItemDetailsItems({ item, senitronItem, setItem, setSenitronItem }) {
+export function ItemDetailsItems({ item, senitronItem, setItem, setSenitronItem, setUpdating }) {
   const { setLoading, setError, setComponent } = useContext(LoadingContext);
   const [currentItem, setCurrentItem] = useState(null);
   const [currentSenitronItem, setCurrentSenitronItem] = useState(null);
@@ -220,8 +220,9 @@ export function ItemDetailsItems({ item, senitronItem, setItem, setSenitronItem 
                 const payload = {
                   item_number: currentItem?.itemId,
                 };
-                setComponent(`inventory item (SKU: ${currentItem?.sku}, ID: ${currentItem?.itemId}) details`);
-                setLoading(true);
+                // setComponent(`inventory item (SKU: ${currentItem?.sku}, ID: ${currentItem?.itemId}) details`);
+                // setLoading(true);
+                setUpdating(true);  
                 axios
                   .post(`${CONFIG.apiUrl}/api_zoho/load/inventory_items/`, payload)
                   .then(() => {
@@ -237,7 +238,8 @@ export function ItemDetailsItems({ item, senitronItem, setItem, setSenitronItem 
                         setError('There was an error fetching senitron inventory item asset.');
                       })
                       .finally(() => {
-                        setLoading(false);
+                        // setLoading(false);
+                        setUpdating(false);
                       });
                   })
                   .catch((err) => {

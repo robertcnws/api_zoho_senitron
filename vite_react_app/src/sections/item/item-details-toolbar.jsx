@@ -9,11 +9,13 @@ import { fDateTime } from 'src/utils/format-time';
 
 import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
+import { generateItemPrintablePDF } from 'src/utils/printable-pdf';
 
 // ----------------------------------------------------------------------
 
 export function ItemDetailsToolbar({
   item,
+  senitronItem,
   backLink,
   status,
 }) {
@@ -73,6 +75,7 @@ export function ItemDetailsToolbar({
             color="inherit"
             variant="outlined"
             startIcon={<Iconify icon="solar:printer-minimalistic-bold" />}
+            onClick={() => {generateItemPrintablePDF({item, senitronItem})}}
           >
             Print
           </Button>

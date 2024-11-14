@@ -270,7 +270,7 @@ export function ItemListView() {
     return (
       <DashboardContent>
         <Card>
-          <Box sx={{ width: '100%'}}>
+          <Box sx={{ width: '100%' }}>
             <Alert severity="warning" sx={{ borderRadius: 0 }}>
               <Typography>Loading SKUs data...</Typography>
             </Alert>
@@ -282,32 +282,32 @@ export function ItemListView() {
 
   if (updating) {
     return (
-        <DashboardContent>
-            <Box
-                sx={{
-                    width: '350px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    height: '80vh',
-                    margin: 'auto'
-                }}
-            >
-                <LinearProgress
-                    key="error"
-                    sx={{
-                        mb: 2,
-                        width: '100%',
-                        '& .MuiLinearProgress-bar': {
-                            backgroundColor: 'black',
-                        },
-                        backgroundColor: '#e0e0e0',
-                    }}
-                />
-            </Box>
-        </DashboardContent>
+      <DashboardContent>
+        <Box
+          sx={{
+            width: '350px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '80vh',
+            margin: 'auto'
+          }}
+        >
+          <LinearProgress
+            key="error"
+            sx={{
+              mb: 2,
+              width: '100%',
+              '& .MuiLinearProgress-bar': {
+                backgroundColor: 'black',
+              },
+              backgroundColor: '#e0e0e0',
+            }}
+          />
+        </Box>
+      </DashboardContent>
     );
-}
+  }
 
   return (
     <>
