@@ -1,8 +1,12 @@
 import { paths } from 'src/routes/paths';
 
+import { CONFIG } from 'src/config-global';
+
 import axios from 'src/utils/axios';
 
 import { STORAGE_KEY } from './constant';
+
+
 
 // ----------------------------------------------------------------------
 
@@ -91,5 +95,28 @@ export async function setSession(accessToken) {
   } catch (error) {
     console.error('Error during set session:', error);
     throw error;
+  }
+}
+
+// ----------------------------------------------------------------------
+
+export async function renewToken() {
+  const refreshToken = localStorage.getItem('refreshToken');
+  if (!refreshToken) {
+    sessionStorage.removeItem('accessToken');
+    window.location.href = paths.auth.jwt.signIn;
+    return;
+  }
+
+  try {
+    const response = await axios.post(`${CONFIG.apiUrl}/api_zoho/api/token/refresh/`, { 
+      refresh: refreshToken 
+    });
+    const newAccessToken = response.data.accessToken;
+    setSession(newAccessToken);
+  } catch (error) {
+    console.error('Error renewing token:', error);
+    sessionStorage.removeItem(STORAGE_KEY);
+    window.location.href = paths.auth.jwt.signIn;
   }
 }

@@ -33,9 +33,9 @@ export function AnalyticsOrderTimeline({ title, subheader, list, isMobile, onVie
             item.text.includes('quantity') ? item.dateActualQuantity :
               item.text.includes('created') && item.text.includes('Senitron') ? item.dateActualQuantity :
                 item.text.includes('created') && item.text.includes('Zoho') ? item.dateActualStockOnHand : item.dateActualStatusSenitron,
-        type: item.text.includes('created') || item.text.includes('INCREASED') ? 'order2' :
-          item.text.includes('changed') || item.text.includes('DECREASED') ? 'order4' :
-            item.text.includes('updated') ? 'order3' : 'order2',
+        type: item.text.includes('created') || item.text.includes('added') ? 'order2' :
+          item.text.includes('changed') ? 'order4' :
+            item.text.includes('updated') ? 'order3' : 'order5',
       };
       newItems.push(newItem);
     });
@@ -97,6 +97,10 @@ export function AnalyticsOrderTimeline({ title, subheader, list, isMobile, onVie
 
 
 function Item({ item, lastItem, onViewDetails, ...other }) {
+
+  const mainText = item?.title.split('->')[0];
+  const subText = item?.title.split('->')[1];
+
   return (
     <TimelineItem {...other} sx={{ cursor: 'pointer' }} onClick={() => onViewDetails(item.id)}>
       <TimelineSeparator>
@@ -113,8 +117,12 @@ function Item({ item, lastItem, onViewDetails, ...other }) {
       </TimelineSeparator>
 
       <TimelineContent>
-        <Typography variant="subtitle2">{item.title}</Typography>
-
+        <Typography variant="subtitle2">
+          {mainText}
+        </Typography>
+        <Typography variant="body2" sx={{ color: 'text.disabled' }}>
+          {subText}
+        </Typography>
         <Typography variant="caption" sx={{ color: 'text.disabled' }}>
           {fDateTime(item.time)}
         </Typography>

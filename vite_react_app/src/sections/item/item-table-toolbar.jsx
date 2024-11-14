@@ -18,7 +18,7 @@ import ExportCSV from 'src/utils/export-csv';
 
 // ----------------------------------------------------------------------
 
-export function ItemTableToolbar({ filters, onResetPage, options, dataFiltered, headersCSV, title }) {
+export function ItemTableToolbar({ filters, onResetPage, options, dataFiltered, headersCSV, setUpdating, title }) {
   const popover = usePopover();
 
   const { setLoading, setError, setComponent } = useContext(LoadingContext);
@@ -126,8 +126,9 @@ export function ItemTableToolbar({ filters, onResetPage, options, dataFiltered, 
           <MenuItem
             onClick={() => {
               popover.onClose();
-              setLoading(true);
-              setComponent('zoho inventory items');
+              // setLoading(true);
+              // setComponent('zoho inventory items');
+              setUpdating(true);
               axios
                 .post(`${CONFIG.apiUrl}/api_zoho/load/inventory_items/`)
                 .then(() => {
@@ -138,7 +139,7 @@ export function ItemTableToolbar({ filters, onResetPage, options, dataFiltered, 
                   setError('There was an error fetching the inventory items.');
                 })
                 .finally(() => {
-                  setLoading(false);
+                  setUpdating(false);
                 });
             }}
           >
@@ -148,8 +149,9 @@ export function ItemTableToolbar({ filters, onResetPage, options, dataFiltered, 
           <MenuItem
             onClick={() => {
               popover.onClose();
-              setLoading(true);
-              setComponent('senitron items');
+              // setLoading(true);
+              // setComponent('senitron items');
+              setUpdating(true);
               axios
                 .post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_item_assets/`)
                 .then(() => {
@@ -161,7 +163,8 @@ export function ItemTableToolbar({ filters, onResetPage, options, dataFiltered, 
                   setError('There was an error fetching senitron inventory items assets.');
                 })
                 .finally(() => {
-                  setLoading(false);
+                  // setLoading(false);
+                  setUpdating(false);
                 });
             }}
           >

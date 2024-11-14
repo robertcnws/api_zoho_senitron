@@ -60,6 +60,8 @@ export function OverviewAnalyticsView() {
 
   const { setLoading, setError, setComponent, isMobile } = useContext(LoadingContext);
 
+  const [updating, setUpdating] = useState(false);
+
   const router = useRouter();
 
   const { data: items } = useItemsQuery();
@@ -320,7 +322,7 @@ export function OverviewAnalyticsView() {
     <>
       {!itemsZohoSenitron || !itemsSenitronZoho || !itemsTimelineData ||
         !itemsZohoData || !seriesPieChart ||
-        totalZohoQty === null || totalSenitronQty === null || totalErrors === null ? (
+        totalZohoQty === null || totalSenitronQty === null || totalErrors === null || updating ? (
         <>
           <Box
             sx={{
@@ -386,8 +388,9 @@ export function OverviewAnalyticsView() {
                   <br />
                   <Stack direction="row" alignItems="center" sx={{ cursor: 'pointer' }}>
                     <Label sx={{ cursor: 'pointer', border: '1px solid #ddd' }} color='warning' onClick={() => {
-                      setLoading(true);
-                      setComponent('Zoho & Senitron Last Info');
+                      // setLoading(true);
+                      // setComponent('Zoho & Senitron Last Info');
+                      setUpdating(true);
                       axios
                         .post(`${CONFIG.apiUrl}/api_zoho/load/inventory_items/`)
                         .then(() => {
@@ -402,7 +405,8 @@ export function OverviewAnalyticsView() {
                               setError('There was an error fetching senitron inventory item asset.');
                             })
                             .finally(() => {
-                              setLoading(false);
+                              // setLoading(false);
+                              setUpdating(false);
                             });
                         })
                         .catch((err) => {
@@ -691,7 +695,7 @@ export function OverviewAnalyticsView() {
 
               <Grid xs={12} md={12} lg={12}>
                 {/* <AnalyticsNews title="News" list={_analyticPosts} /> */}
-                <ItemListShortView />
+                <ItemListShortView updating={updating} setUpdating={setUpdating}/>w
               </Grid>
 
 

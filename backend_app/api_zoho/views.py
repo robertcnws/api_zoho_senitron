@@ -423,12 +423,13 @@ def load_inventory_items(request):
                         date_actual_status_zoho=new_item.last_modified_time or new_item.created_time,
                         zoho_item=new_item,
                         senitron_item=senitron_item,
-                        text=f"SKU: {new_item.sku or '-'} status changed from {prev_item.status} to {new_item.status}"
+                        text=f"{new_item.sku or '-'} status changed -> From {prev_item.status} to {new_item.status}"
                     )
                 )
 
             if int(prev_item.stock_on_hand) != int(new_item.stock_on_hand):
-                change = 'INCREASED' if new_item.stock_on_hand > prev_item.stock_on_hand else 'DECREASED'
+                change = 'added' if new_item.stock_on_hand > prev_item.stock_on_hand else 'removed'
+                abs_value = abs(new_item.stock_on_hand - prev_item.stock_on_hand)
                 timeline_items.append(
                     TimelineItem(
                         item_number=new_item.item_id,
@@ -438,7 +439,7 @@ def load_inventory_items(request):
                         date_actual_stock_on_hand=new_item.last_modified_time or new_item.created_time,
                         zoho_item=new_item,
                         senitron_item=senitron_item,
-                        text=f"SKU: {new_item.sku or '-'} stock on hand {change} from {int(prev_item.stock_on_hand)} to {int(new_item.stock_on_hand)}"
+                        text=f"{new_item.sku or '-'} : {int(abs_value)} unit(s) {change} -> New stock on hand: {int(new_item.stock_on_hand)}"
                     )
                 )
         else:
@@ -452,7 +453,7 @@ def load_inventory_items(request):
                     date_actual_status_zoho=new_item.last_modified_time or new_item.created_time,
                     zoho_item=new_item,
                     senitron_item=senitron_item,
-                    text=f"SKU: {new_item.sku or '-'} created with status {new_item.status}"
+                    text=f"{new_item.sku or '-'} created -> On hand: {int(new_item.stock_on_hand)}, Status: {new_item.status}"
                 )
             )
 

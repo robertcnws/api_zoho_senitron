@@ -13,6 +13,8 @@ import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import Alert from '@mui/material/Alert';
 
+import { LinearProgress } from '@mui/material';
+
 import { paths } from 'src/routes/paths';
 import { useRouter } from 'src/routes/hooks';
 
@@ -49,6 +51,7 @@ import { ItemTableRow } from '../item-table-row';
 import { ItemTableToolbar } from '../item-table-toolbar';
 import { ItemTableFiltersResult } from '../item-table-filters-result';
 
+
 // ----------------------------------------------------------------------
 
 const STATUS_OPTIONS = [{ value: 'all', label: 'All SKUs' }, ...ITEM_STATUS_OPTIONS].concat([
@@ -68,6 +71,8 @@ const headersCSV = [
 export function ItemListView() {
 
   const { isMobile } = useContext(LoadingContext);
+
+  const [updating, setUpdating] = useState(false);
 
   const TABLE_HEAD = [
     { id: 'sku', label: 'SKU', width: isMobile ? 30 : 80 },
@@ -275,6 +280,35 @@ export function ItemListView() {
     );
   }
 
+  if (updating) {
+    return (
+        <DashboardContent>
+            <Box
+                sx={{
+                    width: '350px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: '80vh',
+                    margin: 'auto'
+                }}
+            >
+                <LinearProgress
+                    key="error"
+                    sx={{
+                        mb: 2,
+                        width: '100%',
+                        '& .MuiLinearProgress-bar': {
+                            backgroundColor: 'black',
+                        },
+                        backgroundColor: '#e0e0e0',
+                    }}
+                />
+            </Box>
+        </DashboardContent>
+    );
+}
+
   return (
     <>
       <DashboardContent>
@@ -353,6 +387,7 @@ export function ItemListView() {
             options={{ values: ITEM_SYNC_OPTIONS.map((option) => option.label) }}
             dataFiltered={dataFiltered}
             headersCSV={headersCSV}
+            setUpdating={setUpdating}
             title={filters.state.status === 'all' ? 'All SKUs' :
               filters.state.status === 'synced' ? 'SKU Tracked' :
                 filters.state.status === 'matched_100' ? 'SKU Matched 100%' :
