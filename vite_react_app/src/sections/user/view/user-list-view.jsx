@@ -181,7 +181,7 @@ export function UserListView() {
           heading="List"
           links={[
             { name: 'Dashboard', href: paths.dashboard.general.analytics },
-            { name: 'User', href: paths.dashboard.user.root },
+            { name: 'User', href: paths.dashboard.user.list },
             { name: 'List' },
           ]}
           action={

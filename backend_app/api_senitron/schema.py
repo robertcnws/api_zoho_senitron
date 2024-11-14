@@ -192,7 +192,8 @@ class Query(graphene.ObjectType):
         return TimelineItem.objects.filter(
              Q(zoho_item__sku__isnull=False) & ~Q(zoho_item__sku='') &
                 (~Q(text__icontains='stock on hand') | Q(date_actual_stock_on_hand__isnull=False)) &
-                (~Q(text__icontains='status') | Q(date_actual_status_zoho__isnull=False))
+                (~Q(text__icontains='status') | Q(date_actual_status_zoho__isnull=False)
+                )
             ).annotate(
                 order_date=Coalesce(
                     F('date_actual_stock_on_hand'),

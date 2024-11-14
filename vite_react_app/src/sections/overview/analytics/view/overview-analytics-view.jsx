@@ -5,13 +5,15 @@ import axios from 'axios';
 import { LoadingContext } from 'src/auth/context/loading-context';
 import { Iconify } from 'src/components/iconify';
 import { Label } from 'src/components/label';
-import { Alert, Box, Card, CardHeader, Stack, Table, TableBody, TableCell, TableContainer, TableRow, CircularProgress } from '@mui/material';
+import { Alert, Box, Card, CardHeader, Stack, Table, TableBody, TableCell, TableContainer, TableRow, CircularProgress, LinearProgress } from '@mui/material';
 import { paths } from 'src/routes/paths';
 import { useRouter } from 'src/routes/hooks';
 import { useSetState } from 'src/hooks/use-set-state';
 import MatchGauge from 'src/components/chart/gauge-chart';
 import { TableNoData } from 'src/components/table';
 import { keyframes } from '@mui/system';
+// import { ProgressLinear } from 'src/sections/_examples/mui/progress-view/progress-linear';
+// import { ProgressView } from 'src/sections/_examples/mui/progress-view';
 
 
 import { CONFIG } from 'src/config-global';
@@ -33,6 +35,8 @@ import { AnalyticsWebsiteVisits } from '../analytics-website-visits';
 import { AnalyticsWidgetSummary } from '../analytics-widget-summary';
 import { ModalSublistItems } from './modal-sublist-items';
 import { AnalyticsCurrentVisits } from '../analytics-current-visits';
+
+
 
 const headersCSV = [
   { label: 'SKU', key: 'sku' },
@@ -318,7 +322,30 @@ export function OverviewAnalyticsView() {
         !itemsZohoData || !seriesPieChart ||
         totalZohoQty === null || totalSenitronQty === null || totalErrors === null ? (
         <>
-          <DashboardContent maxWidth="xl">
+          <Box
+            sx={{
+              width: '350px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '80vh',
+              margin: 'auto'
+            }}
+          >
+            <LinearProgress
+              key="error"
+              sx={{
+                mb: 2,
+                width: '100%',
+                '& .MuiLinearProgress-bar': {
+                  backgroundColor: 'black',
+                },
+                backgroundColor: '#e0e0e0', 
+              }}
+            />
+          </Box>
+
+          {/* <DashboardContent maxWidth="xl">
             <Card
               sx={{
                 display: 'flex',
@@ -347,7 +374,7 @@ export function OverviewAnalyticsView() {
                 </Typography>
               </Box>
             </Card>
-          </DashboardContent>
+          </DashboardContent> */}
         </>
       ) : (
         <>

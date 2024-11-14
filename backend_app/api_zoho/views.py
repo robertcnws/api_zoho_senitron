@@ -428,6 +428,7 @@ def load_inventory_items(request):
                 )
 
             if int(prev_item.stock_on_hand) != int(new_item.stock_on_hand):
+                change = 'INCREASED' if new_item.stock_on_hand > prev_item.stock_on_hand else 'DECREASED'
                 timeline_items.append(
                     TimelineItem(
                         item_number=new_item.item_id,
@@ -437,7 +438,7 @@ def load_inventory_items(request):
                         date_actual_stock_on_hand=new_item.last_modified_time or new_item.created_time,
                         zoho_item=new_item,
                         senitron_item=senitron_item,
-                        text=f"SKU: {new_item.sku or '-'} stock on hand changed from {int(prev_item.stock_on_hand)} to {int(new_item.stock_on_hand)}"
+                        text=f"SKU: {new_item.sku or '-'} stock on hand {change} from {int(prev_item.stock_on_hand)} to {int(new_item.stock_on_hand)}"
                     )
                 )
         else:

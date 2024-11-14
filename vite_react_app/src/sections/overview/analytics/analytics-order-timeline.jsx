@@ -29,7 +29,9 @@ export function AnalyticsOrderTimeline({ title, subheader, list, onViewDetails, 
             item.text.includes('quantity') ? item.dateActualQuantity :
               item.text.includes('created') && item.text.includes('Senitron') ? item.dateActualQuantity :
                 item.text.includes('created') && item.text.includes('Zoho') ? item.dateActualStockOnHand : item.dateActualStatusSenitron,
-        type: item.text.includes('created') ? 'order1' : item.text.includes('changed') ? 'order4' : item.text.includes('updated') ? 'order3' : 'order2',
+        type: item.text.includes('created') || item.text.includes('INCREASED') ? 'order1' :
+          item.text.includes('changed') || item.text.includes('DECREASED') ? 'order4' :
+            item.text.includes('updated') ? 'order3' : 'order2',
       };
       newItems.push(newItem);
     });
