@@ -695,7 +695,7 @@ export function OverviewAnalyticsView() {
 
               <Grid xs={12} md={12} lg={12}>
                 {/* <AnalyticsNews title="News" list={_analyticPosts} /> */}
-                <ItemListShortView updating={updating} setUpdating={setUpdating}/>w
+                <ItemListShortView updating={updating} setUpdating={setUpdating}/>
               </Grid>
 
 

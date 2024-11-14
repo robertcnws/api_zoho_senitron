@@ -90,7 +90,7 @@ export function ItemDetailsItems({ item, senitronItem, setItem, setSenitronItem,
               </Grid>
               <Grid item xs={9}>
                 <Box sx={{ typography: 'subtitle2' }}>
-                  <Label color="default"> $ {parseFloat(currentItem.rate).toFixed(2) || '-'} </Label>
+                  <Label color="default"> $ {parseFloat(currentItem.rate).toFixed(2) || '0.00'} </Label>
                 </Box>
               </Grid>
             </Grid>
@@ -102,7 +102,7 @@ export function ItemDetailsItems({ item, senitronItem, setItem, setSenitronItem,
           </Grid>
           <Grid item xs={9}>
             <Box sx={{ typography: 'subtitle2' }}>
-              <Label color="default"> {parseInt(currentItem?.stockOnHand, 10) || '-'} </Label>
+              <Label color="default"> {parseInt(currentItem?.stockOnHand, 10) || '0'} </Label>
             </Box>
           </Grid>
         </Grid>
@@ -113,7 +113,7 @@ export function ItemDetailsItems({ item, senitronItem, setItem, setSenitronItem,
             </Grid>
             <Grid item xs={9}>
               <Box sx={{ typography: 'subtitle2' }}>
-                <Label color="default"> {parseInt(currentSenitronItem?.count, 10) || '-'} </Label>
+                <Label color="default"> {parseInt(currentSenitronItem?.count, 10) || '0'} </Label>
               </Box>
             </Grid>
           </Grid>
@@ -126,10 +126,10 @@ export function ItemDetailsItems({ item, senitronItem, setItem, setSenitronItem,
             <Grid item xs={9}>
               <Box sx={{ typography: 'subtitle2' }}>
                 <Label color={
-                  (parseInt(currentItem?.stockOnHand, 10) - parseInt(currentSenitronItem?.count, 10) === 0 ? 'success' :
-                    (parseInt(currentItem?.stockOnHand, 10) - parseInt(currentSenitronItem?.count, 10) > 0 ? 'warning' : 'error'))
+                  (parseInt(currentSenitronItem?.count, 10) - parseInt(currentItem?.stockOnHand, 10) === 0 ? 'success' :
+                    (parseInt(currentSenitronItem?.count, 10) - parseInt(currentItem?.stockOnHand, 10) > 0 ? 'warning' : 'error'))
                 }>
-                  {(parseInt(currentItem?.stockOnHand, 10) - parseInt(currentSenitronItem?.count, 10)) || '-'}
+                  {(parseInt(currentSenitronItem?.count, 10) - parseInt(currentItem?.stockOnHand, 10)) || '0'}
                 </Label>
               </Box>
             </Grid>

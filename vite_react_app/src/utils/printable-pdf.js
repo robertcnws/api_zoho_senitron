@@ -8,12 +8,12 @@ export const generatePrintablePDF = ({ data, title }) => {
 
     const margin = 40;
     const logoWidth = 120;
-    const logoHeight = 50;
+    const logoHeight = 40;
 
     doc.addImage(logoBase64, 'PNG', margin, margin, logoWidth, logoHeight);
 
     doc.setFontSize(11);
-    doc.text(title, margin + logoWidth + 10, margin + 30);
+    doc.text(` ${title}`, margin + logoWidth + 10, margin + 30);
 
     const date = new Date().toLocaleDateString();
     doc.setFontSize(10);
@@ -69,16 +69,19 @@ export const generatePrintablePDF = ({ data, title }) => {
 
 
 export const generateItemPrintablePDF = ({ item, senitronItem }) => {
+
+    const currentYear = new Date().getFullYear();
+
     const doc = new JsPDF('p', 'pt', 'a4');
 
     const margin = 40;
     const logoWidth = 120;
-    const logoHeight = 50;
+    const logoHeight = 40;
 
     doc.addImage(logoBase64, 'PNG', margin, margin, logoWidth, logoHeight);
 
     doc.setFontSize(11);
-    doc.text(`Details: ${item.sku}`, margin + logoWidth + 10, margin + 30);
+    doc.text(` Details: ${item.sku}`, margin + logoWidth + 10, margin + 30);
 
     const date = new Date().toLocaleDateString();
     doc.setFontSize(10);
@@ -152,7 +155,7 @@ export const generateItemPrintablePDF = ({ item, senitronItem }) => {
             const pageWidth = doc.internal.pageSize.getWidth();
             const pageHeight = doc.internal.pageSize.getHeight();
             doc.text(`Page ${doc.internal.getCurrentPageInfo().pageNumber} of ${pageCount}`, pageWidth / 2, pageHeight - margin / 2, { align: 'center' });
-            doc.text('© 2024 NWS. Warehouse Management System. All rights reserved.', pageWidth / 2, pageHeight - margin / 2 + 10, { align: 'center' });
+            doc.text(`© ${currentYear} NWS. Warehouse Management System. All rights reserved.`, pageWidth / 2, pageHeight - margin / 2 + 10, { align: 'center' });
         },
     });
 
