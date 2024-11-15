@@ -55,16 +55,16 @@ export function AnalyticsCurrentVisits({
       zohoItems.forEach((zItem) => {
         const sItem = sItemMap.get(zItem.itemId);
         if (sItem) {
-          const max = Math.max(zItem.stockOnHand, sItem.senitronItem.qty);
-          const min = Math.min(zItem.stockOnHand, sItem.senitronItem.qty);
+          const max = Math.max(zItem.stockOnHand, sItem.count);
+          const min = Math.min(zItem.stockOnHand, sItem.count);
           const match = (min / max) * 100;
           newData.push({
             itemId: zItem.itemId,
             name: zItem.name,
             sku: zItem.sku,
             stockOnHand: zItem.stockOnHand,
-            quantity: sItem.senitronItem.qty,
-            difference: parseInt(sItem.senitronItem.qty, 10) - parseInt(zItem.stockOnHand, 10),
+            quantity: sItem.count,
+            difference: parseInt(sItem.count, 10) - parseInt(zItem.stockOnHand, 10),
             percentage: match,
           });
         }

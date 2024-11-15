@@ -42,8 +42,8 @@ export function AnalyticsWebsiteVisits({
       zohoItems.forEach((zItem) => {
         const sItem = sItemMap.get(zItem.itemId);
         if (sItem) {
-          const max = Math.max(zItem.stockOnHand, sItem.senitronItem.qty);
-          const min = Math.min(zItem.stockOnHand, sItem.senitronItem.qty);
+          const max = Math.max(zItem.stockOnHand, sItem.count);
+          const min = Math.min(zItem.stockOnHand, sItem.count);
           const match = (min / max) * 100;
           newData.push({
             itemId: zItem.itemId,
