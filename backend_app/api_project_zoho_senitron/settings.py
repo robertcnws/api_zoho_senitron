@@ -34,10 +34,10 @@ environ.Env.read_env()
 
 ALLOWED_HOSTS = [
     'localhost', 
-    '10.1.10.216', 
+    '10.1.10.23', 
     '127.0.0.1', 
     'host.docker.internal', 
-    'api-zoho-senitron.nws.home'
+    'wms.nws.home'
 ]
 
 # Env Vars
@@ -67,11 +67,12 @@ CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3039',
     'http://localhost:3030',
     'https://127.0.0.1',
+    'https://10.1.10.23:444',
     'http://127.0.0.1:3039',
     'http://127.0.0.1:3030',
     'https://host.docker.internal',
     'https://integration.nws.com',
-    'https://api-zoho-senitron.nws.home'
+    'https://wms.nws.home'
 ]
 
 CSRF_COOKIE_SECURE = False  
@@ -93,11 +94,12 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:3039',
     'http://localhost:3030',
     "https://127.0.0.1",
+    'https://10.1.10.23:444',
     "http://127.0.0.1:3039",
     "http://127.0.0.1:3030",
     "https://host.docker.internal",
     "https://integration.nws.com",
-    "https://api-zoho-senitron.nws.home"
+    "https://wms.nws.home"
 ]
 
 CORS_ALLOW_METHODS = [
