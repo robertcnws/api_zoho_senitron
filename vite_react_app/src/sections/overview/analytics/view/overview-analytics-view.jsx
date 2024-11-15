@@ -456,6 +456,7 @@ export function OverviewAnalyticsView() {
                   total={itemsZohoSenitron?.filter(it => it.syncedWithSenitron).length}
                   quantity={itemsZohoSenitron?.filter(it => it.syncedWithSenitron).reduce((acc, item) => acc + item.quantity, 0)}
                   stockOnHand={itemsZohoSenitron?.filter(it => it.syncedWithSenitron).reduce((acc, item) => acc + item.stockOnHand, 0)}
+                  errors={totalErrors}
                   color="success"
                   icon={
                     <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-synced.svg`} />
