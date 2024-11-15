@@ -342,7 +342,7 @@ export function OverviewAnalyticsView() {
                 '& .MuiLinearProgress-bar': {
                   backgroundColor: 'black',
                 },
-                backgroundColor: '#e0e0e0', 
+                backgroundColor: '#e0e0e0',
               }}
             />
           </Box>
@@ -661,7 +661,12 @@ export function OverviewAnalyticsView() {
 
               {timelineItems && (
                 <Grid xs={12} md={6} lg={4}>
-                  <AnalyticsOrderTimeline title="Items timeline" list={itemsTimelineData || timelineItems} isMobile={isMobile} onViewDetails={handleViewRow} />
+                  <AnalyticsOrderTimeline
+                    title="Items timeline"
+                    list={itemsTimelineData || timelineItems}
+                    isMobile={isMobile}
+                    onViewDetails={handleViewRow}
+                  />
                 </Grid>
               )}
 
@@ -695,7 +700,7 @@ export function OverviewAnalyticsView() {
 
               <Grid xs={12} md={12} lg={12}>
                 {/* <AnalyticsNews title="News" list={_analyticPosts} /> */}
-                <ItemListShortView updating={updating} setUpdating={setUpdating}/>
+                <ItemListShortView updating={updating} setUpdating={setUpdating} />
               </Grid>
 
 

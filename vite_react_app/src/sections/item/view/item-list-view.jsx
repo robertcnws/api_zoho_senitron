@@ -152,14 +152,15 @@ export function ItemListView() {
         const senitronItem = senitronData.find((sItem) => sItem?.itemNumber === item.itemId);
         return {
           ...item,
-          syncedWithSenitron: !!senitronItem,
+          previousSyncedWithSenitron: item.syncedWithSenitron,
+          syncedWithSenitron: item.syncedWithSenitron ? item.syncedWithSenitron : !!senitronItem,
           quantity: senitronItem?.count || 0,
           difference: parseInt(senitronItem?.count || '0', 10) - parseInt(item.stockOnHand || '0', 10),
           assets: senitronItem?.assets || [],
         };
       });
       setTableData(rData);
-      const payload = rData.map((item) => ({
+      const payload = rData.filter((item) => !item.previousSyncedWithSenitron && item.syncedWithSenitron).map((item) => ({
         itemId: item.itemId,
         syncedWithSenitron: item.syncedWithSenitron,
       }));
