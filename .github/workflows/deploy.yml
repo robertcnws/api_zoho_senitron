@@ -1,0 +1,63 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+    #   - main
+    - development
+  pull_request:
+    branches:
+    #   - main
+      - development
+
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted
+
+    steps:
+      # 1. Checkout del código
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      # 2. Configurar Node.js para el frontend
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      # 3. Instalar dependencias y construir el frontend
+      - name: Install and Build Frontend
+        working-directory: ./vite_react_app 
+        run: |
+          npm install
+          npm run build
+
+      # 4. Configurar Python para el backend
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12' 
+
+      # 5. Instalar dependencias del backend
+      - name: Install Backend Dependencies
+        working-directory: ./backend_app 
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install -r requirements.txt
+
+      # 6. Construir y etiquetar las imágenes de Docker
+      - name: Build Docker Images
+        run: |
+          docker-compose build
+
+      # 7. Desplegar las aplicaciones usando Docker Compose
+      - name: Deploy with Docker Compose
+        run: |
+          docker-compose down
+          docker-compose up -d
+
+      # 8. (Opcional) Limpiar imágenes antiguas
+      - name: Cleanup Docker
+        run: |
+          docker system prune -f
