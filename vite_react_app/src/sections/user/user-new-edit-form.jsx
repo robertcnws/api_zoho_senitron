@@ -1,5 +1,5 @@
 import { z as zod } from 'zod';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import { CONFIG } from 'src/config-global';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -19,6 +19,7 @@ import { useRouter } from 'src/routes/hooks';
 import { toast } from 'src/components/snackbar';
 import { Form, Field, schemaHelper } from 'src/components/hook-form';
 import { MenuItem } from '@mui/material';
+import { useUserList } from 'src/_mock/_user';
 
 // ----------------------------------------------------------------------
 
@@ -27,6 +28,18 @@ import { MenuItem } from '@mui/material';
 export function UserNewEditForm({ currentUser }) {
   
   const router = useRouter();
+
+  const { loading, error, _userList } = useUserList();
+
+  const [users, setUsers] = useState(null);
+
+  useEffect(() => {
+    if (_userList && _userList.length > 0) {
+      setUsers(_userList);
+    } else if (!loading && !error) {
+      setUsers(null);
+    }
+  }, [_userList, loading, error]);
 
   const NewUserSchema = zod.object({
     // avatarUrl: schemaHelper.file({
@@ -55,6 +68,27 @@ export function UserNewEditForm({ currentUser }) {
     // Not required
     status: zod.string(),
     isVerified: zod.boolean(),
+  })
+  .refine((data) => {
+    if (!currentUser) {
+      return data.password === data.confirmPassword;
+    }
+    return true;
+  }, {
+    message: "Passwords must match",
+    path: ["confirmPassword"],
+  })
+  .refine((data) => {
+    if (!currentUser) {
+      const usernameExists = users?.some(
+        (user) => user.username.toLowerCase() === data.username.toLowerCase()
+      );
+      return !usernameExists;
+    }
+    return true;
+  }, {
+    message: "Username already exists",
+    path: ["username"],
   });
 
   const defaultValues = useMemo(
@@ -101,8 +135,8 @@ export function UserNewEditForm({ currentUser }) {
       reset();
       toast.success(currentUser ? 'Update success!' : 'Create success!');
       router.push(paths.dashboard.user.list);
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error(err);
     }
   });
 

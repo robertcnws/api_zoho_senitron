@@ -29,6 +29,8 @@ export function UserTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
 
   const quickEdit = useBoolean();
 
+  const userLogged = JSON.parse(localStorage.getItem('userLogged'));
+
   return (
     <>
       <TableRow hover selected={selected} aria-checked={selected} tabIndex={-1}>
@@ -95,20 +97,21 @@ export function UserTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
         slotProps={{ arrow: { placement: 'right-top' } }}
       >
         <MenuList>
+          {userLogged.data.username !== row.username && (
+            <MenuItem
+              onClick={() => {
+                confirm.onTrue();
+                popover.onClose();
+              }}
+              sx={{ color: 'error.main' }}
+            >
+              <Iconify icon="solar:trash-bin-trash-bold" />
+              Delete
+            </MenuItem>
+          )}
           <MenuItem
             onClick={() => {
-              confirm.onTrue();
-              popover.onClose();
-            }}
-            sx={{ color: 'error.main' }}
-          >
-            <Iconify icon="solar:trash-bin-trash-bold" />
-            Delete
-          </MenuItem>
-
-          <MenuItem
-            onClick={() => {
-              quickEdit.onTrue(); 
+              quickEdit.onTrue();
               popover.onClose();
             }}
           >

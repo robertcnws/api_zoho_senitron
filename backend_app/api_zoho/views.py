@@ -607,7 +607,33 @@ def sync_with_senitron(request):
     return JsonResponse({'message': 'Items synced successfully'}, status=200)
 
 
-   
+#############################################
+# DELETE USER
+#############################################  
+
+@csrf_exempt
+@api_view(['DELETE'])
+@permission_classes([AllowAny])
+def delete_user(request, user_id):
+    user = LoginUser.objects.filter(id=user_id).first()
+    if not user:
+        return JsonResponse({'error': 'User not found'}, status=404)
+    user.delete()
+    return JsonResponse({'message': 'User deleted successfully'}, status=200) 
+
+@csrf_exempt
+@api_view(['DELETE'])
+@permission_classes([AllowAny])
+def delete_users(request):
+    data = json.loads(request.body)
+    user_ids = data.get('user_ids', [])
+    if not user_ids:
+        return JsonResponse({'error': 'User ids are missing'}, status=400)
+    users = LoginUser.objects.filter(id__in=user_ids)
+    if not users:
+        return JsonResponse({'error': 'Users not found'}, status=404)
+    users.delete()
+    return JsonResponse({'message': 'Users deleted successfully'}, status=200)
     
 
 #############################################

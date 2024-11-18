@@ -1,5 +1,7 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 
+import axios from 'axios';
+
 import Box from '@mui/material/Box';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
@@ -44,7 +46,6 @@ import {
 import { UserTableRow } from '../user-table-row';
 import { UserTableToolbar } from '../user-table-toolbar';
 import { UserTableFiltersResult } from '../user-table-filters-result';
-
 
 // ----------------------------------------------------------------------
 
@@ -134,14 +135,19 @@ export function UserListView() {
   const notFound = useMemo(() => (!dataFiltered.length && canReset) || !dataFiltered.length, [dataFiltered.length, canReset]);
 
   const handleDeleteRow = useCallback(
-    (id) => {
+    async (id) => {
       const deleteRow = tableData.filter((row) => row.id !== id);
+      
+      const response = await axios.delete(`${CONFIG.apiUrl}/api_zoho/delete_user/${id}/`);
 
-      toast.success('Delete success!');
-
-      setTableData(deleteRow);
-
-      table.onUpdatePageDeleteRow(dataInPage.length);
+      if (response.status === 200) {
+        setTableData(deleteRow);
+        table.onUpdatePageDeleteRow(dataInPage.length);
+        toast.success('Delete success!');
+      }
+      else {
+        toast.error('Delete failed!');
+      }
     },
     [dataInPage.length, table, tableData]
   );
@@ -149,14 +155,26 @@ export function UserListView() {
   const handleDeleteRows = useCallback(() => {
     const deleteRows = tableData.filter((row) => !table.selected.includes(row.id));
 
-    toast.success('Delete success!');
-
     setTableData(deleteRows);
 
     table.onUpdatePageDeleteRows({
       totalRowsInPage: dataInPage.length,
       totalRowsFiltered: dataFiltered.length,
     });
+
+    const payload = {
+      user_ids: table.selected,
+    }
+
+    const response = axios.post(`${CONFIG.apiUrl}/api_zoho/delete_users/`, payload);
+
+    if (response.status === 200) {
+      toast.success('Delete success!');
+    }
+    else {
+      toast.error('Delete failed!');
+    }
+
   }, [dataFiltered.length, dataInPage.length, table, tableData]);
 
   const handleEditRow = useCallback(
