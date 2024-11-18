@@ -128,11 +128,11 @@ export function UserQuickEditForm({ currentUser, open, onClose }) {
       PaperProps={{ sx: { maxWidth: 720 } }}
     >
       <Form methods={methods} onSubmit={onSubmit}>
-        <DialogTitle>Quick Update</DialogTitle>
+        <DialogTitle>Quick User Info Update</DialogTitle>
 
         <DialogContent>
           <Alert variant="outlined" severity="info" sx={{ mb: 3 }}>
-            {/* Account is waiting for confirmation */}
+            USERNAME: <b>{currentUser?.username}</b>
           </Alert>
 
           <Box

@@ -385,23 +385,23 @@ function applyFilter({ inputData, comparator, filters }) {
 
   if (name) {
     inputData = inputData.filter(
-      (user) => user.name.toLowerCase().indexOf(name.toLowerCase()) !== -1 || 
-      user.email.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
-      user.phoneNumber.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
-      user.zipCode.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
-      user.state.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
-      user.city.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
-      user.address.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
-      user.country.toLowerCase().indexOf(name.toLowerCase()) !== -1
+      (user) => user?.name?.toLowerCase().indexOf(name.toLowerCase()) !== -1 || 
+      user?.email?.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
+      user?.phoneNumber?.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
+      user?.zipCode?.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
+      user?.state?.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
+      user?.city?.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
+      user?.address?.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
+      user?.country?.toLowerCase().indexOf(name.toLowerCase()) !== -1
     );
   }
 
   if (status !== 'all') {
-    inputData = inputData.filter((user) => user.status === status);
+    inputData = inputData.filter((user) => user?.status === status);
   }
 
   if (role.length) {
-    inputData = inputData.filter((user) => role.includes(user.role));
+    inputData = inputData.filter((user) => role.includes(user?.role));
   }
 
   return inputData;
