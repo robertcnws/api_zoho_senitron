@@ -26,7 +26,7 @@ RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-k
 # Copia el archivo de requisitos al directorio de trabajo
 COPY requirements.txt /app/
 
-# Actualiza pip y instala las dependencias de Python
+# Actualiza pip e instala las dependencias de Python
 RUN pip install --upgrade pip \
     && pip install gunicorn uvicorn \
     && pip install -r requirements.txt
