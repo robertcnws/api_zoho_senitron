@@ -2,6 +2,7 @@ services:
   backend-api-zoho-senitron:
     build:
       context: ./backend_app
+      dockerfile: ./backend_app/Dockerfile
     container_name: backend-api-zoho-senitron
     image: robertocnws/backend-api-zoho-senitron:latest
     cap_add:

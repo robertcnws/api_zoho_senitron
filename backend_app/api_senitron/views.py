@@ -15,8 +15,6 @@ from requests.packages.urllib3.util.retry import Retry
 import requests
 import logging
 import json
-import asyncio
-import aiohttp
 
 
 logging.basicConfig(level=logging.DEBUG)
