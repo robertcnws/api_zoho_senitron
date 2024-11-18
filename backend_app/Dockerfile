@@ -8,20 +8,30 @@ ENV PYTHONPATH=/app
 # Establece el directorio de trabajo dentro del contenedor
 WORKDIR /app
 
-# Instala dependencias del sistema necesarias para compilar psycopg2
+# Instala dependencias del sistema necesarias para compilar psycopg2 y agregar el repositorio de PostgreSQL
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
-    libpq-dev \
     wget \
-    gnupg2 \
+    gnupg \
+    ca-certificates \
     lsb-release \
     && rm -rf /var/lib/apt/lists/*
 
-# Agrega el repositorio de PostgreSQL y actualiza las listas de paquetes
-RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
-    && echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list \
-    && apt-get update && apt-get install -y --no-install-recommends postgresql-client-16 \
+# Agrega la clave GPG de PostgreSQL de forma compatible con Debian 12
+RUN mkdir -p /etc/apt/keyrings \
+    && wget -qO- https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor > /etc/apt/keyrings/postgresql.gpg
+
+# Agrega el repositorio de PostgreSQL usando el método 'signed-by'
+RUN echo "deb [signed-by=/etc/apt/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+
+# Actualiza los paquetes e instala libpq-dev y postgresql-client-16
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq-dev \
+    postgresql-client-16 \
     && rm -rf /var/lib/apt/lists/*
+
+# Verifica que pg_config está disponible
+RUN which pg_config
 
 # Copia el archivo de requisitos al directorio de trabajo
 COPY requirements.txt /app/
