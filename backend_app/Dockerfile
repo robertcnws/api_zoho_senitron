@@ -11,6 +11,7 @@ WORKDIR /app
 # Instala dependencias del sistema necesarias para compilar psycopg2 y agregar el repositorio de PostgreSQL
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    libpq-dev \
     wget \
     gnupg \
     ca-certificates \
@@ -37,7 +38,7 @@ RUN which pg_config
 COPY requirements.txt /app/
 
 # Actualiza pip e instala las dependencias de Python
-RUN pip install --upgrade pip \
+RUN pip install --upgrade pip setuptools wheel \
     && pip install gunicorn uvicorn \
     && pip install -r requirements.txt
 
