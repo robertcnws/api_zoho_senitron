@@ -10,7 +10,7 @@ import { paths } from 'src/routes/paths';
 import { useRouter } from 'src/routes/hooks';
 import { useSetState } from 'src/hooks/use-set-state';
 import MatchGauge from 'src/components/chart/gauge-chart';
-import { TableNoData } from 'src/components/table';
+import { TableNoData, useTable, getComparator } from 'src/components/table';
 import { keyframes } from '@mui/system';
 // import { ProgressLinear } from 'src/sections/_examples/mui/progress-view/progress-linear';
 // import { ProgressView } from 'src/sections/_examples/mui/progress-view';
@@ -35,6 +35,7 @@ import { AnalyticsWebsiteVisits } from '../analytics-website-visits';
 import { AnalyticsWidgetSummary } from '../analytics-widget-summary';
 import { ModalSublistItems } from './modal-sublist-items';
 import { AnalyticsCurrentVisits } from '../analytics-current-visits';
+
 
 
 
@@ -96,8 +97,11 @@ export function OverviewAnalyticsView() {
 
   const filters = useSetState({ name: '' });
 
+  const table = useTable({ defaultDense: true });
+
   const modalDataFiltered = applyFilter({
     inputData: modalListItems,
+    comparator: getComparator(table.order, table.orderBy),
     filters: filters.state,
   });
 
@@ -657,6 +661,7 @@ export function OverviewAnalyticsView() {
                     handleViewRow={handleViewRow}
                     handleFilterName={handleFilterName}
                     filters={filters}
+                    table={table}
                   />
                 </Grid>
               )}
@@ -727,6 +732,7 @@ export function OverviewAnalyticsView() {
             filters={filters}
             handleFilterName={handleFilterName}
             handleViewRow={handleViewRow}
+            table={table}
           />
         </>
       )}
@@ -734,9 +740,19 @@ export function OverviewAnalyticsView() {
   );
 }
 
-function applyFilter({ inputData, filters }) {
+function applyFilter({ inputData, comparator, filters }) {
 
   const { name } = filters;
+
+  const stabilizedThis = inputData?.map((el, index) => [el, index]);
+
+  stabilizedThis?.sort((a, b) => {
+    const order = comparator(a[0], b[0]);
+    if (order !== 0) return order;
+    return a[1] - b[1];
+  });
+
+  inputData = stabilizedThis?.map((el) => el[0]);
 
   if (name) {
     inputData = inputData?.filter(

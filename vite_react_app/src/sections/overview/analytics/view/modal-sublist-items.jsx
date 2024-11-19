@@ -1,5 +1,6 @@
 import React, { useContext } from 'react';
-import { Box, Button, TextField, Stack, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, InputAdornment } from "@mui/material";
+import Table from '@mui/material/Table';
+import { Box, Button, TextField, Stack, TableContainer, TableHead, TableRow, TableCell, TableBody, InputAdornment } from "@mui/material";
 import { usePopover, CustomPopover } from 'src/components/custom-popover';
 import IconButton from '@mui/material/IconButton';
 import MenuList from '@mui/material/MenuList';
@@ -11,24 +12,38 @@ import { alpha, useTheme } from '@mui/material/styles';
 import { generatePrintablePDF } from 'src/utils/printable-pdf';
 import { LoadingContext } from 'src/auth/context/loading-context';
 import ExportCSV from "src/utils/export-csv";
+import { TableHeadCustom } from 'src/components/table';
 
-export function ModalSublistItems({ 
-  openModal, 
-  setOpenModal, 
-  modalDataFiltered, 
-  modalTitle, 
+export function ModalSublistItems({
+  openModal,
+  setOpenModal,
+  modalDataFiltered,
+  modalTitle,
   headersCSV,
-  modalButtonColor, 
-  filters, 
-  handleFilterName, 
-  handleViewRow, 
-  ...other 
+  modalButtonColor,
+  filters,
+  handleFilterName,
+  handleViewRow,
+  table,
+  ...other
 }) {
 
   const theme = useTheme();
   const popover = usePopover();
 
   const { isMobile } = useContext(LoadingContext);
+
+  const TABLE_HEAD = [
+    { id: 'no', label: '#' },
+    { id: 'sku', label: 'SKU', width: 300 },
+    ...(!isMobile ? [
+      { id: 'name', label: 'Name', width: 500 },
+    ] : []),
+    { id: 'stockOnHand', label: 'On Hand', width: 200 },
+    { id: 'quantity', label: 'RFID Count', width: 200 },
+    { id: 'difference', label: 'Difference', width: 200 },
+    { id: '', label: 'Actions', width: 200 },
+  ];
 
   return (
     <>
@@ -66,10 +81,17 @@ export function ModalSublistItems({
                 <Iconify icon="eva:more-vertical-fill" />
               </IconButton>
             </Stack>
-            <br/>
+            <br />
             <TableContainer sx={{ maxHeight: 440 }}>
-              <Table size='small' stickyHeader>
-                <TableHead>
+              <Table size={table?.dense ? 'small' : 'medium'} sx={{ minWidth: 960 }} stickyHeader>
+                <TableHeadCustom
+                  order={table?.order}
+                  orderBy={table?.orderBy}
+                  headLabel={TABLE_HEAD}
+                  rowCount={modalDataFiltered?.length}
+                  onSort={table?.onSort}
+                />
+                {/* <TableHead>
                   <TableRow>
                     <TableCell>No.</TableCell>
                     <TableCell sx={{ width: 300 }}>SKU</TableCell>
@@ -79,7 +101,7 @@ export function ModalSublistItems({
                     <TableCell sx={{ width: 200 }}>Difference</TableCell>
                     <TableCell sx={{ width: 200 }}>Actions</TableCell>
                   </TableRow>
-                </TableHead>
+                </TableHead> */}
                 <TableBody>
                   {modalDataFiltered?.map((item, index) => (
                     <TableRow key={`${item.itemId}-${index}`}>
@@ -149,7 +171,7 @@ export function ModalSublistItems({
           >
             <ExportCSV data={modalDataFiltered} headers={headersCSV} buttonText="Export CSV" docName={modalTitle} />
           </MenuItem>
-          
+
         </MenuList>
       </CustomPopover>
     </>

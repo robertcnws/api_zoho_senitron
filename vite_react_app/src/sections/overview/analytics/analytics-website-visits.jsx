@@ -27,6 +27,7 @@ export function AnalyticsWebsiteVisits({
   handleViewRow,
   handleFilterName,
   filters,
+  table,
   ...other
 }) {
 
@@ -153,6 +154,7 @@ export function AnalyticsWebsiteVisits({
         filters={filters}
         handleFilterName={handleFilterName}
         handleViewRow={handleViewRow}
+        table={table}
       />
     </>
   );

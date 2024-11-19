@@ -506,7 +506,6 @@ export function ItemListView() {
                 </Tooltip>
               }
             />
-
             <Scrollbar>
               <TableContainer sx={{ maxHeight: 440 }}>
                 <Table size={table.dense ? 'small' : 'medium'} sx={{ minWidth: 960 }} stickyHeader>
