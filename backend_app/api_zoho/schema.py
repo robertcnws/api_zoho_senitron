@@ -2,7 +2,7 @@ import graphene
 from django.db.models import BigIntegerField
 from django.db.models.functions import Cast
 from graphene_django.types import DjangoObjectType
-from .models import LoginUser, ZohoInventoryItem, ZohoInventoryShipmentSalesOrder
+from .models import LoginUser, ZohoInventoryItem, ZohoInventoryShipmentSalesOrder, ZohoSkuTrackInfo
 from datetime import datetime
 
 class LoginUserType(DjangoObjectType):
@@ -20,10 +20,17 @@ class ZohoInventoryShipmentSalesOrderType(DjangoObjectType):
         model = ZohoInventoryShipmentSalesOrder
         fields = "__all__"
         
+        
+class ZohoSkuTrackInfoType(DjangoObjectType):
+    class Meta:
+        model = ZohoSkuTrackInfo
+        fields = "__all__"
+        
 
 class Query(graphene.ObjectType):
     all_login_users = graphene.List(LoginUserType)
     all_zoho_inventory_items = graphene.List(ZohoInventoryItemType)
+    all_zoho_sku_track_info = graphene.List(ZohoSkuTrackInfoType)
 
     # Agrega los argumentos `start_date` y `end_date` para filtrar por rango de fechas
     all_zoho_inventory_sales_orders = graphene.List(
@@ -40,6 +47,9 @@ class Query(graphene.ObjectType):
         return ZohoInventoryItem.objects.annotate(
             item_id_int=Cast('item_id', BigIntegerField())
         ).order_by('-item_id_int')
+        
+    def resolve_all_zoho_sku_track_info(self, info, **kwargs):
+        return ZohoSkuTrackInfo.objects.all().order_by('-date')
 
     def resolve_all_zoho_inventory_sales_orders(self, info, start_date=None, end_date=None, **kwargs):
         # sales_orders = ZohoInventoryShipmentSalesOrder.objects.all().order_by('-salesorder_id')

@@ -25,6 +25,7 @@ urlpatterns = [
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('sync/senitron/', views.sync_with_senitron, name='sync_with_senitron'),
+    path('create_zoho_sku_track_info/', views.create_zoho_sku_track_info, name='create_zoho_sku_track_info'),
     path('graphql/', csrf_exempt(GraphQLView.as_view(graphiql=True, schema=schema))),
 
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

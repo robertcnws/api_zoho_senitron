@@ -97,7 +97,7 @@ export function ItemListShortView( {updating, setUpdating} ) {
 
     const [tableData, setTableData] = useState([]);
 
-    const filters = useSetState({ name: '', syncedWithSenitron: [], status: localStorage.getItem('itemStatus') || 'synced' });
+    const filters = useSetState({ name: '', syncedWithSenitron: [], status: STATUS_OPTIONS.includes(localStorage.getItem('itemStatus')) ? localStorage.getItem('itemStatus') : 'synced' });
 
 
     useEffect(() => {

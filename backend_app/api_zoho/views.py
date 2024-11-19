@@ -9,7 +9,7 @@ from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from .models import AppConfig, ZohoInventoryItem, ZohoInventoryShipmentSalesOrder, LoginUser
+from .models import AppConfig, ZohoInventoryItem, ZohoInventoryShipmentSalesOrder, LoginUser, ZohoSkuTrackInfo
 from api_senitron.models import SenitronItem, TimelineItem
 from .manage_instances import create_inventory_item_instance, create_inventory_sales_order_instance
 from rest_framework.decorators import api_view, permission_classes
@@ -634,6 +634,40 @@ def delete_users(request):
         return JsonResponse({'error': 'Users not found'}, status=404)
     users.delete()
     return JsonResponse({'message': 'Users deleted successfully'}, status=200)
+
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def create_zoho_sku_track_info(request):
+    last_sku_track_info = ZohoSkuTrackInfo.objects.last()
+    data = json.loads(request.body)
+    sku_tracked = data.get('sku_tracked', 0)
+    sku_matched = data.get('sku_matched', 0)
+    sku_missing = data.get('sku_missing', 0)
+    sku_excess = data.get('sku_excess', 0)
+    if not last_sku_track_info:
+        ZohoSkuTrackInfo.objects.create(
+            sku_tracked=sku_tracked,
+            sku_matched=sku_matched,
+            sku_missing=sku_missing,
+            sku_excess=sku_excess   
+        ).save()
+        message = 'SKU track info created successfully'
+    elif last_sku_track_info.sku_tracked != sku_tracked or \
+         last_sku_track_info.sku_matched != sku_matched or \
+         last_sku_track_info.sku_missing != sku_missing or \
+         last_sku_track_info.sku_excess != sku_excess:
+        ZohoSkuTrackInfo.objects.create(
+            sku_tracked=sku_tracked,
+            sku_matched=sku_matched,
+            sku_missing=sku_missing,
+            sku_excess=sku_excess
+        ).save()
+        message = 'SKU track info updated successfully'
+    else:
+        message = 'SKU track info already exists'
+    return JsonResponse({'message': message}, status=201)
     
 
 #############################################

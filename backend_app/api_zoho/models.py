@@ -170,4 +170,16 @@ class ZohoInventoryShipmentSalesOrder(models.Model):
 
     def __str__(self):
         return f"Sales Order {self.salesorder_number} - {self.customer_name}"
+    
+    
+class ZohoSkuTrackInfo(models.Model):
+    id = models.AutoField(primary_key=True)
+    sku_tracked = models.IntegerField(default=0)
+    sku_matched = models.IntegerField(default=0)
+    sku_missing = models.IntegerField(default=0)
+    sku_excess = models.IntegerField(default=0)
+    date = models.DateTimeField(default=timezone.now)
+    
+    def __str__(self):
+        return f"SKU Tracking Info for {self.date}"
 

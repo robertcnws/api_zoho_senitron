@@ -1,23 +1,20 @@
-import React, { useState, useEffect, useCallback, useContext } from 'react';
+import React, { useState, useEffect, useCallback, useContext, useRef, useMemo } from 'react';
 import Typography from '@mui/material/Typography';
 import Grid from '@mui/material/Unstable_Grid2';
 import axios from 'axios';
+import { fDateTime } from 'src/utils/format-time';
 import { LoadingContext } from 'src/auth/context/loading-context';
 import { Iconify } from 'src/components/iconify';
 import { Label } from 'src/components/label';
-import { Alert, Box, Card, CardHeader, Stack, Table, TableBody, TableCell, TableContainer, TableRow, CircularProgress, LinearProgress } from '@mui/material';
+import { Box, Card, CardHeader, Stack, Table, TableBody, TableCell, TableContainer, TableRow, LinearProgress } from '@mui/material';
 import { paths } from 'src/routes/paths';
 import { useRouter } from 'src/routes/hooks';
 import { useSetState } from 'src/hooks/use-set-state';
 import MatchGauge from 'src/components/chart/gauge-chart';
 import { TableNoData, useTable, getComparator } from 'src/components/table';
-import { keyframes } from '@mui/system';
-// import { ProgressLinear } from 'src/sections/_examples/mui/progress-view/progress-linear';
-// import { ProgressView } from 'src/sections/_examples/mui/progress-view';
-
-
 import { CONFIG } from 'src/config-global';
 import { useItemsQuery, useSenitronItemsQuery } from 'src/_mock/_items';
+import { useSkuTrackInfoQuery } from 'src/_mock/_sku_track_info';
 import { DashboardContent } from 'src/layouts/dashboard';
 import {
   _analyticTasks,
@@ -31,12 +28,9 @@ import { useTimelineItemsQuery } from 'src/_mock/_timelineItems';
 import { ItemListShortView } from 'src/sections/item/view';
 
 import { AnalyticsOrderTimeline } from '../analytics-order-timeline';
-import { AnalyticsWebsiteVisits } from '../analytics-website-visits';
 import { AnalyticsWidgetSummary } from '../analytics-widget-summary';
 import { ModalSublistItems } from './modal-sublist-items';
 import { AnalyticsCurrentVisits } from '../analytics-current-visits';
-
-
 
 
 const headersCSV = [
@@ -45,22 +39,11 @@ const headersCSV = [
   { label: 'Difference', key: 'difference' },
 ]
 
-const spin = keyframes`
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-`;
-
-
-
 // ----------------------------------------------------------------------
 
 export function OverviewAnalyticsView() {
 
-  const { setLoading, setError, setComponent, isMobile } = useContext(LoadingContext);
+  const { setError, isMobile } = useContext(LoadingContext);
 
   const [updating, setUpdating] = useState(false);
 
@@ -69,35 +52,277 @@ export function OverviewAnalyticsView() {
   const { data: items } = useItemsQuery();
   const { data: senitronItems } = useSenitronItemsQuery();
   const { data: timelineItems } = useTimelineItemsQuery();
+  const { data: itemsSkusTrack } = useSkuTrackInfoQuery();
 
-  const [itemsTimelineData, setItemsTimelineData] = useState(timelineItems);
-  const [itemsZohoData, setItemsZohoData] = useState(null);
-
-  const [itemsSynced, setItemsSynced] = useState(null);
-  const [itemsMismatched, setItemsMismatched] = useState(null);
-  const [itemsZohoSenitron, setItemsZohoSenitron] = useState(null);
-  const [itemsSenitronZoho, setItemsSenitronZoho] = useState(null);
-  const [itemsZohoMismatched, setItemsZohoMismatched] = useState(null);
-  const [percentage, setPercentage] = useState(null);
-  const [totalZohoQty, setTotalZohoQty] = useState(null);
-  const [totalSenitronQty, setTotalSenitronQty] = useState(null);
-  const [totalErrors, setTotalErrors] = useState(null);
-  const [totalRFIDCorrect, setTotalRFIDCorrect] = useState(null);
-
-  const [categories, setCategories] = useState(null);
-  const [series, setSeries] = useState(null);
-  const [seriesPieChart, setSeriesPieChart] = useState(null);
+  const [categories, setCategories] = useState(['Items']);
 
   const [openModal, setOpenModal] = useState(false);
   const [modalListItems, setModalListItems] = useState(null);
   const [modalTitle, setModalTitle] = useState(null);
   const [modalButtonColor, setModalButtonColor] = useState(null);
 
-  const [userLogged, setUserLogged] = useState(null);
-
   const filters = useSetState({ name: '' });
 
   const table = useTable({ defaultDense: true });
+
+  const itemsZohoSenitronRef = useRef(null);
+
+  const intervalIdRef = useRef(null);
+
+  const userLogged = useMemo(() => JSON.parse(localStorage.getItem('userLogged')), []);
+
+  const itemsZohoData = useMemo(() => items || null, [items]);
+
+  const itemsTimelineData = useMemo(() => timelineItems || null, [timelineItems]);
+
+  const itemsSkuTrackInfo = useMemo(() => itemsSkusTrack || null, [itemsSkusTrack]);
+
+  const itemsSynced = useMemo(() => {
+    if (itemsZohoData) {
+      return itemsZohoData.filter((item) => item.syncedWithSenitron);
+    }
+    return null;
+  }, [itemsZohoData]);
+
+  const totalSenitronQty = useMemo(() => {
+    if (senitronItems) {
+      return senitronItems.reduce((acc, senitronItem) => acc + senitronItem.count, 0);
+    }
+    return null;
+  }, [senitronItems]);
+
+  const totalZohoQty = useMemo(() => {
+    if (itemsSynced) {
+      return itemsSynced.reduce((acc, item) => acc + item.stockOnHand, 0);
+    }
+    return null;
+  }, [itemsSynced]);
+
+  const itemsZohoSenitron = useMemo(() => {
+    if (itemsZohoData && senitronItems) {
+      const zohoSenitronItems = itemsZohoData.map((item) => {
+        const senitronItem =
+          senitronItems.find(
+            (sItem) => String(sItem?.itemNumber) === String(item?.itemId)
+          ) || {};
+
+        return {
+          ...item,
+          quantity: senitronItem.count || 0,
+          difference:
+            parseInt(senitronItem.count || '0', 10) -
+            parseInt(item.stockOnHand || '0', 10),
+          assets: senitronItem.assets || [],
+        };
+      });
+      return sortBySku(zohoSenitronItems);
+    }
+    return null;
+  }, [itemsZohoData, senitronItems]);
+
+
+  const itemsSenitronZoho = useMemo(() => {
+    if (itemsZohoData && senitronItems) {
+      const senitronZohoItems = senitronItems.map((item) => {
+        const zohoItem =
+          itemsZohoData.find(
+            (zItem) => String(zItem?.itemId) === String(item?.itemNumber)
+          ) || {};
+
+        return {
+          ...item,
+          itemId: zohoItem.itemId || '',
+          sku: zohoItem.sku || '',
+          name: zohoItem.name || '',
+          stockOnHand: zohoItem.stockOnHand || 0,
+          quantity: item.count || 0,
+          syncedWithSenitron: zohoItem.syncedWithSenitron,
+          difference:
+            parseInt(zohoItem.stockOnHand || '0', 10) -
+            parseInt(item.count || '0', 10),
+        };
+      });
+      return sortBySku(senitronZohoItems);
+    }
+    return null;
+  }, [itemsZohoData, senitronItems]);
+
+
+  const { series, seriesPieChart } = useMemo(() => {
+    if (itemsZohoSenitron && itemsSenitronZoho) {
+      const itemsSync = itemsZohoSenitron.filter((item) => item.syncedWithSenitron);
+      const sseries = itemsSync.map((item) => {
+        const senitronItem = itemsSenitronZoho?.find(
+          (sItem) => sItem.itemNumber === item.itemId
+        );
+        const zohoQty = item?.stockOnHand || 0;
+        const senitronQty = senitronItem?.count || 0;
+        const max = Math.max(zohoQty, senitronQty);
+        const min = Math.min(zohoQty, senitronQty);
+        const match = Math.floor((min / max) * 100) || 0;
+        return match;
+      });
+      const sseriesAvg = processingNumbers(sseries);
+      const pieChart = processingNumbersPieChart(sseries);
+      return { series: sseriesAvg, seriesPieChart: pieChart };
+    }
+    return { series: null, seriesPieChart: null };
+  }, [itemsZohoSenitron, itemsSenitronZoho]);
+
+
+  const { percentage, totalErrors } = useMemo(() => {
+    if (itemsZohoSenitron) {
+      const errors =
+        Math.abs(
+          parseInt(
+            itemsZohoSenitron
+              ?.filter(
+                (it) =>
+                  parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 &&
+                  it.syncedWithSenitron
+              )
+              .reduce((acc, it) => acc + it.quantity, 0),
+            10
+          ) -
+          parseInt(
+            itemsZohoSenitron
+              ?.filter(
+                (it) =>
+                  parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 &&
+                  it.syncedWithSenitron
+              )
+              .reduce((acc, it) => acc + it.stockOnHand, 0),
+            10
+          )
+        ) +
+        Math.abs(
+          parseInt(
+            itemsZohoSenitron
+              ?.filter(
+                (it) =>
+                  parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 &&
+                  it.syncedWithSenitron
+              )
+              .reduce((acc, it) => acc + it.quantity, 0),
+            10
+          ) -
+          parseInt(
+            itemsZohoSenitron
+              ?.filter(
+                (it) =>
+                  parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 &&
+                  it.syncedWithSenitron
+              )
+              .reduce((acc, it) => acc + it.stockOnHand, 0),
+            10
+          )
+        );
+
+      const tSenitronQty = itemsZohoSenitron
+        ?.filter((it) => it.syncedWithSenitron)
+        .reduce((acc, item) => acc + item.quantity, 0);
+
+      const tOnHand = itemsZohoSenitron
+        ?.filter((it) => it.syncedWithSenitron)
+        .reduce((acc, item) => acc + item.stockOnHand, 0);
+
+      const tErrors = errors;
+      const tRFIDCorrect = tSenitronQty - errors;
+      const percent = Math.floor(((tOnHand - errors) / tOnHand) * 100) || 0;
+      return { percentage: percent, totalErrors: tErrors, totalRFIDCorrect: tRFIDCorrect };
+    }
+    return { percentage: null, totalErrors: null, totalRFIDCorrect: null };
+  }, [itemsZohoSenitron]);
+
+  const [dataLoaded, setDataLoaded] = useState(false);
+
+  useEffect(() => {
+    if (
+      itemsZohoSenitron &&
+      itemsSenitronZoho &&
+      itemsTimelineData &&
+      itemsZohoData &&
+      seriesPieChart &&
+      totalZohoQty !== null &&
+      totalSenitronQty !== null &&
+      totalErrors !== null &&
+      !updating
+    ) {
+      setDataLoaded(true);
+    } else {
+      setDataLoaded(false);
+    }
+  }, [
+    itemsZohoSenitron,
+    itemsSenitronZoho,
+    itemsTimelineData,
+    itemsZohoData,
+    seriesPieChart,
+    totalZohoQty,
+    totalSenitronQty,
+    totalErrors,
+    updating,
+  ]);
+
+  useEffect(() => {
+    if (itemsZohoSenitron) {
+      itemsZohoSenitronRef.current = itemsZohoSenitron;
+    }
+  }, [itemsZohoSenitron]);
+
+  useEffect(() => {
+    async function createZohoSenitronItems() {
+      const currentItems = itemsZohoSenitronRef.current;
+      if (currentItems) {
+        const skuTrackedCount = currentItems.filter((it) => it.syncedWithSenitron).length;
+        const skuMatchedCount = currentItems.filter(
+          (it) =>
+            parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 &&
+            it.syncedWithSenitron
+        ).length;
+        const skuMissingCount = currentItems.filter(
+          (it) =>
+            parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 &&
+            it.syncedWithSenitron
+        ).length;
+        const skuExcessCount = currentItems.filter(
+          (it) =>
+            parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 &&
+            it.syncedWithSenitron
+        ).length;
+        const payload = {
+          sku_tracked: skuTrackedCount,
+          sku_matched: skuMatchedCount,
+          sku_missing: skuMissingCount,
+          sku_excess: skuExcessCount,
+        };
+        try {
+          const response = await axios.post(
+            `${CONFIG.apiUrl}/api_zoho/create_zoho_sku_track_info/`,
+            payload
+          );
+          console.log('response', response);
+        } catch (error) {
+          console.error('Error al crear la información de seguimiento de SKU:', error);
+        }
+      }
+    }
+
+    if (dataLoaded && !intervalIdRef.current) {
+      createZohoSenitronItems();
+      intervalIdRef.current = setInterval(() => {
+        createZohoSenitronItems();
+      }, 5 * 60 * 1000);
+    }
+
+    return () => {
+      if (intervalIdRef.current) {
+        clearInterval(intervalIdRef.current);
+        intervalIdRef.current = null;
+      }
+    };
+  }, [dataLoaded]);
+
 
   const modalDataFiltered = applyFilter({
     inputData: modalListItems,
@@ -112,196 +337,6 @@ export function OverviewAnalyticsView() {
     [filters]
   );
 
-  const processingNumbers = (arrayNumbers) => {
-    const ranges = [
-      { name: '100%', min: 100, max: Infinity, data: [0] },
-      { name: '90% - 100 %', min: 90, max: 100, data: [0] },
-      { name: '80% - 90%', min: 80, max: 90, data: [0] },
-      { name: '70% - 80%', min: 70, max: 80, data: [0] },
-      { name: '60% - 70%', min: 60, max: 70, data: [0] },
-      { name: '50% - 60%', min: 50, max: 60, data: [0] },
-      { name: '-50%', min: -Infinity, max: 50, data: [0] },
-    ];
-
-    arrayNumbers.forEach((number) => {
-      const rangeFound = ranges.find(
-        (range) => number >= range.min && number < range.max
-      );
-      if (rangeFound) {
-        rangeFound.data[0] += 1;
-      }
-    });
-
-    return ranges.map(({ name, data }) => ({ name, data }));
-  };
-
-
-  const processingNumbersPieChart = (arrayNumbers) => {
-    const ranges = [
-      { label: '100%', min: 100, max: Infinity, value: 0 },
-      { label: '90% - 100 %', min: 90, max: 100, value: 0 },
-      { label: '80% - 90%', min: 80, max: 90, value: 0 },
-      { label: '70% - 80%', min: 70, max: 80, value: 0 },
-      { label: '60% - 70%', min: 60, max: 70, value: 0 },
-      { label: '50% - 60%', min: 50, max: 60, value: 0 },
-      { label: '-50%', min: -Infinity, max: 50, value: 0 },
-    ];
-
-    arrayNumbers.forEach((number) => {
-      const rangeFound = ranges.find(
-        (range) => number >= range.min && number < range.max
-      );
-      if (rangeFound) {
-        rangeFound.value += 1;
-      }
-    });
-
-    const list = ranges.map(({ label, value }) => ({ label, value }));
-
-    return list;
-  };
-
-  useEffect(() => {
-    const usernameLogged = JSON.parse(localStorage.getItem('userLogged'));
-    setUserLogged(usernameLogged);
-  }, []);
-
-
-  useEffect(() => {
-    if (items) {
-      setItemsZohoData(items);
-    }
-  }, [items]);
-
-
-  useEffect(() => {
-    if (itemsZohoData) {
-      const iSynced = itemsZohoData.filter(item => item.syncedWithSenitron);
-      setItemsSynced(iSynced);
-      let tSenitronQty = 0;
-      if (senitronItems) {
-        tSenitronQty = senitronItems.reduce((acc, senitronItem) => acc + senitronItem.count, 0);
-        setTotalSenitronQty(tSenitronQty);
-
-      }
-      const tZohoQty = iSynced?.reduce((acc, item) => acc + item.stockOnHand, 0);
-      setTotalZohoQty(tZohoQty);
-      // const max = Math.max(tZohoQty, tSenitronQty);
-      // const min = Math.min(tZohoQty, tSenitronQty);
-      // const match = Math.floor((min / max) * 100) || 0;
-      // setPercentage(match);
-    }
-  }, [itemsZohoData, senitronItems]);
-
-
-  useEffect(() => {
-    if (itemsZohoData && senitronItems) {
-      const mismatchedItems = senitronItems.filter(senitronItem => {
-        const item = itemsZohoData.find(it => it.itemId === senitronItem.itemNumber);
-        return item && item.stockOnHand !== senitronItem.count;
-      });
-      setItemsMismatched(mismatchedItems);
-      setItemsZohoMismatched(itemsZohoData.filter(item => {
-        const senitronItem = mismatchedItems.find(sItem => sItem.itemNumber === item.itemId);
-        return senitronItem
-      }));
-    }
-  }, [itemsZohoData, senitronItems]);
-
-
-  useEffect(() => {
-    if (itemsZohoData && senitronItems) {
-      const zohoSenitronItems = itemsZohoData.map(item => {
-        const senitronItem = senitronItems.find((sItem) => String(sItem?.itemNumber) === String(item?.itemId)) || {};
-
-        return {
-          ...item,
-          quantity: senitronItem.count || 0,
-          difference: parseInt(senitronItem.count || '0', 10) - parseInt(item.stockOnHand || '0', 10),
-          assets: senitronItem.assets || [],
-        };
-      });
-      const sortedItemsZohoSenitron = sortBySku(zohoSenitronItems);
-      setItemsZohoSenitron(sortedItemsZohoSenitron);
-
-      const senitronZohoItems = senitronItems.map(item => {
-        const zohoItem = itemsZohoData.find((zItem) => String(zItem?.itemId) === String(item?.itemNumber)) || {};
-
-        return {
-          ...item,
-          itemId: zohoItem.itemId || '',
-          sku: zohoItem.sku || '',
-          name: zohoItem.name || '',
-          stockOnHand: zohoItem.stockOnHand || 0,
-          quantity: item.count || 0,
-          syncedWithSenitron: zohoItem.syncedWithSenitron,
-          difference: parseInt(zohoItem.stockOnHand || '0', 10) - parseInt(item.count || '0', 10),
-        };
-      });
-      const sortedItemsSenitronZoho = sortBySku(senitronZohoItems);
-      setItemsSenitronZoho(sortedItemsSenitronZoho);
-    }
-  }, [itemsZohoData, senitronItems]);
-
-
-
-  useEffect(() => {
-    if (itemsZohoSenitron && itemsSenitronZoho) {
-      const itemsSync = itemsZohoSenitron.filter(item => item.syncedWithSenitron);
-      const sseries = itemsSync.map(item => {
-        const senitronItem = itemsSenitronZoho?.find(sItem => sItem.itemNumber === item.itemId);
-        const zohoQty = item?.stockOnHand || 0;
-        const senitronQty = senitronItem?.count || 0;
-        const max = Math.max(zohoQty, senitronQty);
-        const min = Math.min(zohoQty, senitronQty);
-        const match = Math.floor((min / max) * 100) || 0;
-        return match;
-      });
-      const sseriesAvg = processingNumbers(sseries);
-      setSeries(sseriesAvg);
-      setCategories(['Items']);
-      setSeriesPieChart(processingNumbersPieChart(sseries));
-    }
-
-  }, [itemsZohoSenitron, itemsSenitronZoho]);
-
-
-  useEffect(() => {
-    if (timelineItems) {
-      setItemsTimelineData(timelineItems);
-    }
-  }, [timelineItems]);
-
-
-  useEffect(() => {
-    const errors = Math.abs(
-      parseInt(itemsZohoSenitron?.filter(
-        it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron).reduce(
-          (acc, it) => acc + it.quantity, 0
-        ), 10) - parseInt(itemsZohoSenitron?.filter(
-          it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron).reduce(
-            (acc, it) => acc + it.stockOnHand, 0), 10)
-    ) + Math.abs(
-      parseInt(itemsZohoSenitron?.filter(
-        it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron).reduce(
-          (acc, it) => acc + it.quantity, 0
-        ), 10) - parseInt(itemsZohoSenitron?.filter(
-          it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron
-        ).reduce(
-          (acc, it) => acc + it.stockOnHand, 0
-        ), 10)
-    );
-
-    const tSenitronQty = itemsZohoSenitron?.filter(it => it.syncedWithSenitron).reduce((acc, item) => acc + item.quantity, 0);
-
-    const tOnHand = itemsZohoSenitron?.filter(it => it.syncedWithSenitron).reduce((acc, item) => acc + item.stockOnHand, 0);
-
-    setTotalErrors(errors);
-    setTotalRFIDCorrect(tSenitronQty - errors);
-    setPercentage(Math.floor(((tOnHand - errors) / tOnHand) * 100) || 0);
-
-  }, [itemsZohoSenitron]);
-
 
   const handleViewRow = useCallback(
     (id) => {
@@ -312,16 +347,6 @@ export function OverviewAnalyticsView() {
     [router]
   );
 
-  // if (!itemsZohoSenitron || !itemsSenitronZoho || !itemsTimelineData ||
-  //   !itemsZohoData || !seriesPieChart ||
-  //   totalZohoQty === null || totalSenitronQty === null || totalErrors === null) {
-  // setLoading(true);
-  // setComponent('Loading Dashboard Analytics Data...');
-  //   return null;
-  // }
-
-  // setLoading(false);
-  // setComponent(null);
 
   return (
     <>
@@ -351,37 +376,6 @@ export function OverviewAnalyticsView() {
               }}
             />
           </Box>
-
-          {/* <DashboardContent maxWidth="xl">
-            <Card
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                // minHeight: '60vh',
-                background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-                boxShadow: 3,
-                borderRadius: 2,
-              }}
-            >
-              <Box
-                sx={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  // minHeight: '60vh',
-                  background: 'transparent',
-                  padding: 4,
-                }}
-              >
-                <CircularProgress size={40} color="primary" />
-                <Typography variant="h6" sx={{ mt: 3, color: 'text.secondary' }}>
-                  Cargando Datos de Analytics del Dashboard...
-                </Typography>
-              </Box>
-            </Card>
-          </DashboardContent> */}
         </>
       ) : (
         <>
@@ -428,36 +422,11 @@ export function OverviewAnalyticsView() {
 
             <Grid container spacing={3}>
 
-              {/* <Grid xs={12} sm={6} md={2.4}>
-            <AnalyticsWidgetSummary
-              sx={{ cursor: 'pointer' }}
-              title="Items from Senitron"
-              percent={2.8}
-              total={itemsSenitronZoho?.length}
-              quantity={itemsSenitronZoho?.reduce((acc, item) => acc + item.quantity, 0)}
-              stockOnHand={itemsSenitronZoho?.reduce((acc, item) => acc + item.stockOnHand, 0)}
-              color="info"
-              icon={
-                <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-senitron.svg`} />
-              }
-              chart={{
-                categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
-                series: [40, 70, 50, 28, 70, 75, 7, 64],
-              }}
-              onClick={() => {
-                setOpenModal(true)
-                setModalListItems(itemsSenitronZoho)
-                setModalTitle(`Items from Sentitron (${itemsSenitronZoho?.length})`)
-                setModalButtonColor('#0dcaf0')
-              }}
-            />
-          </Grid> */}
-
               <Grid xs={12} sm={6} md={3}>
                 <AnalyticsWidgetSummary
                   sx={{ cursor: 'pointer' }}
                   title="SKU Tracked"
-                  percent={2.6}
+                  percent={linearRegresionCalculation(itemsSkuTrackInfo?.map((it) => it.skuTracked))}
                   total={itemsZohoSenitron?.filter(it => it.syncedWithSenitron).length}
                   quantity={itemsZohoSenitron?.filter(it => it.syncedWithSenitron).reduce((acc, item) => acc + item.quantity, 0)}
                   stockOnHand={itemsZohoSenitron?.filter(it => it.syncedWithSenitron).reduce((acc, item) => acc + item.stockOnHand, 0)}
@@ -467,8 +436,8 @@ export function OverviewAnalyticsView() {
                     <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-synced.svg`} />
                   }
                   chart={{
-                    categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
-                    series: [22, 8, 35, 50, 82, 84, 77, 12],
+                    categories: itemsSkuTrackInfo?.map((it) => fDateTime(it.date)).slice(-8),
+                    series: itemsSkuTrackInfo?.map((it) => it.skuTracked).slice(-8),
                   }}
                   onClick={() => {
                     setOpenModal(true)
@@ -483,7 +452,7 @@ export function OverviewAnalyticsView() {
                 <AnalyticsWidgetSummary
                   sx={{ cursor: 'pointer' }}
                   title="SKU Matched 100%"
-                  percent={-0.1}
+                  percent={linearRegresionCalculation(itemsSkuTrackInfo?.map((it) => it.skuMatched))}
                   total={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron).length}
                   quantity={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron).reduce((acc, it) => acc + it.quantity, 0)}
                   stockOnHand={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron).reduce((acc, it) => acc + it.stockOnHand, 0)}
@@ -492,8 +461,8 @@ export function OverviewAnalyticsView() {
                     <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-zoho.svg`} />
                   }
                   chart={{
-                    categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
-                    series: [56, 47, 40, 62, 73, 30, 23, 54],
+                    categories: itemsSkuTrackInfo?.map((it) => fDateTime(it.date)).slice(-8),
+                    series: itemsSkuTrackInfo?.map((it) => it.skuMatched).slice(-8),
                   }}
                   onClick={() => {
                     setOpenModal(true)
@@ -509,7 +478,7 @@ export function OverviewAnalyticsView() {
                 <AnalyticsWidgetSummary
                   sx={{ cursor: 'pointer' }}
                   title="SKU Missing Items"
-                  percent={3.6}
+                  percent={linearRegresionCalculation(itemsSkuTrackInfo?.map((it) => it.skuMissing))}
                   total={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron).length}
                   quantity={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron).reduce((acc, it) => acc + it.quantity, 0)}
                   stockOnHand={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron).reduce((acc, it) => acc + it.stockOnHand, 0)}
@@ -518,8 +487,8 @@ export function OverviewAnalyticsView() {
                     <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-mismatch.svg`} />
                   }
                   chart={{
-                    categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
-                    series: [56, 30, 23, 54, 47, 40, 62, 73],
+                    categories: itemsSkuTrackInfo?.map((it) => fDateTime(it.date)).slice(-8),
+                    series: itemsSkuTrackInfo?.map((it) => it.skuMissing).slice(-8),
                   }}
                   onClick={() => {
                     setOpenModal(true)
@@ -534,7 +503,7 @@ export function OverviewAnalyticsView() {
                 <AnalyticsWidgetSummary
                   sx={{ cursor: 'pointer' }}
                   title="SKU Excess Items"
-                  percent={3.6}
+                  percent={linearRegresionCalculation(itemsSkuTrackInfo?.map((it) => it.skuExcess))}
                   total={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron).length}
                   quantity={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron).reduce((acc, it) => acc + it.quantity, 0)}
                   stockOnHand={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron).reduce((acc, it) => acc + it.stockOnHand, 0)}
@@ -543,8 +512,8 @@ export function OverviewAnalyticsView() {
                     <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-front-3.svg`} />
                   }
                   chart={{
-                    categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
-                    series: [56, 30, 23, 54, 47, 40, 62, 73],
+                    categories: itemsSkuTrackInfo?.map((it) => fDateTime(it.date)).slice(-8),
+                    series: itemsSkuTrackInfo?.map((it) => it.skuExcess).slice(-8),
                   }}
                   onClick={() => {
                     setOpenModal(true)
@@ -557,17 +526,7 @@ export function OverviewAnalyticsView() {
 
               {percentage && (
                 <Grid xs={12} md={6} lg={4}>
-                  {/* <AnalyticsCurrentVisits
-              title="Current visits"
-              chart={{
-                series: [
-                  { label: 'America', value: 3500 },
-                  { label: 'Asia', value: 2500 },
-                  { label: 'Europe', value: 1500 },
-                  { label: 'Africa', value: 500 },
-                ],
-              }}
-            /> */}
+
                   <Card>
                     <CardHeader title="SKU Tracked totals" />
                     <Stack direction="column" sx={{ p: 0, textAlign: 'center' }} alignItems="center">
@@ -619,28 +578,7 @@ export function OverviewAnalyticsView() {
 
               {series && (
                 <Grid xs={12} md={6} lg={4}>
-                  {/* <AnalyticsWebsiteVisits
-                title="Quantity Match"
-                subheader="Number of items by percentage range"
-                element="items"
-                chart={{
-                  categories: categories || ['Items'],
-                  series: series || [{ name: 'Items', data: [0] }],
-                }}
-                openModal={openModal}
-                setOpenModal={setOpenModal}
-                modalTitle={modalTitle}
-                setModalTitle={setModalTitle}
-                modalDataFiltered={modalListItems}
-                setModalDataFiltered={setModalListItems}
-                modalButtonColor={modalButtonColor}
-                setModalButtonColor={setModalButtonColor}
-                zohoItems={itemsZohoData}
-                senitronItems={senitronItems}
-                handleViewRow={handleViewRow}
-                handleFilterName={handleFilterName}
-                filters={filters}
-              /> */}
+
                   <AnalyticsCurrentVisits title="SKUs and RFID count match"
                     subheader="Number of items by percentage range"
                     element="items"
@@ -676,49 +614,9 @@ export function OverviewAnalyticsView() {
                   />
                 </Grid>
               )}
-
-              {/* <Grid xs={12} md={6} lg={8}>
-          <AnalyticsConversionRates
-            title="Conversion rates"
-            subheader="(+43%) than last year"
-            chart={{
-              categories: ['Italy', 'Japan', 'China', 'Canada', 'France'],
-              series: [
-                { name: '2022', data: [44, 55, 41, 64, 22] },
-                { name: '2023', data: [53, 32, 33, 52, 13] },
-              ],
-            }}
-          />
-        </Grid> */}
-
-              {/* <Grid xs={12} md={6} lg={4}>
-          <AnalyticsCurrentSubject
-            title="Current subject"
-            chart={{
-              categories: ['English', 'History', 'Physics', 'Geography', 'Chinese', 'Math'],
-              series: [
-                { name: 'Series 1', data: [80, 50, 30, 40, 100, 20] },
-                { name: 'Series 2', data: [20, 30, 40, 80, 20, 80] },
-                { name: 'Series 3', data: [44, 76, 78, 13, 43, 10] },
-              ],
-            }}
-          />
-        </Grid> */}
-
               <Grid xs={12} md={12} lg={12}>
-                {/* <AnalyticsNews title="News" list={_analyticPosts} /> */}
                 <ItemListShortView updating={updating} setUpdating={setUpdating} />
               </Grid>
-
-
-
-              {/* <Grid xs={12} md={6} lg={4}>
-          <AnalyticsTrafficBySite title="Traffic by site" list={_analyticTraffic} />
-        </Grid>
-
-        <Grid xs={12} md={6} lg={8}>
-          <AnalyticsTasks title="Tasks" list={_analyticTasks} />
-        </Grid> */}
             </Grid>
           </DashboardContent >
 
@@ -765,7 +663,6 @@ function applyFilter({ inputData, comparator, filters }) {
   return inputData;
 }
 
-
 function sortBySku(items) {
   return items.sort((a, b) => {
     const skuA = a.sku || '';
@@ -778,3 +675,76 @@ function sortBySku(items) {
 
   });
 }
+
+function processingNumbers(arrayNumbers) {
+  const ranges = [
+    { name: '100%', min: 100, max: Infinity, data: [0] },
+    { name: '90% - 100 %', min: 90, max: 100, data: [0] },
+    { name: '80% - 90%', min: 80, max: 90, data: [0] },
+    { name: '70% - 80%', min: 70, max: 80, data: [0] },
+    { name: '60% - 70%', min: 60, max: 70, data: [0] },
+    { name: '50% - 60%', min: 50, max: 60, data: [0] },
+    { name: '-50%', min: -Infinity, max: 50, data: [0] },
+  ];
+
+  arrayNumbers.forEach((number) => {
+    const rangeFound = ranges.find(
+      (range) => number >= range.min && number < range.max
+    );
+    if (rangeFound) {
+      rangeFound.data[0] += 1;
+    }
+  });
+
+  return ranges.map(({ name, data }) => ({ name, data }));
+};
+
+function processingNumbersPieChart(arrayNumbers) {
+  const ranges = [
+    { label: '100%', min: 100, max: Infinity, value: 0 },
+    { label: '90% - 100 %', min: 90, max: 100, value: 0 },
+    { label: '80% - 90%', min: 80, max: 90, value: 0 },
+    { label: '70% - 80%', min: 70, max: 80, value: 0 },
+    { label: '60% - 70%', min: 60, max: 70, value: 0 },
+    { label: '50% - 60%', min: 50, max: 60, value: 0 },
+    { label: '-50%', min: -Infinity, max: 50, value: 0 },
+  ];
+
+  arrayNumbers.forEach((number) => {
+    const rangeFound = ranges.find(
+      (range) => number >= range.min && number < range.max
+    );
+    if (rangeFound) {
+      rangeFound.value += 1;
+    }
+  });
+
+  const list = ranges.map(({ label, value }) => ({ label, value }));
+
+  return list;
+};
+
+function linearRegresionCalculation(serie) {
+  const n = serie.length;
+  if (n < 2) return 0;
+  let sumaX = 0;
+  let sumaY = 0;
+  let sumaXY = 0;
+  let sumaX2 = 0;
+  for (let i = 0; i < n; i += 1) {
+    const x = i;
+    const y = serie[i];
+    sumaX += x;
+    sumaY += y;
+    sumaXY += x * y;
+    sumaX2 += x * x;
+  }
+  const pendiente = (n * sumaXY - sumaX * sumaY) / (n * sumaX2 - sumaX * sumaX);
+  const intercepto = (sumaY - pendiente * sumaX) / n;
+  
+  const primerValor = pendiente * 0 + intercepto;
+  const ultimoValor = pendiente * (n - 1) + intercepto;
+  const cambioPorcentual = ((ultimoValor - primerValor) / primerValor) * 100;
+  return cambioPorcentual;
+}
+
