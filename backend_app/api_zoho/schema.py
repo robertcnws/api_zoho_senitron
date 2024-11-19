@@ -49,7 +49,7 @@ class Query(graphene.ObjectType):
         ).order_by('-item_id_int')
         
     def resolve_all_zoho_sku_track_info(self, info, **kwargs):
-        return ZohoSkuTrackInfo.objects.all().order_by('-date')
+        return ZohoSkuTrackInfo.objects.all().order_by('date')
 
     def resolve_all_zoho_inventory_sales_orders(self, info, start_date=None, end_date=None, **kwargs):
         # sales_orders = ZohoInventoryShipmentSalesOrder.objects.all().order_by('-salesorder_id')
