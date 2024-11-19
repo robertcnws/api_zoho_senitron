@@ -69,6 +69,7 @@ export function ItemTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
               (row.status === 'inactive' && 'error') ||
               'default'
             }
+            sx={{ cursor: 'pointer' }}
           >
             {row.status}
           </Label>
@@ -112,6 +113,8 @@ export function ItemTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
               <Label
                 variant="soft"
                 color="warning"
+                sx={{ cursor: 'pointer' }}
+                onClick={() => onViewRow(row.itemId)}
               >
                 No items
               </Label>

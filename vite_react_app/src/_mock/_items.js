@@ -117,6 +117,14 @@ export const ITEM_STATUS_OPTIONS = [
   // { value: 'inactive', label: 'Inactive' },
 ];
 
+export const ITEM_TYPE_OPTIONS = [
+  { value: 'not_synced', label: 'SKUs Untracked' },
+  { value: 'active', label: 'SKUs Active' },
+  { value: 'inactive', label: 'SKUs Inactive' },
+  { value: 'confirmation_pending', label: 'SKUs in Confirmation Pending' },
+  { value: 'not_assets', label: 'SKUs without Assets' },
+];
+
 export const ITEM_STATUS_SHORT_OPTIONS = [
   // { value: 'all', label: 'All Items' }, 
   // { value: 'active', label: 'Items Active' },

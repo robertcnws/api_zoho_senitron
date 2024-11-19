@@ -13,7 +13,7 @@ import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import Alert from '@mui/material/Alert';
 
-import { LinearProgress } from '@mui/material';
+import { Collapse, LinearProgress } from '@mui/material';
 
 import { paths } from 'src/routes/paths';
 import { useRouter } from 'src/routes/hooks';
@@ -23,7 +23,7 @@ import { useSetState } from 'src/hooks/use-set-state';
 
 import { varAlpha } from 'src/theme/styles';
 import { DashboardContent } from 'src/layouts/dashboard';
-import { ITEM_STATUS_OPTIONS, ITEM_SYNC_OPTIONS, useItemsQuery, useSenitronItemsQuery } from 'src/_mock/_items';
+import { ITEM_STATUS_OPTIONS, ITEM_SYNC_OPTIONS, ITEM_TYPE_OPTIONS, useItemsQuery, useSenitronItemsQuery } from 'src/_mock/_items';
 import { CONFIG } from 'src/config-global';
 
 import { Label } from 'src/components/label';
@@ -67,6 +67,10 @@ const headersCSV = [
   { label: 'Difference', key: 'difference' },
 ]
 
+const getValidTabValue = (options, currentValue) => options.some(
+  (tab) => tab.value === currentValue
+) ? currentValue : false;
+
 // ----------------------------------------------------------------------
 
 export function ItemListView() {
@@ -101,6 +105,17 @@ export function ItemListView() {
   const [tableData, setTableData] = useState([]);
 
   const filters = useSetState({ name: '', syncedWithSenitron: [], status: localStorage.getItem('itemStatus') || 'all' });
+
+  const collapse = useBoolean(
+    filters.state.status === 'not_synced' ||
+    filters.state.status === 'not_assets' ||
+    filters.state.status === 'active' ||
+    filters.state.status === 'confirmation_pending' ||
+    filters.state.status === 'inactive'
+  );
+
+  const statusValue = getValidTabValue(STATUS_OPTIONS, filters.state.status);
+  const itemTypeValue = getValidTabValue(ITEM_TYPE_OPTIONS, filters.state.status);
 
 
   useEffect(() => {
@@ -230,8 +245,16 @@ export function ItemListView() {
       table.onResetPage();
       localStorage.setItem('itemStatus', newValue);
       filters.setState({ status: newValue });
+      if (newValue === 'not_synced' || newValue === 'not_assets' ||
+        newValue === 'active' || newValue === 'confirmation_pending' ||
+        newValue === 'inactive') {
+        collapse.onTrue();
+      }
+      else {
+        collapse.onFalse();
+      }
     },
-    [filters, table]
+    [filters, table, collapse]
   );
 
   const handleViewRow = useCallback(
@@ -334,54 +357,110 @@ export function ItemListView() {
         />
 
         <Card>
-          <Tabs
-            value={filters.state.status}
-            onChange={handleFilterStatus}
-            sx={{
-              px: 2.5,
-              boxShadow: (theme) =>
-                `inset 0 -2px 0 0 ${varAlpha(theme.vars.palette.grey['500Channel'], 0.08)}`,
-            }}
-          >
-            {STATUS_OPTIONS.map((tab) => (
-              <Tab
-                key={tab.value}
-                iconPosition="end"
-                value={tab.value}
-                label={tab.label}
-                icon={
-                  <Label
-                    variant={
-                      ((tab.value === 'all' || tab.value === filters.state.status) && 'filled') ||
-                      'soft'
-                    }
-                    color={
-                      (tab.value === 'synced' && 'success') ||
-                      (tab.value === 'missing_items' && 'warning') ||
-                      (tab.value === 'excess_items' && 'error') ||
-                      (tab.value === 'matched_100' && 'info') ||
-                      'default'
-                    }
-                  >
-                    {tab.value === 'synced' ?
-                      tableData.filter((it) => it.syncedWithSenitron).length :
-                      tab.value === 'missing_items' ?
-                        tableData.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron).length :
-                        tab.value === 'excess_items' ?
-                          tableData.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron).length :
-                          tab.value === 'matched_100' ?
-                            tableData.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron).length :
-                            tab.value === 'all' ?
-                              tableData.length :
-                              tableData.filter((it) => it.status === tab.value).length}
-                    {/* {['active', 'confirmation_pending', 'inactive'].includes(tab.value)
+          <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+            <Tabs
+              value={statusValue}
+              onChange={handleFilterStatus}
+              sx={{
+                px: 2.5,
+                // boxShadow: (theme) =>
+                //   `inset 0 -2px 0 0 ${varAlpha(theme.vars.palette.grey['500Channel'], 0.08)}`,
+                width: '97%',
+              }}
+            >
+              {STATUS_OPTIONS.map((tab) => (
+                <Tab
+                  key={tab.value}
+                  iconPosition="end"
+                  value={tab.value}
+                  label={tab.label}
+                  icon={
+                    <Label
+                      variant={
+                        ((tab.value === 'all' || tab.value === filters.state.status) && 'filled') ||
+                        'soft'
+                      }
+                      color={
+                        (tab.value === 'synced' && 'success') ||
+                        (tab.value === 'missing_items' && 'warning') ||
+                        (tab.value === 'excess_items' && 'error') ||
+                        (tab.value === 'matched_100' && 'info') ||
+                        'default'
+                      }
+                    >
+                      {tab.value === 'synced' ?
+                        tableData.filter((it) => it.syncedWithSenitron).length :
+                        tab.value === 'missing_items' ?
+                          tableData.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron).length :
+                          tab.value === 'excess_items' ?
+                            tableData.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron).length :
+                            tab.value === 'matched_100' ?
+                              tableData.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron).length :
+                              tab.value === 'all' ?
+                                tableData.length :
+                                tableData.filter((it) => it.status === tab.value).length}
+                      {/* {['active', 'confirmation_pending', 'inactive'].includes(tab.value)
                       ? tableData.filter((user) => user.status === tab.value).length
                       : tableData.length} */}
-                  </Label>
-                }
-              />
-            ))}
-          </Tabs>
+                    </Label>
+                  }
+                />
+              ))}
+            </Tabs>
+            <Box sx={{ display: 'flex', alignItems: 'right' }}>
+              <IconButton
+                color={collapse.value ? 'inherit' : 'default'}
+                onClick={collapse.onToggle}
+                sx={{ ...(collapse.value && { bgcolor: 'action.hover' }) }}
+              >
+                <Iconify icon={collapse.value ? "eva:arrow-ios-upward-fill" : "eva:arrow-ios-downward-fill"} />
+              </IconButton>
+            </Box>
+          </Box>
+
+          <Collapse
+            in={collapse.value}
+            timeout="auto"
+            unmountOnExit
+            sx={{ bgcolor: 'background.neutral' }}
+          >
+
+            <Tabs
+              value={itemTypeValue}
+              onChange={handleFilterStatus}
+              sx={{
+                px: 2.5,
+                boxShadow: (theme) =>
+                  `inset 0 -2px 0 0 ${varAlpha(theme.vars.palette.grey['500Channel'], 0.08)}`,
+              }}
+            >
+              {ITEM_TYPE_OPTIONS.map((tab) => (
+                <Tab
+                  key={tab.value}
+                  iconPosition="end"
+                  value={tab.value}
+                  label={tab.label}
+                  icon={
+                    <Label
+                      variant='soft'
+                      color='default'
+                    >
+                      {
+                        tab.value === 'not_synced' ?
+                          tableData.filter((it) => !it.syncedWithSenitron).length :
+                          tab.value === 'not_assets' ?
+                            tableData.filter(it => it.assets.length === 0).length :
+                            ['active', 'confirmation_pending', 'inactive'].includes(tab.value) ?
+                              tableData.filter((it) => it.status === tab.value).length :
+                              tableData.length
+                      }
+                    </Label>
+                  }
+                />
+              ))}
+            </Tabs>
+
+          </Collapse>
 
           <ItemTableToolbar
             filters={filters}
@@ -492,7 +571,7 @@ export function ItemListView() {
             }}
           />
         </Card>
-      </DashboardContent>
+      </DashboardContent >
 
       <ConfirmDialog
         open={confirm.value}
@@ -554,6 +633,12 @@ function applyFilter({ inputData, comparator, filters }) {
       inputData = inputData.filter(item => parseInt(item.stockOnHand, 10) - parseInt(item.quantity, 10) > 0 && item.syncedWithSenitron);
     } else if (status === 'missing_items') {
       inputData = inputData.filter(item => parseInt(item.stockOnHand, 10) - parseInt(item.quantity, 10) < 0 && item.syncedWithSenitron);
+    } else if (status === 'not_synced') {
+      inputData = inputData.filter((item) => item.syncedWithSenitron !== true);
+    } else if (status === 'not_assets') {
+      inputData = inputData.filter((item) => item.assets.length === 0);
+    } else if (status === 'active' || status === 'confirmation_pending' || status === 'inactive') {
+      inputData = inputData.filter((item) => item.status === status);
     }
   }
 
