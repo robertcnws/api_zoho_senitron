@@ -41,6 +41,7 @@ import { AnalyticsCurrentVisits } from '../analytics-current-visits';
 const headersCSV = [
   { label: 'SKU', key: 'sku' },
   { label: 'Qty', key: 'stockOnHand' },
+  { label: 'Difference', key: 'difference' },
 ]
 
 const spin = keyframes`

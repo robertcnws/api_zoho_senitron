@@ -64,6 +64,7 @@ const STATUS_OPTIONS = [{ value: 'all', label: 'All SKUs' }, ...ITEM_STATUS_OPTI
 const headersCSV = [
   { label: 'SKU', key: 'sku' },
   { label: 'Qty', key: 'stockOnHand' },
+  { label: 'Difference', key: 'difference' },
 ]
 
 // ----------------------------------------------------------------------

@@ -63,6 +63,7 @@ const STATUS_OPTIONS = [...ITEM_STATUS_SHORT_OPTIONS].concat([
 const headersCSV = [
     { label: 'SKU', key: 'sku' },
     { label: 'Qty', key: 'stockOnHand' },
+    { label: 'Difference', key: 'difference' },
 ]
 
 // ----------------------------------------------------------------------
