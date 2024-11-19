@@ -38,6 +38,12 @@ jobs:
         with:
           python-version: '3.12' 
 
+      # **Nuevo Paso: Instalar dependencias del sistema para el backend**
+      - name: Install System Dependencies for Backend
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libpq-dev
+
       # 5. Instalar dependencias del backend
       - name: Install Backend Dependencies
         working-directory: ./backend_app 
