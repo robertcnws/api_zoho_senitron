@@ -25,10 +25,9 @@ export function ItemDetailsItems({ item, senitronItem, setItem, setSenitronItem,
 
 
   useEffect(() => {
-    if (item)
-      setCurrentItem(item);
-    if (senitronItem)
-      setCurrentSenitronItem(senitronItem);
+    if (item) setCurrentItem(item);
+    if (senitronItem) setCurrentSenitronItem(senitronItem);
+    
   }, [item, senitronItem]);
 
 
@@ -54,7 +53,7 @@ export function ItemDetailsItems({ item, senitronItem, setItem, setSenitronItem,
   const renderTotal = (
     <Stack spacing={1} alignItems="flex-start" sx={{ p: 3, textAlign: 'left', typography: 'body2' }}>
       <Grid container spacing={2}>
-        {currentItem?.itemId && (
+        {currentItem && currentItem?.itemId && (
           <>
             <Grid container item xs={12}>
               <Grid item xs={3}>
@@ -68,7 +67,7 @@ export function ItemDetailsItems({ item, senitronItem, setItem, setSenitronItem,
             </Grid>
           </>
         )}
-        {currentItem?.sku && (
+        {currentItem && currentItem?.sku && (
           <>
             <Grid container item xs={12}>
               <Grid item xs={3}>
@@ -82,7 +81,7 @@ export function ItemDetailsItems({ item, senitronItem, setItem, setSenitronItem,
             </Grid>
           </>
         )}
-        {currentItem?.rate && (
+        {currentItem && currentItem?.rate && (
           <>
             <Grid container item xs={12}>
               <Grid item xs={3}>
@@ -96,105 +95,99 @@ export function ItemDetailsItems({ item, senitronItem, setItem, setSenitronItem,
             </Grid>
           </>
         )}
-        <Grid container item xs={12}>
-          <Grid item xs={3}>
-            <Box sx={{ color: 'text.secondary' }}>On Hand: </Box>
-          </Grid>
-          <Grid item xs={9}>
-            <Box sx={{ typography: 'subtitle2' }}>
-              <Label color="default"> {parseInt(currentItem?.stockOnHand, 10) || '0'} </Label>
-            </Box>
-          </Grid>
-        </Grid>
-        {currentSenitronItem?.count && (
-          <Grid container item xs={12}>
-            <Grid item xs={3}>
-              <Box sx={{ color: 'text.secondary' }}>RFID Count: </Box>
-            </Grid>
-            <Grid item xs={9}>
-              <Box sx={{ typography: 'subtitle2' }}>
-                <Label color="default"> {parseInt(currentSenitronItem?.count, 10) || '0'} </Label>
-              </Box>
-            </Grid>
-          </Grid>
-        )}
-        {currentItem?.stockOnHand && currentSenitronItem?.count && (
-          <Grid container item xs={12}>
-            <Grid item xs={3}>
-              <Box sx={{ color: 'text.secondary' }}>Difference: </Box>
-            </Grid>
-            <Grid item xs={9}>
-              <Box sx={{ typography: 'subtitle2' }}>
-                <Label color={
-                  (parseInt(currentSenitronItem?.count, 10) - parseInt(currentItem?.stockOnHand, 10) === 0 ? 'success' :
-                    (parseInt(currentSenitronItem?.count, 10) - parseInt(currentItem?.stockOnHand, 10) > 0 ? 'warning' : 'error'))
-                }>
-                  {(parseInt(currentSenitronItem?.count, 10) - parseInt(currentItem?.stockOnHand, 10)) || '0'}
-                </Label>
-              </Box>
-            </Grid>
-          </Grid>
-        )}
-        {currentSenitronItem?.assets && (
-          <Grid container item xs={12}>
-            <Grid item xs={3}>
-              <Box sx={{ color: 'text.secondary' }}>Info Assets: </Box>
-            </Grid>
-            <Grid item xs={9}>
-              <TableContainer sx={{ height: '400px' }}>
-                <Table stickyHeader>
-                  <TableHead>
-                    <TableRow sx={{ p: 0 }}>
-                      <TableCell>Antenna</TableCell>
-                      <TableCell>Serial</TableCell>
-                      <TableCell>Last Zone</TableCell>
-                      <TableCell>Info</TableCell>
-                      <TableCell>Last Seen</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {currentSenitronItem?.assets.filter((asset) => asset.lastSeenAntenna && asset.lastZone && asset.text3)
-                      .map((asset, index) => (
-                        <TableRow key={`${asset.id}-${index}-${asset.serialNumber}`}>
-                          <TableCell>
-                            {asset.lastSeenAntenna}
-                          </TableCell>
-                          <TableCell>
-                            {asset.serialNumber}
-                          </TableCell>
-                          <TableCell>
-                            {asset.lastZone}
-                          </TableCell>
-                          <TableCell>
-                            {asset.text3}
-                          </TableCell>
-                          <TableCell>
-                            {asset.lastSeen ? fDateTime(asset.lastSeen) : `Updated:  ${fDateTime(asset.updatedAt)}`}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Grid>
-          </Grid>
-        )}
-        {/*
-        {currentSenitronItem?.handheldReader && (
+        {currentItem && (
           <>
             <Grid container item xs={12}>
               <Grid item xs={3}>
-                <Box sx={{ color: 'text.secondary' }}>Hand Held Reader (Senitron): </Box>
+                <Box sx={{ color: 'text.secondary' }}>On Hand: </Box>
               </Grid>
               <Grid item xs={9}>
                 <Box sx={{ typography: 'subtitle2' }}>
-                  <Label color="default"> {currentSenitronItem?.handheldReader || '-'} </Label>
+                  <Label color="default">{parseInt(currentItem?.stockOnHand, 10) || '0'}</Label>
                 </Box>
               </Grid>
             </Grid>
           </>
-        )} */}
-
+        )}
+        {currentSenitronItem && currentSenitronItem?.count && (
+          <>
+            <Grid container item xs={12}>
+              <Grid item xs={3}>
+                <Box sx={{ color: 'text.secondary' }}>RFID Count: </Box>
+              </Grid>
+              <Grid item xs={9}>
+                <Box sx={{ typography: 'subtitle2' }}>
+                  <Label color="default"> {parseInt(currentSenitronItem?.count, 10) || '0'} </Label>
+                </Box>
+              </Grid>
+            </Grid>
+          </>
+        )}
+        {currentItem && currentSenitronItem && currentItem?.stockOnHand && currentSenitronItem?.count && (
+          <>
+            <Grid container item xs={12}>
+              <Grid item xs={3}>
+                <Box sx={{ color: 'text.secondary' }}>Difference: </Box>
+              </Grid>
+              <Grid item xs={9}>
+                <Box sx={{ typography: 'subtitle2' }}>
+                  <Label color={
+                    (parseInt(currentSenitronItem?.count, 10) - parseInt(currentItem?.stockOnHand, 10) === 0 ? 'success' :
+                      (parseInt(currentSenitronItem?.count, 10) - parseInt(currentItem?.stockOnHand, 10) > 0 ? 'warning' : 'error'))
+                  }>
+                    {(parseInt(currentSenitronItem?.count, 10) - parseInt(currentItem?.stockOnHand, 10)) || '0'}
+                  </Label>
+                </Box>
+              </Grid>
+            </Grid>
+          </>
+        )}
+        {currentSenitronItem && currentSenitronItem?.assets && (
+          <>
+            <Grid container item xs={12}>
+              <Grid item xs={3}>
+                <Box sx={{ color: 'text.secondary' }}>Info Assets: </Box>
+              </Grid>
+              <Grid item xs={9}>
+                <TableContainer sx={{ height: '400px' }}>
+                  <Table stickyHeader>
+                    <TableHead>
+                      <TableRow sx={{ p: 0 }}>
+                        <TableCell>Antenna</TableCell>
+                        <TableCell>Serial</TableCell>
+                        <TableCell>Last Zone</TableCell>
+                        <TableCell>Info</TableCell>
+                        <TableCell>Last Seen</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {currentSenitronItem?.assets.filter((asset) => asset.lastSeenAntenna && asset.lastZone && asset.text3)
+                        .map((asset, index) => (
+                          <TableRow key={`${asset.id}-${index}-${asset.serialNumber}`}>
+                            <TableCell>
+                              {asset.lastSeenAntenna}
+                            </TableCell>
+                            <TableCell>
+                              {asset.serialNumber}
+                            </TableCell>
+                            <TableCell>
+                              {asset.lastZone}
+                            </TableCell>
+                            <TableCell>
+                              {asset.text3}
+                            </TableCell>
+                            <TableCell>
+                              {asset.lastSeen ? fDateTime(asset.lastSeen) : `Updated:  ${fDateTime(asset.updatedAt)}`}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Grid>
+            </Grid>
+          </>
+        )}
       </Grid>
     </Stack>
   );
@@ -222,7 +215,7 @@ export function ItemDetailsItems({ item, senitronItem, setItem, setSenitronItem,
                 };
                 // setComponent(`inventory item (SKU: ${currentItem?.sku}, ID: ${currentItem?.itemId}) details`);
                 // setLoading(true);
-                setUpdating(true);  
+                setUpdating(true);
                 axios
                   .post(`${CONFIG.apiUrl}/api_zoho/load/inventory_items/`, payload)
                   .then(() => {
