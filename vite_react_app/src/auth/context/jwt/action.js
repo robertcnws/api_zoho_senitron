@@ -40,6 +40,7 @@ export const signInWithUsernameAndPassword = async ({ username, password }) => {
     if (res.status === 200) {
       localStorage.setItem('accessToken', res.data.access);
       localStorage.setItem('refreshToken', res.data.refresh);
+      setSession(res.data.access);
 
       const accessToken = res.data.access;
 
@@ -58,7 +59,7 @@ export const signInWithUsernameAndPassword = async ({ username, password }) => {
         delete loginResponse.data.data.password;
         localStorage.setItem('userLogged', JSON.stringify(loginResponse.data));
       }
-      setSession(accessToken);
+      // setSession(accessToken);
     }
 
   } catch (error) {

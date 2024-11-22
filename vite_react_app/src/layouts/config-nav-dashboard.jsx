@@ -36,6 +36,7 @@ const ICONS = {
   dashboard: icon('ic-dashboard'),
   parameter: icon('ic-parameter'),
   item: icon('ic-item'),
+  shipment: icon('ic-shipment'),
 };
 
 const userLogged = JSON.parse(localStorage.getItem('userLogged'));
@@ -75,6 +76,17 @@ export const navData = [
             onClick: () => {
               alert('List');
             }
+          },
+        ],
+      },
+      {
+        title: 'Shipments',
+        path: paths.dashboard.shipment.root,
+        icon: ICONS.shipment,
+        children: [
+          {
+            title: 'List',
+            path: paths.dashboard.shipment.list,
           },
         ],
       },

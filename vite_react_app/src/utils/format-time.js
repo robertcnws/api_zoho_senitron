@@ -3,6 +3,7 @@ import duration from 'dayjs/plugin/duration';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
+import { constrainPoint } from '@fullcalendar/core/internal';
 
 // ----------------------------------------------------------------------
 
@@ -127,6 +128,9 @@ export function fIsBetween(inputDate, startDate, endDate) {
 /** output: boolean
  */
 export function fIsAfter(startDate, endDate) {
+  if (startDate === null) {
+    startDate = dayjs(endDate).subtract(1, 'day');
+  }
   return dayjs(startDate).isAfter(endDate);
 }
 
@@ -185,6 +189,20 @@ export function fDateRangeShortLabel(startDate, endDate, initial) {
 
   return label;
 }
+
+
+export function fDateShortLabel(date, initial) {
+  const isValid = dayjs(date).isValid();
+
+  if (!isValid) {
+    return 'Invalid time value';
+  }
+
+  const label = `${fDate(date)}`;
+
+  return label;
+}
+
 
 /** output: '2024-05-28T05:55:31+00:00'
  */
