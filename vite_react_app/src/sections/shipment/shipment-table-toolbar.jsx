@@ -21,7 +21,7 @@ import { CONFIG } from 'src/config-global';
 
 // ----------------------------------------------------------------------
 
-export function ShipmentTableToolbar({ filters, onResetPage, dateError, setUpdating }) {
+export function ShipmentTableToolbar({ filters, onResetPage, dateError, setUpdating, setTitleLinearProgress }) {
   const popover = usePopover();
 
   const { setLoading, setError, setComponent } = useContext(LoadingContext);
@@ -168,6 +168,7 @@ export function ShipmentTableToolbar({ filters, onResetPage, dateError, setUpdat
               popover.onClose();
               // setLoading(true);
               setUpdating(true);
+              setTitleLinearProgress('Fetching updates shipments from Zoho...');
               axios
                 .post(`${CONFIG.apiUrl}/api_zoho/load/inventory_shipments/`, {
                   start_date: filters.state.endDate.format('YYYY-MM-DD'),

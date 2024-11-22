@@ -79,6 +79,8 @@ export function ItemListView() {
 
   const [updating, setUpdating] = useState(false);
 
+  const [titleLinearProgress, setTitleLinearProgress] = useState('Loading data...');
+
   const TABLE_HEAD = [
     { id: 'sku', label: 'SKU', width: isMobile ? 30 : 80 },
     ...(!isMobile ? [
@@ -121,6 +123,7 @@ export function ItemListView() {
   useEffect(() => {
     localStorage.removeItem('routeByAnalytics');
     localStorage.removeItem('routeByOrder');
+    localStorage.removeItem('routeByShipment');
   }, []);
 
 
@@ -261,6 +264,7 @@ export function ItemListView() {
     (id) => {
       localStorage.removeItem('routeByAnalytics');
       localStorage.removeItem('routeByOrder');
+      localStorage.removeItem('routeByShipment');
       localStorage.setItem('itemStatus', filters.state.status);
       router.push(paths.dashboard.item.details(id));
     },
@@ -312,12 +316,16 @@ export function ItemListView() {
           sx={{
             width: '350px',
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
             height: '80vh',
             margin: 'auto'
           }}
         >
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            {titleLinearProgress}
+          </Typography>
           <LinearProgress
             key="error"
             sx={{
@@ -469,6 +477,7 @@ export function ItemListView() {
             dataFiltered={dataFiltered}
             headersCSV={headersCSV}
             setUpdating={setUpdating}
+            setTitleLinearProgress={setTitleLinearProgress}
             title={filters.state.status === 'all' ? 'All SKUs' :
               filters.state.status === 'synced' ? 'SKU Tracked' :
                 filters.state.status === 'matched_100' ? 'SKU Matched 100%' :

@@ -323,4 +323,15 @@ class ZohoPackage(models.Model):
     
     def __str__(self):
         return f"ZohoPackage {self.package_number}"
+    
+    
+class ZohoItemAssetsTrack(models.Model):
+    id = models.AutoField(primary_key=True)
+    item_id = models.CharField(max_length=255, null=True, blank=True)
+    sku = models.CharField(max_length=255, null=True, blank=True)
+    assets = models.JSONField(default=list, null=True, blank=True)
+    created_time = models.DateTimeField(default=timezone.now)
+    
+    def __str__(self):
+        return f"ItemAssetsTrack {self.item_id} - Created on {self.created_time}"
 

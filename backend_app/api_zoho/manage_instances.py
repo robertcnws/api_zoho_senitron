@@ -1,6 +1,6 @@
 from datetime import datetime as dt
 from django.utils import timezone
-from .models import ZohoInventoryItem, ZohoInventoryShipmentSalesOrder, ZohoShipmentOrder, ZohoPackage
+from .models import ZohoInventoryItem, ZohoInventoryShipmentSalesOrder, ZohoShipmentOrder, ZohoPackage, ZohoItemAssetsTrack
 from django.db.utils import IntegrityError
 
 #############################################
@@ -429,3 +429,24 @@ def create_inventory_package_instance(logger, data, zoho_shipment=None):
     except Exception as e:
         logger.error(f"Error creating package instance: {e}")
         return None
+    
+
+def create_zoho_item_assets_track_instance(logger, data, date):
+    item_id = data.get('itemId', '')
+    sku = data.get('sku', '')
+    assets = data.get('assets', [])
+    try:
+        obj = ZohoItemAssetsTrack.objects.create(
+            item_id=item_id,
+            sku=sku,
+            assets=assets,
+            created_time=date,   
+        )
+        return obj
+    except IntegrityError:
+        logger.error(f"Integrity error for ZohoItemAssetsTrack item_id={item_id}. Skipping.")
+        return None
+    except Exception as e:
+        logger.error(f"Error creating ZohoItemAssetsTrack instance: {e}")
+        return None
+    

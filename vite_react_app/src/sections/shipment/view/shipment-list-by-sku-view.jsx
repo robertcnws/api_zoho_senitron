@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useContext } from 'react';
+import { useState, useCallback, useEffect, useContext, useMemo } from 'react';
 
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
@@ -24,6 +24,7 @@ import { fIsAfter, fIsBetween } from 'src/utils/format-time';
 import { varAlpha } from 'src/theme/styles';
 import { DashboardContent } from 'src/layouts/dashboard';
 import { SHIPMENTS_STATUS_OPTIONS, useShipmentsQuery } from 'src/_mock/_shipment';
+import { usePackagesQuery } from 'src/_mock/_package';
 import { CONFIG } from 'src/config-global';
 
 
@@ -60,7 +61,42 @@ const STATUS_OPTIONS = [{ value: 'all', label: 'All' }, ...SHIPMENTS_STATUS_OPTI
 
 // ----------------------------------------------------------------------
 
-export function ShipmentListView() {
+export function ShipmentListBySkuView() {
+
+  const filters = useSetState({
+    shipmentNumber: '',
+    status: 'all',
+    startDate: null,
+    endDate: null,
+  });
+
+  const dateError = fIsAfter(null, filters.state.endDate);
+
+  const parseLineItems = (lineItems) => {
+    if (typeof lineItems === 'string') {
+      try {
+        return JSON.parse(lineItems).filter(item => item.sku);
+      } catch (err) {
+        console.error('Error al parsear lineItems:', err);
+        return [];
+      }
+    } else {
+      return (lineItems || []).filter(item => item.sku);
+    }
+  }
+
+  const parsePackages = (packages) => {
+    if (typeof packages === 'string') {
+      try {
+        return JSON.parse(packages).filter(pkg => pkg.package_id);
+      } catch (err) {
+        console.error('Error al parsear packages:', err);
+        return [];
+      }
+    } else {
+      return (packages || []).filter(pkg => pkg.package_id);
+    }
+  }
 
   const { isMobile } = useContext(LoadingContext);
 
@@ -69,11 +105,9 @@ export function ShipmentListView() {
   const [titleLinearProgress, setTitleLinearProgress] = useState('Loading data...');
 
   const TABLE_HEAD = [
-    { id: 'shipmentNumber', label: 'Number', width: isMobile ? 50 : 140 },
-    { id: 'date', label: 'Date', width: isMobile ? 50 : 140 },
-    { id: 'status', label: 'Status', width: isMobile ? 50 : 110 },
-    { id: 'package_total', label: 'Pkg Total', width: isMobile ? 50 : 110 },
-    { id: 'package_quantity', label: 'Pkg Qty', width: isMobile ? 50 : 110 },
+    { id: 'sku', label: 'SKU', width: isMobile ? 50 : 140 },
+    { id: 'date', label: 'Date', width: isMobile ? 50 : 110 },
+    { id: 'total_quantity', label: 'Total Qty Shipped', width: isMobile ? 50 : 140 },
     { id: '', width: isMobile ? 30 : 68 },
   ];
 
@@ -84,7 +118,7 @@ export function ShipmentListView() {
 
   const confirm = useBoolean();
 
-  const { loading, error, data } = useShipmentsQuery(null, null);
+  const { data: shipments } = useShipmentsQuery(null, null);
 
   const [tableData, setTableData] = useState([]);
 
@@ -101,46 +135,94 @@ export function ShipmentListView() {
   }, [table]);
 
 
+  const allShipments = useMemo(() => shipments || null, [shipments]);
 
-  // useEffect(() => {
-  //   const socket = new WebSocket(`wss://${CONFIG.apiHost}/${CONFIG.apiDomain}/ws/inventory_sales_orders/`);
-
-  //   socket.onmessage = (event) => {
-  //     const message = JSON.parse(event.data);
-  //     if (message.type === 'created' || message.type === 'updated') {
-  //       setTableData((prevData) => {
-  //         const existingItemIndex = prevData.findIndex(item => item.shipmentId === message.item.shipmentId);
-  //         if (existingItemIndex !== -1) {
-  //           const updatedData = [...prevData];
-  //           updatedData[existingItemIndex] = message.item;
-  //           return updatedData;
-  //         }
-  //         return [message.item, ...prevData];
-  //       });
-  //     }
-  //   };
-  //   return () => {
-  //     socket.close();
-  //   };
-  // }, []);
-
-  useEffect(() => {
-    if (data && data.length > 0) {
-      setTableData(data);
-    } else if (!loading && !error) {
-      console.error("No data returned from useShipmentsQuery");
-      setTableData([]);
+  const allPackages = useMemo(() => {
+    if (allShipments) {
+      const packages = [];
+      allShipments.forEach(shipment => {
+        const parsedPackage = parsePackages(shipment.packages);
+        packages.push(parsedPackage);
+      });
+      return packages;
     }
-  }, [data, loading, error]);
+    return null;
+  }, [allShipments]);
 
-  const filters = useSetState({
-    shipmentNumber: '',
-    status: 'all',
-    startDate: null,
-    endDate: null,
-  });
+  // console.log('allPackages:', allPackages);
 
-  const dateError = fIsAfter(null, filters.state.endDate);
+
+  // console.log('allShipments:', allPackages?.flatMap(pkgs => pkgs.map(pkg => pkg.package_id)) || []);
+
+  const { data: linePackages } = usePackagesQuery(null, null, allPackages?.flatMap(pkgs => pkgs.map(pkg => pkg.package_id)));
+
+  const allLinePackages = useMemo(() => linePackages || null, [linePackages]);
+
+  const dataItems = useMemo(() => {
+    if (linePackages) {
+      const items = linePackages?.map(pkg => ({
+        packageId: pkg.packageId,
+        packageNumber: pkg.packageNumber,
+        shipmentId: pkg.shipmentId,
+        shipmentNumber: pkg.shipmentNumber,
+        totalQuantity: pkg.totalQuantity,
+        date: filters.state.date,
+        items: parseLineItems(pkg.lineItems) || [],
+      }));
+      return items;
+    }
+    return [];
+  }, [linePackages, filters.state.date]);
+
+
+  // console.log('dataItems:', dataItems);
+
+
+  const mergeItems = useMemo(() => {
+    if (allShipments && allPackages && allLinePackages && dataItems) {
+      const merged = dataItems?.flatMap(itemList => itemList.items.map(item => ({
+        itemId: item.item_id,
+        sku: item.sku,
+        name: item.name,
+        quantity: item.quantity,
+        shipmentId: itemList.shipmentId,
+        shipmentNumber: itemList.shipmentNumber,
+        packageId: itemList.packageId,
+        packageNumber: itemList.packageNumber,
+        date: itemList.date,
+      })));
+      return merged;
+    }
+    return [];
+  }, [allShipments, allPackages, allLinePackages, dataItems]);
+
+
+  const groupedItems = mergeItems.reduce((acc, currentItem) => {
+    const { itemId, name, sku, packageId, quantity, shipmentId, shipmentNumber, packageNumber, date } = currentItem;
+    if (!acc[itemId]) {
+      acc[itemId] = {
+        itemId,
+        name,
+        sku,
+        date,
+        itemTotalQty: 0,
+        linePackages: []
+      };
+    }
+    acc[itemId].itemTotalQty += quantity;
+    acc[itemId].linePackages.push({
+      packageId,
+      packageNumber,
+      quantity,
+      shipmentId,
+      shipmentNumber
+    });
+    return acc;
+  }, {});
+
+  const finalGroupedArray = Object.values(groupedItems);
+
+  console.log('finalGroupedArray:', finalGroupedArray);
 
   const dataFiltered = applyFilter({
     inputData: tableData,
@@ -157,6 +239,20 @@ export function ShipmentListView() {
     !!filters.state.endDate;
 
   const notFound = (!dataFiltered.length && canReset) || !dataFiltered.length;
+
+
+
+
+  // useEffect(() => {
+  //   if (data && data.length > 0) {
+  //     setTableData(data);
+  //   } else {
+  //     console.error("No data returned from useShipmentsQuery");
+  //     setTableData([]);
+  //   }
+  // }, [data]);
+
+
 
   const handleDeleteRow = useCallback(
     (id) => {

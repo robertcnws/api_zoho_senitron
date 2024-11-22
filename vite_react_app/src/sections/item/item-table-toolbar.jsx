@@ -18,7 +18,7 @@ import ExportCSV from 'src/utils/export-csv';
 
 // ----------------------------------------------------------------------
 
-export function ItemTableToolbar({ filters, onResetPage, options, dataFiltered, headersCSV, setUpdating, title }) {
+export function ItemTableToolbar({ filters, onResetPage, options, dataFiltered, headersCSV, setUpdating, title, setTitleLinearProgress}) {
   const popover = usePopover();
 
   const { setLoading, setError, setComponent } = useContext(LoadingContext);
@@ -129,6 +129,7 @@ export function ItemTableToolbar({ filters, onResetPage, options, dataFiltered, 
               // setLoading(true);
               // setComponent('zoho inventory items');
               setUpdating(true);
+              setTitleLinearProgress('Fetching Item Updates from Zoho...');
               axios
                 .post(`${CONFIG.apiUrl}/api_zoho/load/inventory_items/`)
                 .then(() => {
@@ -152,6 +153,7 @@ export function ItemTableToolbar({ filters, onResetPage, options, dataFiltered, 
               // setLoading(true);
               // setComponent('senitron items');
               setUpdating(true);
+              setTitleLinearProgress('Fetching Item Updates from Senitron...');
               axios
                 .post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_item_assets/`)
                 .then(() => {

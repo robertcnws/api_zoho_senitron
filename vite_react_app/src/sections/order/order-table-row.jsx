@@ -61,6 +61,7 @@ export function OrderTableRow({ row, selected, onViewRow, onSelectRow, onDeleteR
   const handleViewItemRow = useCallback(
     (id) => {
       localStorage.removeItem('routeByAnalytics');
+      localStorage.removeItem('routeByShipment');
       localStorage.setItem('routeByOrder', id);
       router.push(paths.dashboard.item.details(id));
     },

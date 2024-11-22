@@ -9,9 +9,13 @@ from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from .models import AppConfig, ZohoInventoryItem, ZohoInventoryShipmentSalesOrder, LoginUser, ZohoSkuTrackInfo, ZohoShipmentOrder, ZohoPackage
+from .models import AppConfig, ZohoInventoryItem, ZohoInventoryShipmentSalesOrder, LoginUser, ZohoSkuTrackInfo, ZohoShipmentOrder, ZohoPackage, ZohoItemAssetsTrack
 from api_senitron.models import SenitronItem, TimelineItem
-from .manage_instances import create_inventory_item_instance, create_inventory_sales_order_instance, create_inventory_shipment_instance, create_inventory_package_instance
+from .manage_instances import create_inventory_item_instance, \
+                              create_inventory_sales_order_instance, \
+                              create_inventory_shipment_instance, \
+                              create_inventory_package_instance, \
+                              create_zoho_item_assets_track_instance
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.db import transaction
@@ -985,6 +989,33 @@ def create_zoho_sku_track_info(request):
         message = 'SKU track info updated successfully'
     else:
         message = 'SKU track info already exists'
+    return JsonResponse({'message': message}, status=201)
+
+
+
+#############################################
+# CREATE ZOHO ITEMS ASSETS TRACK
+############################################# 
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def create_zoho_items_assets_track(request):
+    data = json.loads(request.body)
+    info = data.get('items', [])
+    if len(info) > 0:
+        date = dt.now()
+        items_to_insert = []
+        for data in info:
+            new_item = create_zoho_item_assets_track_instance(logger, data, date)
+            items_to_insert.append(new_item)
+        if items_to_insert:
+            with transaction.atomic():
+                ZohoItemAssetsTrack.objects.bulk_create(items_to_insert, batch_size=200, ignore_conflicts=True)
+            message = 'Items Assets Info saved successfully'
+        message = 'Items Assets Info saved successfully'
+    else:
+        message = 'No Items Assets Info to save'
     return JsonResponse({'message': message}, status=201)
     
 

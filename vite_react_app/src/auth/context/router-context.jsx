@@ -32,7 +32,7 @@ const RouteProvider = ({ children }) => {
         mapRoutesKeys.forEach(({ subtext, keys }) => {
             keys.forEach((key) => {
                 if (!currentPath.includes(subtext)) {
-                    if (!localStorage.getItem('routeByOrder')) {
+                    if (!localStorage.getItem('routeByOrder') || !localStorage.getItem('routeByAnalytics') || !localStorage.getItem('routeByShipment')) {
                         localStorage.removeItem(key);
                         // console.log(
                         //     `Se eliminó '${key}' de localStorage porque la ruta '${currentPath}' no contiene '${subtext}'.`

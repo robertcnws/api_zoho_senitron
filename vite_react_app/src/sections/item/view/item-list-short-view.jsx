@@ -68,7 +68,7 @@ const headersCSV = [
 
 // ----------------------------------------------------------------------
 
-export function ItemListShortView( {updating, setUpdating} ) {
+export function ItemListShortView( {updating, setUpdating, setTitleLinearProgress} ) {
 
     const { isMobile } = useContext(LoadingContext);
 
@@ -103,6 +103,7 @@ export function ItemListShortView( {updating, setUpdating} ) {
     useEffect(() => {
         localStorage.removeItem('routeByAnalytics');
         localStorage.removeItem('routeByOrder');
+        localStorage.removeItem('routeByShipment');
     }, []);
 
 
@@ -208,6 +209,7 @@ export function ItemListShortView( {updating, setUpdating} ) {
     const handleViewRow = useCallback(
         (id) => {
             localStorage.removeItem('routeByOrder');
+            localStorage.removeItem('routeByShipment');
             localStorage.setItem('routeByAnalytics', id);
             localStorage.setItem('itemStatus', filters.state.status);
             router.push(paths.dashboard.item.details(id));
@@ -338,6 +340,7 @@ export function ItemListShortView( {updating, setUpdating} ) {
                     dataFiltered={dataFiltered}
                     headersCSV={headersCSV}
                     setUpdating={setUpdating}
+                    setTitleLinearProgress={setTitleLinearProgress}
                     title={filters.state.status === 'synced' ? 'SKU Tracked' :
                         filters.state.status === 'matched_100' ? 'SKU Matched 100%' :
                             filters.state.status === 'excess_items' ? 'SKU with excess items' :

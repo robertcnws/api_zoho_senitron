@@ -15,6 +15,8 @@ import { _socials } from 'src/_mock';
 import { TwitterIcon, FacebookIcon, LinkedinIcon, InstagramIcon } from 'src/assets/icons';
 
 import { Logo } from 'src/components/logo';
+import { useContext } from 'react';
+import { LoadingContext } from 'src/auth/context/loading-context';
 
 // ----------------------------------------------------------------------
 
@@ -176,6 +178,8 @@ export const CustomFooter = () => {
 
   const currentYear = new Date().getFullYear();
 
+  const { isMobile } = useContext(LoadingContext);
+
   return (
     <Box
       sx={{
@@ -198,7 +202,10 @@ export const CustomFooter = () => {
             color="text.secondary"
             sx={{ fontSize: '12px', fontWeight: 'bold' }}
           >
-            © {currentYear} Warehouse Management System. New Window System. All rights reserved.
+            © {currentYear}{' '}
+          { isMobile
+            ? 'WMS. NWS. All rights reserved.'
+            : 'Warehouse Management System. New Window System. All rights reserved.'}
           </Typography>
         </Grid>
         

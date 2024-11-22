@@ -47,6 +47,8 @@ export function OverviewAnalyticsView() {
 
   const [updating, setUpdating] = useState(false);
 
+  const [titleLinearProgress, setTitleLinearProgress] = useState('Loading data...');
+
   const router = useRouter();
 
   const { data: items } = useItemsQuery();
@@ -115,6 +117,7 @@ export function OverviewAnalyticsView() {
           assets: senitronItem.assets || [],
         };
       });
+
       return sortBySku(zohoSenitronItems);
     }
     return null;
@@ -276,19 +279,13 @@ export function OverviewAnalyticsView() {
       if (currentItems) {
         const skuTrackedCount = currentItems.filter((it) => it.syncedWithSenitron).length;
         const skuMatchedCount = currentItems.filter(
-          (it) =>
-            parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 &&
-            it.syncedWithSenitron
+          (it) => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron
         ).length;
         const skuMissingCount = currentItems.filter(
-          (it) =>
-            parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 &&
-            it.syncedWithSenitron
+          (it) => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron
         ).length;
         const skuExcessCount = currentItems.filter(
-          (it) =>
-            parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 &&
-            it.syncedWithSenitron
+          (it) => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron
         ).length;
         const payload = {
           sku_tracked: skuTrackedCount,
@@ -301,7 +298,7 @@ export function OverviewAnalyticsView() {
             `${CONFIG.apiUrl}/api_zoho/create_zoho_sku_track_info/`,
             payload
           );
-          console.log('response', response);
+          // console.log('response', response);
         } catch (error) {
           console.error('Error al crear la información de seguimiento de SKU:', error);
         }
@@ -330,6 +327,7 @@ export function OverviewAnalyticsView() {
     filters: filters.state,
   });
 
+
   const handleFilterName = useCallback(
     (event) => {
       filters.setState({ name: event.target.value });
@@ -341,6 +339,7 @@ export function OverviewAnalyticsView() {
   const handleViewRow = useCallback(
     (id) => {
       localStorage.removeItem('routeByOrder');
+      localStorage.removeItem('routeByShipment');
       localStorage.setItem('routeByAnalytics', id);
       router.push(paths.dashboard.item.details(id));
     },
@@ -358,12 +357,16 @@ export function OverviewAnalyticsView() {
             sx={{
               width: '350px',
               display: 'flex',
+              flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
               height: '80vh',
               margin: 'auto'
             }}
           >
+            <Typography variant="body2" sx={{ mb: 1 }}>
+              {titleLinearProgress}
+            </Typography>
             <LinearProgress
               key="error"
               sx={{
@@ -390,14 +393,24 @@ export function OverviewAnalyticsView() {
                       // setLoading(true);
                       // setComponent('Zoho & Senitron Last Info');
                       setUpdating(true);
+                      const payload = {
+                        items: itemsZohoSenitron.filter(it => it.assets.length > 0),
+                      };
+                      setTitleLinearProgress('Updating Items Assets Info...');
                       axios
-                        .post(`${CONFIG.apiUrl}/api_zoho/load/inventory_items/`)
+                        .post(`${CONFIG.apiUrl}/api_zoho/create_zoho_items_assets_track/`, payload)
                         .then(() => {
+                          setTitleLinearProgress('Loading Inventory Items Updated Info from Zoho...');
                           axios
-                            .post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_item_assets/`)
+                            .post(`${CONFIG.apiUrl}/api_zoho/load/inventory_items/`)
                             .then(() => {
-                              console.log('Zoho Inventory item fetched');
-                              console.log('Senitron Inventory item fetched');
+                              setTitleLinearProgress('Loading Items Updated Info from Senitron...');
+                              axios
+                                .post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_item_assets/`)
+                                .then(() => {
+                                  console.log('Zoho Inventory item fetched');
+                                  console.log('Senitron Inventory item fetched');
+                                });
                             })
                             .catch((err) => {
                               console.error('Error fetching senitron inventory item asset:', err);
@@ -615,7 +628,7 @@ export function OverviewAnalyticsView() {
                 </Grid>
               )}
               <Grid xs={12} md={12} lg={12}>
-                <ItemListShortView updating={updating} setUpdating={setUpdating} />
+                <ItemListShortView updating={updating} setUpdating={setUpdating} setTitleLinearProgress={setTitleLinearProgress}/>
               </Grid>
             </Grid>
           </DashboardContent >
@@ -741,7 +754,7 @@ function linearRegresionCalculation(serie) {
   }
   const pendiente = (n * sumaXY - sumaX * sumaY) / (n * sumaX2 - sumaX * sumaX);
   const intercepto = (sumaY - pendiente * sumaX) / n;
-  
+
   const primerValor = pendiente * 0 + intercepto;
   const ultimoValor = pendiente * (n - 1) + intercepto;
   const cambioPorcentual = ((ultimoValor - primerValor) / primerValor) * 100;

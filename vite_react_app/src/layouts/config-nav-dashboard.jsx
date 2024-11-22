@@ -88,6 +88,10 @@ export const navData = [
             title: 'List',
             path: paths.dashboard.shipment.list,
           },
+          {
+            title: 'List By SKUs',
+            path: paths.dashboard.shipment.listBySku,
+          },
         ],
       },
       // {
