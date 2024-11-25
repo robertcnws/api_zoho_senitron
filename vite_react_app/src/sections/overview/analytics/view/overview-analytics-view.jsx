@@ -758,7 +758,7 @@ function linearRegresionCalculation(serie) {
 
   const primerValor = pendiente * 0 + intercepto;
   const ultimoValor = pendiente * (n - 1) + intercepto;
-  const cambioPorcentual = ((ultimoValor - primerValor) / primerValor) * 100;
+  const cambioPorcentual = ((ultimoValor - primerValor) / primerValor);
   return cambioPorcentual;
 }
 
