@@ -246,7 +246,7 @@ export function ShipmentListBySkuView() {
     dateError,
   });
 
-  console.log('dataFiltered:', dataFiltered);
+  // console.log('dataFiltered:', dataFiltered);
 
   const dataInPage = rowInPage(dataFiltered, table.page, table.rowsPerPage);
 

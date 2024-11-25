@@ -243,7 +243,7 @@ export function ShipmentTableRowListBySku({ row, selected, onViewRow, onSelectRo
             }}
           >
             <Iconify icon="solar:eye-bold" />
-            View Shipment
+            View Item
           </MenuItem>
           <MenuItem
             onClick={() => {
@@ -253,7 +253,7 @@ export function ShipmentTableRowListBySku({ row, selected, onViewRow, onSelectRo
             sx={{ color: 'error.main' }}
           >
             <Iconify icon="solar:trash-bin-trash-bold" />
-            Delete Shipment
+            Delete Item
           </MenuItem>
         </MenuList>
       </CustomPopover>
