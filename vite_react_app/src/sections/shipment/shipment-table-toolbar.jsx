@@ -137,16 +137,16 @@ export function ShipmentTableToolbar({ filters, onResetPage, dateError, setUpdat
         slotProps={{ arrow: { placement: 'right-top' } }}
       >
         <MenuList>
-          <MenuItem
+          {/* <MenuItem
             onClick={() => {
               popover.onClose();
             }}
           >
             <Iconify icon="solar:printer-minimalistic-bold" />
             Print
-          </MenuItem>
+          </MenuItem> */}
 
-          <MenuItem
+          {/* <MenuItem
             onClick={() => {
               popover.onClose();
             }}
@@ -162,7 +162,7 @@ export function ShipmentTableToolbar({ filters, onResetPage, dateError, setUpdat
           >
             <Iconify icon="solar:export-bold" />
             Export
-          </MenuItem>
+          </MenuItem> */}
           <MenuItem
             onClick={() => {
               popover.onClose();

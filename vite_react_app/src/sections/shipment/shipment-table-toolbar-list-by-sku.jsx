@@ -17,11 +17,12 @@ import { usePopover, CustomPopover } from 'src/components/custom-popover';
 
 import { LoadingContext } from 'src/auth/context/loading-context';
 import { CONFIG } from 'src/config-global';
+import { generateItemShipmentPrintablePDF } from 'src/utils/printable-pdf';
 
 
 // ----------------------------------------------------------------------
 
-export function ShipmentTableToolbarListBySku({ filters, onResetPage, dateError, setUpdating, setTitleLinearProgress }) {
+export function ShipmentTableToolbarListBySku({ filters, onResetPage, dataFiltered, dateError, setUpdating, setTitleLinearProgress }) {
   const popover = usePopover();
 
   const { setLoading, setError, setComponent } = useContext(LoadingContext);
@@ -140,13 +141,14 @@ export function ShipmentTableToolbarListBySku({ filters, onResetPage, dateError,
           <MenuItem
             onClick={() => {
               popover.onClose();
+              generateItemShipmentPrintablePDF({data: dataFiltered});
             }}
           >
             <Iconify icon="solar:printer-minimalistic-bold" />
             Print
           </MenuItem>
 
-          <MenuItem
+          {/* <MenuItem
             onClick={() => {
               popover.onClose();
             }}
@@ -162,7 +164,7 @@ export function ShipmentTableToolbarListBySku({ filters, onResetPage, dateError,
           >
             <Iconify icon="solar:export-bold" />
             Export
-          </MenuItem>
+          </MenuItem> */}
           <MenuItem
             onClick={() => {
               popover.onClose();

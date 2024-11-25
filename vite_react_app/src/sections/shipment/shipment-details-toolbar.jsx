@@ -74,13 +74,13 @@ export function ShipmentDetailsToolbar({
             {status}
           </Button> */}
 
-          <Button
+          {/* <Button
             color="inherit"
             variant="outlined"
             startIcon={<Iconify icon="solar:printer-minimalistic-bold" />}
           >
             Print
-          </Button>
+          </Button> */}
 
           {/* <Button color="inherit" variant="contained" startIcon={<Iconify icon="solar:pen-bold" />}>
             Edit

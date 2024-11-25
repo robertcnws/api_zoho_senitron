@@ -344,6 +344,7 @@ export function ShipmentListBySkuView() {
           <ShipmentTableToolbarListBySku
             filters={filters}
             onResetPage={table.onResetPage}
+            dataFiltered={dataFiltered}
             dateError={dateError}
             setUpdating={setUpdating}
             setTitleLinearProgress={setTitleLinearProgress}
