@@ -104,6 +104,7 @@ export function ItemListShortView( {updating, setUpdating, setTitleLinearProgres
         localStorage.removeItem('routeByAnalytics');
         localStorage.removeItem('routeByOrder');
         localStorage.removeItem('routeByShipment');
+        localStorage.removeItem('routeByShipmentBySku');
     }, []);
 
 

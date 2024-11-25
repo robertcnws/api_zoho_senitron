@@ -124,6 +124,7 @@ export function ItemListView() {
     localStorage.removeItem('routeByAnalytics');
     localStorage.removeItem('routeByOrder');
     localStorage.removeItem('routeByShipment');
+    localStorage.removeItem('routeByShipmentBySku');
   }, []);
 
 
@@ -265,6 +266,7 @@ export function ItemListView() {
       localStorage.removeItem('routeByAnalytics');
       localStorage.removeItem('routeByOrder');
       localStorage.removeItem('routeByShipment');
+      localStorage.removeItem('routeByShipmentBySku');
       localStorage.setItem('itemStatus', filters.state.status);
       router.push(paths.dashboard.item.details(id));
     },

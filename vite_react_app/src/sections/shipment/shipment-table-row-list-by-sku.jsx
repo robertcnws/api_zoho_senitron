@@ -91,7 +91,8 @@ export function ShipmentTableRowListBySku({ row, selected, onViewRow, onSelectRo
     (id) => {
       localStorage.removeItem('routeByAnalytics');
       localStorage.removeItem('routeByOrder');
-      localStorage.setItem('routeByShipment', id);
+      localStorage.removeItem('routeByShipment');
+      localStorage.setItem('routeByShipmentBySku', id);
       router.push(paths.dashboard.item.details(id));
     },
     [router]
@@ -184,13 +185,25 @@ export function ShipmentTableRowListBySku({ row, selected, onViewRow, onSelectRo
                   <Grid container spacing={2} alignItems="center">
                     <Grid item xs={11}>
                       <ListItemText
-                        primary={
-                          <b>#: {item.packageNumber}</b>
-                        }
                         secondary={
                           <>
-                            Shipment: <b>{item.shipmentNumber}</b><br/>
-                            Pkg Qty: <b>{parseInt(item.quantity, 10)}</b>
+                            <Grid container spacing={1}>
+                              <Grid item xs={4}>
+                                <Typography variant="body2">
+                                  # Pkg: <strong>{item.packageNumber}</strong>
+                                </Typography>
+                              </Grid>
+                              <Grid item xs={4}>
+                                <Typography variant="body2">
+                                  # Shipment: <strong>{item.shipmentNumber}</strong>
+                                </Typography>
+                              </Grid>
+                              <Grid item xs={4}>
+                                <Typography variant="body2">
+                                  Pkg Qty: <strong>{parseInt(item.quantity, 10)}</strong>
+                                </Typography>
+                              </Grid>
+                            </Grid>
                           </>
                         }
                         primaryTypographyProps={{ variant: 'body2' }}

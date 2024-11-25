@@ -91,6 +91,7 @@ export function ShipmentTableRow({ row, selected, onViewRow, onSelectRow, onDele
     (id) => {
       localStorage.removeItem('routeByAnalytics');
       localStorage.removeItem('routeByOrder');
+      localStorage.removeItem('routeByShipmentBySku');
       localStorage.setItem('routeByShipment', id);
       router.push(paths.dashboard.item.details(id));
     },

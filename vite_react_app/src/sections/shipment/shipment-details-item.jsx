@@ -12,35 +12,57 @@ import { Iconify } from 'src/components/iconify';
 
 // ----------------------------------------------------------------------
 
-export function ShipmentDetailsItems({ order }) {
+export function ShipmentDetailsItems({ shipment }) {
 
   const router = useRouter();
 
   const parseLineItems = (lineItems) => {
     if (typeof lineItems === 'string') {
       try {
-        return JSON.parse(lineItems).filter(item => item.sku);
+        return JSON.parse(lineItems).filter(item => item.item_id);
       } catch (error) {
         console.error('Error al parsear lineItems:', error);
         return [];
       }
     } else {
-      return (lineItems || []).filter(item => item.sku);
+      return (lineItems || []).filter(item => item.item_id);
+    }
+  }
+
+  const parsePackages = (packages) => {
+    if (typeof packages === 'string') {
+      try {
+        return JSON.parse(packages).filter(item => item.package_id);
+      } catch (error) {
+        console.error('Error al parsear lineItems:', error);
+        return [];
+      }
+    } else {
+      return (packages || []).filter(item => item.package_id);
     }
   }
 
   const [lineItems, setLineItems] = useState(null);
 
+  const [packages, setPackages] = useState(null);
+
 
   useEffect(() => {
-    const items = order.lineItems;
+    const items = shipment.lineItems;
     setLineItems(parseLineItems(items));
-  }, [order.lineItems]);
+  }, [shipment.lineItems]);
+
+  useEffect(() => {
+    const pckgs = shipment.packages;
+    setPackages(parsePackages(pckgs));
+  }, [shipment.packages]);
 
 
   const handleViewItemRow = useCallback(
     (id) => {
       localStorage.removeItem('routeByAnalytics');
+      localStorage.removeItem('routeByOrder');
+      localStorage.removeItem('routeByShipmentBySku');
       localStorage.setItem('routeByShipment', id);
       router.push(paths.dashboard.item.details(id));
     },
@@ -55,7 +77,6 @@ export function ShipmentDetailsItems({ order }) {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>SKU</TableCell>
                 <TableCell>Name</TableCell>
                 <TableCell>Quantity</TableCell>
                 <TableCell />
@@ -64,9 +85,8 @@ export function ShipmentDetailsItems({ order }) {
             <TableBody>
               {lineItems && lineItems.map((item, index) => (
                 <TableRow key={index}>
-                  <TableCell>{item.sku}</TableCell>
                   <TableCell>{item.name}</TableCell>
-                  <TableCell>{item.quantity_shipped}</TableCell>
+                  <TableCell>{item.quantity}</TableCell>
                   <TableCell>
                     <IconButton
                       color='default'
@@ -84,11 +104,35 @@ export function ShipmentDetailsItems({ order }) {
       </Stack>
     </Stack>
 
+const renderPackages =
+<Stack direction="row" alignItems="center" justifyContent="space-between">
+  <Stack direction="row" alignItems="center" spacing={2}>
+    <TableContainer>
+      <Table>
+        <TableHead>
+          <TableRow>
+            <TableCell>Pkg Number</TableCell>
+            <TableCell>Quantity</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {packages && packages.map((item, index) => (
+            <TableRow key={index}>
+              <TableCell>{item.package_number}</TableCell>
+              <TableCell>{item.package_quantity}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  </Stack>
+</Stack>
+
 
   const renderTotal = (
     <Stack spacing={2} alignItems="flex-start" sx={{ p: 3, textAlign: 'left', typography: 'body2' }}>
       <Grid container spacing={2}>
-        {order.salesorderId && (
+        {shipment.shipmentId && (
           <>
             <Grid container item xs={12}>
               <Grid item xs={3}>
@@ -96,14 +140,29 @@ export function ShipmentDetailsItems({ order }) {
               </Grid>
               <Grid item xs={9}>
                 <Box sx={{ typography: 'subtitle2' }}>
-                  <Label color="default"> {order.salesorderId || '-'} </Label>
+                  <Label color="default"> {shipment.shipmentId || '-'} </Label>
                 </Box>
               </Grid>
 
             </Grid>
           </>
         )}
-        {order.customerName && (
+        {shipment.shipmentNumber && (
+          <>
+            <Grid container item xs={12}>
+              <Grid item xs={3}>
+                <Box sx={{ color: 'text.secondary' }}>Number: </Box>
+              </Grid>
+              <Grid item xs={9}>
+                <Box sx={{ typography: 'subtitle2' }}>
+                  <Label color="default"> {shipment.shipmentNumber || '-'} </Label>
+                </Box>
+              </Grid>
+
+            </Grid>
+          </>
+        )}
+        {shipment.customerName && (
           <>
             <Grid container item xs={12}>
               <Grid item xs={3}>
@@ -111,29 +170,14 @@ export function ShipmentDetailsItems({ order }) {
               </Grid>
               <Grid item xs={9}>
                 <Box sx={{ typography: 'subtitle2' }}>
-                  <Label color="default"> {order.customerName || '-'} </Label>
+                  <Label color="default"> {shipment.customerName || '-'} </Label>
                 </Box>
               </Grid>
 
             </Grid>
           </>
         )}
-        {order.totalQuantity && (
-          <>
-            <Grid container item xs={12}>
-              <Grid item xs={3}>
-                <Box sx={{ color: 'text.secondary' }}>Total Quantity: </Box>
-              </Grid>
-              <Grid item xs={9}>
-                <Box sx={{ typography: 'subtitle2' }}>
-                  <Label color="default"> {order.totalQuantity || '-'} </Label>
-                </Box>
-              </Grid>
-
-            </Grid>
-          </>
-        )}
-        {order.total && (
+        {shipment.total && (
           <>
             <Grid container item xs={12}>
               <Grid item xs={3}>
@@ -147,17 +191,7 @@ export function ShipmentDetailsItems({ order }) {
                     </Grid>
                     <Grid item xs={1}>
                       <Box alignItems="flex-end" sx={{ p: 0, textAlign: 'right', typography: 'body2' }}>
-                        <Label color="default"> {parseFloat(order.subTotal).toFixed(2) || '-'} </Label>
-                      </Box>
-                    </Grid>
-                  </Grid>
-                  <Grid container spacing={2}>
-                    <Grid item xs={4}>
-                      <Box sx={{ color: 'text.secondary' }}>Tax Total: </Box>
-                    </Grid>
-                    <Grid item xs={1}>
-                      <Box alignItems="flex-end" sx={{ p: 0, textAlign: 'right', typography: 'body2' }}>
-                        <Label color="default"> {parseFloat(order.taxTotal).toFixed(2) || '-'} </Label>
+                        <Label color="default"> {parseFloat(shipment.subTotal).toFixed(2) || '-'} </Label>
                       </Box>
                     </Grid>
                   </Grid>
@@ -167,7 +201,7 @@ export function ShipmentDetailsItems({ order }) {
                     </Grid>
                     <Grid item xs={1}>
                       <Box alignItems="flex-end" sx={{ p: 0, textAlign: 'right', typography: 'body2' }}>
-                        <Label color="default"> {parseFloat(order.total).toFixed(2) || '-'} </Label>
+                        <Label color="default"> {parseFloat(shipment.total).toFixed(2) || '-'} </Label>
                       </Box>
                     </Grid>
                   </Grid>
@@ -185,6 +219,19 @@ export function ShipmentDetailsItems({ order }) {
               </Grid>
               <Grid item xs={9}>
                 {renderItems}
+              </Grid>
+
+            </Grid>
+          </>
+        )}
+        {packages && packages.length > 0 && (
+          <>
+            <Grid container item xs={12}>
+              <Grid item xs={3}>
+                <Box sx={{ color: 'text.secondary' }}>Packages: </Box>
+              </Grid>
+              <Grid item xs={9}>
+                {renderPackages}
               </Grid>
 
             </Grid>

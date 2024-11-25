@@ -286,7 +286,8 @@ export function ShipmentListBySkuView() {
 
   const handleViewRow = useCallback(
     (id) => {
-      router.push(paths.dashboard.order.details(id));
+      localStorage.setItem('routeByShipmentBySku', id);
+      router.push(paths.dashboard.item.details(id));
     },
     [router]
   );

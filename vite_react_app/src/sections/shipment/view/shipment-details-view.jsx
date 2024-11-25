@@ -15,8 +15,8 @@ import { ShipmentDetailsHistory } from '../shipment-details-history';
 
 // ----------------------------------------------------------------------
 
-export function ShipmentDetailsView({ order }) {
-  const [status, setStatus] = useState(order?.status);
+export function ShipmentDetailsView({ shipment }) {
+  const [status, setStatus] = useState(shipment?.status);
 
   const handleChangeStatus = useCallback((newValue) => {
     setStatus(newValue);
@@ -25,9 +25,9 @@ export function ShipmentDetailsView({ order }) {
   return (
     <DashboardContent>
       <ShipmentDetailsToolbar
-        backLink={paths.dashboard.order.root}
-        orderNumber={order?.salesorderNumber}
-        createdAt={order?.createdTime}
+        backLink={paths.dashboard.shipment.root}
+        orderNumber={shipment?.shipmentNumber}
+        createdAt={shipment?.createdTime}
         status={status}
         onChangeStatus={handleChangeStatus}
         statusOptions={ORDER_STATUS_OPTIONS}
@@ -36,7 +36,7 @@ export function ShipmentDetailsView({ order }) {
       <Grid container spacing={3}>
         <Grid xs={12} md={12}>
           <Stack spacing={3} direction={{ xs: 'column-reverse', md: 'column' }}>
-            <ShipmentDetailsItems order={order}
+            <ShipmentDetailsItems shipment={shipment}
             />
 
             {/* <ShipmentDetailsHistory history={order?.history} /> */}

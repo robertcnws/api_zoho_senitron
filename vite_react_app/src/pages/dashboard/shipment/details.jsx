@@ -4,11 +4,11 @@ import { Helmet } from 'react-helmet-async';
 
 import { useParams } from 'src/routes/hooks';
 
-import { useSalesOrdersQuery } from 'src/_mock/_orders';
+import { useShipmentsQuery } from 'src/_mock/_shipment';
 
 import { CONFIG } from 'src/config-global';
 
-import { OrderDetailsView } from 'src/sections/order/view';
+import { ShipmentDetailsView } from 'src/sections/shipment/view';
 
 // ----------------------------------------------------------------------
 
@@ -17,20 +17,20 @@ const metadata = { title: `Order details | Dashboard - ${CONFIG.appName}` };
 export default function Page() {
   const { id = '' } = useParams();
 
-  const { data } = useSalesOrdersQuery();
+  const { data } = useShipmentsQuery(null, null);
 
-  const [orders, setOrders] = useState(null);
+  const [shipments, setShipments] = useState(null);
 
-  const [currentOrder, setCurrentOrder] = useState(null);
+  const [currentShipment, setCurrentShipment] = useState(null);
 
   useEffect(() => {
     if (data) {
-      setOrders(data);
-      setCurrentOrder(data.find((order) => order.salesorderId === id));
+      setShipments(data);
+      setCurrentShipment(data.find((ship) => ship.shipmentId === id));
     }
   }, [id, data]);
 
-  if (!currentOrder) {
+  if (!currentShipment) {
     return null;
   }
 
@@ -40,7 +40,7 @@ export default function Page() {
         <title> {metadata.title}</title>
       </Helmet>
 
-      <OrderDetailsView order={currentOrder} />
+      <ShipmentDetailsView shipment={currentShipment} />
     </>
   );
 }

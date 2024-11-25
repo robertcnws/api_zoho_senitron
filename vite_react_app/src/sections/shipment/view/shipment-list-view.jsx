@@ -186,7 +186,7 @@ export function ShipmentListView() {
 
   const handleViewRow = useCallback(
     (id) => {
-      router.push(paths.dashboard.order.details(id));
+      router.push(paths.dashboard.shipment.details(id));
     },
     [router]
   );
@@ -198,6 +198,8 @@ export function ShipmentListView() {
     },
     [filters, table]
   );
+
+  // console.log("shipment-list-view.jsx: dataFiltered", dataFiltered);
 
   if (updating) {
     return (

@@ -340,6 +340,7 @@ export function OverviewAnalyticsView() {
     (id) => {
       localStorage.removeItem('routeByOrder');
       localStorage.removeItem('routeByShipment');
+      localStorage.removeItem('routeByShipmentBySku');
       localStorage.setItem('routeByAnalytics', id);
       router.push(paths.dashboard.item.details(id));
     },

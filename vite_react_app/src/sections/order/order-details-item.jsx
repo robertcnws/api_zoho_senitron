@@ -42,6 +42,7 @@ export function OrderDetailsItems({ order }) {
     (id) => {
       localStorage.removeItem('routeByAnalytics');
       localStorage.removeItem('routeByShipment');
+      localStorage.removeItem('routeByShipmentBySku');
       localStorage.setItem('routeByOrder', id);
       router.push(paths.dashboard.item.details(id));
     },

@@ -42,10 +42,8 @@ export function ShipmentDetailsToolbar({
               <Label
                 variant="soft"
                 color={
-                  (status === 'fulfilled' && 'success') ||
-                  (status === 'confirmed' && 'info') ||
+                  (status === 'delivered' && 'success') ||
                   (status === 'partially_shipped' && 'warning') ||
-                  (status === 'draft' && 'error') ||
                   'default'
                 }
               >
