@@ -1,7 +1,7 @@
 // ----------------------------------------------------------------------
 
 export function rowInPage(data, page, rowsPerPage) {
-  return data.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  return data?.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 }
 
 // ----------------------------------------------------------------------

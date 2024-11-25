@@ -52,6 +52,9 @@ import {
 import { ShipmentTableRow } from '../shipment-table-row';
 import { ShipmentTableToolbar } from '../shipment-table-toolbar';
 import { ShipmentTableFiltersResult } from '../shipment-table-filters-result';
+import { ShipmentTableRowListBySku } from '../shipment-table-row-list-by-sku';
+import { ShipmentTableToolbarListBySku } from '../shipment-table-toolbar-list-by-sku';
+import { ShipmentTableFiltersResultListBySku } from '../shipment-table-filters-result-list-by-sku';
 
 
 // ----------------------------------------------------------------------
@@ -64,13 +67,10 @@ const STATUS_OPTIONS = [{ value: 'all', label: 'All' }, ...SHIPMENTS_STATUS_OPTI
 export function ShipmentListBySkuView() {
 
   const filters = useSetState({
-    shipmentNumber: '',
-    status: 'all',
+    sku: '',
     startDate: null,
     endDate: null,
   });
-
-  const dateError = fIsAfter(null, filters.state.endDate);
 
   const parseLineItems = (lineItems) => {
     if (typeof lineItems === 'string') {
@@ -85,18 +85,21 @@ export function ShipmentListBySkuView() {
     }
   }
 
-  const parsePackages = (packages) => {
+  const parsePackages = (packages, date = null) => {
     if (typeof packages === 'string') {
       try {
-        return JSON.parse(packages).filter(pkg => pkg.package_id);
+        const parsedPackages = JSON.parse(packages)
+          .filter(pkg => pkg.package_id)
+          .map(pkg => ({ ...pkg, date })); 
+        return parsedPackages;
       } catch (err) {
         console.error('Error al parsear packages:', err);
         return [];
       }
     } else {
-      return (packages || []).filter(pkg => pkg.package_id);
+      return (packages || []).filter(pkg => pkg.package_id).map(pkg => ({ ...pkg, date }));
     }
-  }
+  };
 
   const { isMobile } = useContext(LoadingContext);
 
@@ -107,12 +110,12 @@ export function ShipmentListBySkuView() {
   const TABLE_HEAD = [
     { id: 'sku', label: 'SKU', width: isMobile ? 50 : 140 },
     { id: 'date', label: 'Date', width: isMobile ? 50 : 110 },
-    { id: 'total_quantity', label: 'Total Qty Shipped', width: isMobile ? 50 : 140 },
+    { id: 'itemTotalQty', label: 'Total Qty Shipped', width: isMobile ? 50 : 140 },
     { id: '', width: isMobile ? 30 : 68 },
   ];
 
 
-  const table = useTable({ defaultOrderBy: 'shipmentNumber', defaultDense: true });
+  const table = useTable({ defaultOrderBy: 'sku', defaultDense: true });
 
   const router = useRouter();
 
@@ -120,7 +123,9 @@ export function ShipmentListBySkuView() {
 
   const { data: shipments } = useShipmentsQuery(null, null);
 
-  const [tableData, setTableData] = useState([]);
+  const [dataShipments, setDataShipments] = useState([]);
+
+  // const [tableData, setTableData] = useState([]);
 
 
   useEffect(() => {
@@ -141,7 +146,7 @@ export function ShipmentListBySkuView() {
     if (allShipments) {
       const packages = [];
       allShipments.forEach(shipment => {
-        const parsedPackage = parsePackages(shipment.packages);
+        const parsedPackage = parsePackages(shipment.packages, shipment.date);
         packages.push(parsedPackage);
       });
       return packages;
@@ -166,13 +171,13 @@ export function ShipmentListBySkuView() {
         shipmentId: pkg.shipmentId,
         shipmentNumber: pkg.shipmentNumber,
         totalQuantity: pkg.totalQuantity,
-        date: filters.state.date,
+        date: pkg.date,
         items: parseLineItems(pkg.lineItems) || [],
       }));
       return items;
     }
     return [];
-  }, [linePackages, filters.state.date]);
+  }, [linePackages]);
 
 
   // console.log('dataItems:', dataItems);
@@ -222,7 +227,17 @@ export function ShipmentListBySkuView() {
 
   const finalGroupedArray = Object.values(groupedItems);
 
-  console.log('finalGroupedArray:', finalGroupedArray);
+  const [tableData, setTableData] = useState(null);
+
+  useEffect(() => {
+    if (finalGroupedArray) {
+      setTableData(finalGroupedArray);
+    }
+  }, [finalGroupedArray]);
+
+  // console.log('finalGroupedArray:', tableData);
+
+  const dateError = fIsAfter(null, filters.state.endDate);
 
   const dataFiltered = applyFilter({
     inputData: tableData,
@@ -231,54 +246,43 @@ export function ShipmentListBySkuView() {
     dateError,
   });
 
+  console.log('dataFiltered:', dataFiltered);
+
   const dataInPage = rowInPage(dataFiltered, table.page, table.rowsPerPage);
 
   const canReset =
     !!filters.state.shipmentNumber ||
-    filters.state.status !== 'all' ||
     !!filters.state.endDate;
 
-  const notFound = (!dataFiltered.length && canReset) || !dataFiltered.length;
-
-
-
-
-  // useEffect(() => {
-  //   if (data && data.length > 0) {
-  //     setTableData(data);
-  //   } else {
-  //     console.error("No data returned from useShipmentsQuery");
-  //     setTableData([]);
-  //   }
-  // }, [data]);
+  const notFound = (!dataFiltered?.length && canReset) || !dataFiltered?.length;
 
 
 
   const handleDeleteRow = useCallback(
     (id) => {
-      const deleteRow = tableData.filter((row) => row.shipmentId !== id);
+      const deleteRow = tableData?.filter((row) => row.itemId !== id);
 
       toast.success('Delete success!');
 
       setTableData(deleteRow);
 
-      table.onUpdatePageDeleteRow(dataInPage.length);
+      table.onUpdatePageDeleteRow(dataInPage?.length);
     },
-    [dataInPage.length, table, tableData]
+    [dataInPage?.length, table, tableData]
   );
 
   const handleDeleteRows = useCallback(() => {
-    const deleteRows = tableData.filter((row) => !table.selected.includes(row.shipmentId));
+    const deleteRows = tableData?.filter((row) => !table.selected.includes(row.itemId));
 
     toast.success('Delete success!');
 
     setTableData(deleteRows);
 
     table.onUpdatePageDeleteRows({
-      totalRowsInPage: dataInPage.length,
-      totalRowsFiltered: dataFiltered.length,
+      totalRowsInPage: dataInPage?.length,
+      totalRowsFiltered: dataFiltered?.length,
     });
-  }, [dataFiltered.length, dataInPage.length, table, tableData]);
+  }, [dataFiltered?.length, dataInPage?.length, table, tableData]);
 
   const handleViewRow = useCallback(
     (id) => {
@@ -287,13 +291,6 @@ export function ShipmentListBySkuView() {
     [router]
   );
 
-  const handleFilterStatus = useCallback(
-    (event, newValue) => {
-      table.onResetPage();
-      filters.setState({ status: newValue });
-    },
-    [filters, table]
-  );
 
   if (updating) {
     return (
@@ -332,53 +329,18 @@ export function ShipmentListBySkuView() {
     <>
       <DashboardContent>
         <CustomBreadcrumbs
-          heading="List"
+          heading="List By SKU"
           links={[
             { name: 'Dashboard', href: paths.dashboard.general.analytics },
-            { name: 'Shipment', href: paths.dashboard.shipment.root },
-            { name: 'List' },
+            { name: 'Shipment', href: paths.dashboard.shipment.listBySku },
+            { name: 'List By SKU' },
           ]}
           sx={{ mb: { xs: 3, md: 5 } }}
         />
 
         <Card>
-          <Tabs
-            value={filters.state.status}
-            onChange={handleFilterStatus}
-            sx={{
-              px: 2.5,
-              boxShadow: (theme) =>
-                `inset 0 -2px 0 0 ${varAlpha(theme.vars.palette.grey['500Channel'], 0.08)}`,
-            }}
-          >
-            {STATUS_OPTIONS.map((tab) => (
-              <Tab
-                key={tab.value}
-                iconPosition="end"
-                value={tab.value}
-                label={tab.label}
-                icon={
-                  <Label
-                    variant={
-                      ((tab.value === 'all' || tab.value === filters.state.status) && 'filled') ||
-                      'soft'
-                    }
-                    color={
-                      (tab.value === 'delivered' && 'success') ||
-                      (tab.value === 'partially_shipped' && 'warning') ||
-                      'default'
-                    }
-                  >
-                    {['delivered', 'partially_shipped', 'draft'].includes(tab.value)
-                      ? tableData.filter((it) => it.status === tab.value).length
-                      : tableData.length}
-                  </Label>
-                }
-              />
-            ))}
-          </Tabs>
-
-          <ShipmentTableToolbar
+          
+          <ShipmentTableToolbarListBySku
             filters={filters}
             onResetPage={table.onResetPage}
             dateError={dateError}
@@ -387,9 +349,9 @@ export function ShipmentListBySkuView() {
           />
 
           {canReset && (
-            <ShipmentTableFiltersResult
+            <ShipmentTableFiltersResultListBySku
               filters={filters}
-              totalResults={dataFiltered.length}
+              totalResults={dataFiltered?.length}
               onResetPage={table.onResetPage}
               sx={{ p: 2.5, pt: 0 }}
             />
@@ -399,11 +361,11 @@ export function ShipmentListBySkuView() {
             <TableSelectedAction
               dense={table.dense}
               numSelected={table.selected.length}
-              rowCount={dataFiltered.length}
+              rowCount={dataFiltered?.length}
               onSelectAllRows={(checked) =>
                 table.onSelectAllRows(
                   checked,
-                  dataFiltered.map((row) => row.shipmentId)
+                  dataFiltered?.map((row) => row.itemId)
                 )
               }
               action={
@@ -422,37 +384,36 @@ export function ShipmentListBySkuView() {
                     order={table.order}
                     orderBy={table.orderBy}
                     headLabel={TABLE_HEAD}
-                    rowCount={dataFiltered.length}
+                    rowCount={dataFiltered?.length}
                     numSelected={table.selected.length}
                     onSort={table.onSort}
                     onSelectAllRows={(checked) =>
                       table.onSelectAllRows(
                         checked,
-                        dataFiltered.map((row) => row.shipmentId)
+                        dataFiltered?.map((row) => row.itemId)
                       )
                     }
                   />
 
                   <TableBody>
-                    {dataFiltered
-                      .slice(
+                    {dataFiltered?.slice(
                         table.page * table.rowsPerPage,
                         table.page * table.rowsPerPage + table.rowsPerPage
                       )
                       .map((row, index) => (
-                        <ShipmentTableRow
-                          key={`${row.shipmentId}-${index}`}
+                        <ShipmentTableRowListBySku
+                          key={`${row.itemId}-${index}`}
                           row={row}
-                          selected={table.selected.includes(row.shipmentId)}
-                          onSelectRow={() => table.onSelectRow(row.shipmentId)}
-                          onDeleteRow={() => handleDeleteRow(row.shipmentId)}
-                          onViewRow={() => handleViewRow(row.shipmentId)}
+                          selected={table.selected.includes(row.itemId)}
+                          onSelectRow={() => table.onSelectRow(row.itemId)}
+                          onDeleteRow={() => handleDeleteRow(row.itemId)}
+                          onViewRow={() => handleViewRow(row.itemId)}
                         />
                       ))}
 
                     <TableEmptyRows
                       height={table.dense ? 56 : 56 + 20}
-                      emptyRows={emptyRows(table.page, table.rowsPerPage, dataFiltered.length)}
+                      emptyRows={emptyRows(table.page, table.rowsPerPage, dataFiltered?.length)}
                     />
 
                     <TableNoData notFound={notFound} />
@@ -465,7 +426,7 @@ export function ShipmentListBySkuView() {
           <TablePaginationCustom
             page={table.page}
             dense={table.dense}
-            count={dataFiltered.length}
+            count={dataFiltered?.length || 0}
             rowsPerPage={table.rowsPerPage}
             onPageChange={(event, newPage) => {
               localStorage.setItem('orderPage', newPage);
@@ -507,37 +468,37 @@ export function ShipmentListBySkuView() {
 }
 
 function applyFilter({ inputData, comparator, filters, dateError }) {
-  const { status, shipmentNumber, startDate, endDate } = filters;
+  // console.log('inputData:', inputData);
+  const { sku, startDate, endDate } = filters;
 
-  const stabilizedThis = inputData.map((el, index) => [el, index]);
+  const stabilizedThis = inputData?.map((el, index) => [el, index]);
 
-  stabilizedThis.sort((a, b) => {
+  stabilizedThis?.sort((a, b) => {
     const order = comparator(a[0], b[0]);
     if (order !== 0) return order;
     return a[1] - b[1];
   });
 
-  inputData = stabilizedThis.map((el) => el[0]);
+  inputData = stabilizedThis?.map((el) => el[0]);
 
-  if (shipmentNumber) {
-    inputData = inputData.filter(
+  if (sku) {
+    inputData = inputData?.filter(
       (ship) => (
-        ship.shipmentNumber.toLowerCase().indexOf(shipmentNumber.toLowerCase()) !== -1
+        ship.sku.toLowerCase().indexOf(sku.toLowerCase()) !== -1 ||
+        ship.name.toLowerCase().indexOf(sku.toLowerCase()) !== -1 ||
+        ship.linePackages.some(pkg => pkg.packageNumber.toLowerCase().indexOf(sku.toLowerCase()) !== -1) ||
+        ship.linePackages.some(pkg => pkg.shipmentNumber.toLowerCase().indexOf(sku.toLowerCase()) !== -1)
       )
     );
   }
 
-  if (status !== 'all') {
-    inputData = inputData.filter((ship) => ship.status === status);
-  }
-
   if (!dateError) {
     if (startDate && endDate) {
-      inputData = inputData.filter((ship) => fIsBetween(ship.date, startDate, endDate));
+      inputData = inputData?.filter((ship) => fIsBetween(ship.date, startDate, endDate));
     }
     else if (endDate) {
       const oneDayBefore = new Date(endDate) - 1;
-      inputData = inputData.filter((ship) => fIsBetween(ship.date, oneDayBefore, endDate));
+      inputData = inputData?.filter((ship) => fIsBetween(ship.date, oneDayBefore, endDate));
     }
   }
 

@@ -426,7 +426,7 @@ function applyFilter({ inputData, comparator, filters, dateError }) {
   if (shipmentNumber) {
     inputData = inputData.filter(
       (ship) => (
-        ship.shipmentNumber.toLowerCase().indexOf(shipmentNumber.toLowerCase()) !== -1
+        ship.shipmentNumber.toLowerCase().indexOf(shipmentNumber.toLowerCase()) !== -1 
       )
     );
   }
