@@ -114,7 +114,7 @@ export function OverviewAnalyticsView() {
 
   const totalsLostsTrack = useMemo(() => {
     if (itemsAssetsTrackInfo) {
-      return itemsAssetsTrackInfo.reduce((acc, item) => acc + item.differences.losts.length, 0);
+      return itemsAssetsTrackInfo?.reduce((acc, item) => acc + item.differences.losts.length, 0);
     }
     return 0;
   }, [itemsAssetsTrackInfo]);
@@ -771,7 +771,7 @@ export function OverviewAnalyticsView() {
                   <Box sx={{ gap: 3, display: 'flex', flexDirection: 'column' }}>
                     <BankingContacts
                       title="SKUs Serial Changes"
-                      subheader={`${itemsAssetsTrackInfo.length} SKUs serial changes at ${fDateTime(itemsAssetsTrackInfo[0].createdTime)}`}
+                      subheader={`${itemsAssetsTrackInfo?.length} SKUs serial changes at ${fDateTime(itemsAssetsTrackInfo[0]?.createdTime)}`}
                       list={itemsAssetsTrackInfo}
                     />
                   </Box>
