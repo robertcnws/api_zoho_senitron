@@ -66,7 +66,7 @@ export function BookingTotalIncomes({ title, total, percent, chart, sx, ...other
       <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between' }}>
         <div>
           <Box sx={{ mb: 1, typography: 'subtitle2' }}>{title}</Box>
-          <Box sx={{ typography: 'h3' }}>{fCurrency(total)}</Box>
+          <Box sx={{ typography: 'h3' }}>{total}</Box>
         </div>
 
         {renderTrending}

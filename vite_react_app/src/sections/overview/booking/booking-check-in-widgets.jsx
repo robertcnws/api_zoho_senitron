@@ -72,6 +72,7 @@ export function BookingCheckInWidgets({ chart, ...other }) {
               px: { xs: 3, sm: 0 },
               alignItems: 'center',
               justifyContent: { sm: 'center' },
+              cursor: 'pointer',
             }}
           >
             <Chart

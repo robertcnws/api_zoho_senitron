@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback, useContext, useRef, useMemo } from 'react';
+import { useTheme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import Grid from '@mui/material/Unstable_Grid2';
 import axios from 'axios';
+import AnimatedIcon from 'src/components/animate/animated-icon';
 import { fDateTime } from 'src/utils/format-time';
 import { LoadingContext } from 'src/auth/context/loading-context';
 import { Iconify } from 'src/components/iconify';
@@ -15,12 +17,16 @@ import { TableNoData, useTable, getComparator } from 'src/components/table';
 import { CONFIG } from 'src/config-global';
 import { useItemsQuery, useSenitronItemsQuery } from 'src/_mock/_items';
 import { useSkuTrackInfoQuery } from 'src/_mock/_sku_track_info';
+import { useItemAssetsTrackQuery } from 'src/_mock/_itemAssetsTrack';
 import { DashboardContent } from 'src/layouts/dashboard';
 import {
   _analyticTasks,
   _analyticPosts,
   _analyticTraffic,
   _analyticOrderTimeline,
+  _bookingReview,
+  _bookingsOverview,
+  _bankingContacts,
 } from 'src/_mock';
 
 import { useTimelineItemsQuery } from 'src/_mock/_timelineItems';
@@ -31,6 +37,15 @@ import { AnalyticsOrderTimeline } from '../analytics-order-timeline';
 import { AnalyticsWidgetSummary } from '../analytics-widget-summary';
 import { ModalSublistItems } from './modal-sublist-items';
 import { AnalyticsCurrentVisits } from '../analytics-current-visits';
+import { BookingCustomerReviews } from '../../booking/booking-customer-reviews';
+import { BookingAvailable } from '../../booking/booking-available';
+import { BookingStatistics } from '../../booking/booking-statistics';
+import { BookingCheckInWidgets } from '../../booking/booking-check-in-widgets';
+import { BookingBooked } from '../../booking/booking-booked';
+import { BookingTotalIncomes } from '../../booking/booking-total-incomes';
+import { BankingContacts } from '../banking-contacts';
+
+
 
 const headersCSV = [
   { label: 'SKU', key: 'sku' },
@@ -41,6 +56,8 @@ const headersCSV = [
 // ----------------------------------------------------------------------
 
 export function OverviewAnalyticsView() {
+
+  const theme = useTheme();
 
   const { setError, isMobile } = useContext(LoadingContext);
 
@@ -54,6 +71,7 @@ export function OverviewAnalyticsView() {
   const { data: senitronItems } = useSenitronItemsQuery();
   const { data: timelineItems } = useTimelineItemsQuery();
   const { data: itemsSkusTrack } = useSkuTrackInfoQuery();
+  const { data: itemsAssetsTrack } = useItemAssetsTrackQuery();
 
   const [categories, setCategories] = useState(['Items']);
 
@@ -81,6 +99,25 @@ export function OverviewAnalyticsView() {
   const itemsTimelineData = useMemo(() => timelineItems || null, [timelineItems]);
 
   const itemsSkuTrackInfo = useMemo(() => itemsSkusTrack || null, [itemsSkusTrack]);
+
+  const itemsAssetsTrackInfo = useMemo(
+    () => itemsAssetsTrack?.filter((it) => it.differences.news.length > 0 || it.differences.losts.length > 0).sort((a, b) => a.differences.losts.length - b.differences.losts.length)
+    || null, [itemsAssetsTrack]
+  );
+
+  const totalsNewsTrack = useMemo(() => {
+    if (itemsAssetsTrackInfo) {
+      return itemsAssetsTrackInfo.reduce((acc, item) => acc + item.differences.news.length, 0);
+    }
+    return 0;
+  }, [itemsAssetsTrackInfo]);
+
+  const totalsLostsTrack = useMemo(() => {
+    if (itemsAssetsTrackInfo) {
+      return itemsAssetsTrackInfo.reduce((acc, item) => acc + item.differences.losts.length, 0);
+    }
+    return 0;
+  }, [itemsAssetsTrackInfo]);
 
   const itemsSynced = useMemo(() => {
     if (itemsZohoData) {
@@ -394,7 +431,7 @@ export function OverviewAnalyticsView() {
     axios
       .post(`${CONFIG.apiUrl}/api_zoho/ignore_selected_errors_zoho_items/`, payload)
       .then(() => {
-        console.log('Items updated to ignore errors with value:', valueIgnoreErrors); 
+        console.log('Items updated to ignore errors with value:', valueIgnoreErrors);
         setOpenModal(false);
         setIgnoreErrorsSelected([]);
       })
@@ -492,17 +529,21 @@ export function OverviewAnalyticsView() {
               </Grid >
               {itemsIgnoreErrors.length > 0 && (
                 <Grid xs={2.5} sm={2.5} md={2.5}>
-                  <Alert severity="warning" sx={{ mb: 2, cursor: 'pointer' }} onClick={
-                    () => {
-                      setOpenModal(true)
-                      setModalListItems(itemsIgnoreErrors)
-                      setModalTitle(`Items with errors ignored`)
-                      setModalButtonColor('warning.main')
-                      setHasIgnoredErrors(true)
-                      setValueIgnoreErrors(false)
-                      setIsIgnore(false)
-                    }
-                  }>
+                  <Alert
+                    severity="warning"
+                    icon={<AnimatedIcon icon="mdi:alert" color="warning" />}
+                    sx={{ mb: 2, cursor: 'pointer' }}
+                    onClick={
+                      () => {
+                        setOpenModal(true)
+                        setModalListItems(itemsIgnoreErrors)
+                        setModalTitle(`SKUs with errors ignored`)
+                        setModalButtonColor('warning.main')
+                        setHasIgnoredErrors(true)
+                        setValueIgnoreErrors(false)
+                        setIsIgnore(false)
+                      }
+                    }>
                     <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
                       {itemsIgnoreErrors.length} Items with errors ignored
                     </Typography>
@@ -724,6 +765,75 @@ export function OverviewAnalyticsView() {
                   />
                 </Grid>
               )}
+
+              <Grid container xs={12}>
+                <Grid xs={12} md={5} lg={4}>
+                  <Box sx={{ gap: 3, display: 'flex', flexDirection: 'column' }}>
+                    <BankingContacts
+                      title="SKUs Serial Changes"
+                      subheader={`${itemsAssetsTrackInfo.length} SKUs serial changes at ${fDateTime(itemsAssetsTrackInfo[0].createdTime)}`}
+                      list={itemsAssetsTrackInfo}
+                    />
+                  </Box>
+                </Grid>
+                <Grid xs={12} md={7} lg={8}>
+                  <Box
+                    sx={{
+                      mb: 1,
+                      p: { md: 1 },
+                      display: 'flex',
+                      gap: { xs: 3, md: 1 },
+                      borderRadius: { md: 2 },
+                      flexDirection: 'column',
+                      bgcolor: { md: 'background.neutral' },
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        p: { md: 1 },
+                        display: 'grid',
+                        gap: { xs: 3, md: 0 },
+                        borderRadius: { md: 2 },
+                        bgcolor: { md: 'background.paper' },
+                        gridTemplateColumns: { xs: 'repeat(1, 1fr)', md: 'repeat(2, 1fr)' },
+                      }}
+                    >
+                      <BookingTotalIncomes
+                        title="Total Serial Numbers (News & Losts)"
+                        total={totalsNewsTrack + totalsLostsTrack}
+                        percent={2.6}
+                        chart={{
+                          categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'],
+                          series: [{ data: [10, 41, 80, 100, 60, 120, 69, 91, 160] }],
+                        }}
+                      />
+
+                      <BookingBooked
+                        title="Serial Numbers Status"
+                        data={
+                          [
+                            { status: 'Canceled', value: totalsLostsTrack + totalsNewsTrack, quantity: totalsLostsTrack },
+                            { status: 'Sold', value: totalsNewsTrack + totalsNewsTrack, quantity: totalsNewsTrack },
+                          ]
+                        }
+                        sx={{ boxShadow: { md: 'none' } }}
+                      />
+                    </Box>
+
+                    <BookingCheckInWidgets
+                      chart={{
+                        series: [
+                          { label: 'New Serials', percent: parseFloat(totalsNewsTrack / (totalsNewsTrack + totalsLostsTrack) * 100).toFixed(2), total: totalsNewsTrack },
+                          { label: 'Lost Serials', percent: parseFloat(totalsLostsTrack / (totalsNewsTrack + totalsLostsTrack) * 100).toFixed(2), total: totalsLostsTrack },
+                        ],
+                        colors: [theme.palette.success.light, theme.palette.warning.light],
+                      }}
+                      sx={{ boxShadow: { md: 'none' } }}
+                    />
+                  </Box>
+                </Grid>
+              </Grid>
+
               <Grid xs={12} md={12} lg={12}>
                 <ItemListShortView updating={updating} setUpdating={setUpdating} setTitleLinearProgress={setTitleLinearProgress} />
               </Grid>

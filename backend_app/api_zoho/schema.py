@@ -3,7 +3,7 @@ from django.db.models import BigIntegerField
 from django.db.models.functions import Cast
 from graphene_django.types import DjangoObjectType
 from django.db.models import Window, F
-from django.db.models.functions import Lead
+from django.db.models.functions import Lead, RowNumber
 from .models import LoginUser, ZohoInventoryItem, ZohoInventoryShipmentSalesOrder, ZohoSkuTrackInfo, ZohoPackage, ZohoShipmentOrder, ZohoItemAssetsTrack
 from .scalars import JSONScalar
 from datetime import datetime
@@ -45,6 +45,28 @@ class ZohoPackageType(DjangoObjectType):
 class DifferencesSerialsType(graphene.ObjectType):
     news = graphene.List(graphene.String, description="New serial numbers")
     losts = graphene.List(graphene.String, description="Lost serial numbers")
+    
+    
+class AssetType(graphene.ObjectType):
+    id = graphene.Int()
+    serial_number = graphene.String()
+    alt_serial = graphene.String()
+    first_seen = graphene.DateTime()
+    last_seen = graphene.DateTime()
+    last_seen_antenna = graphene.String()
+    last_zone = graphene.String()
+    handheld_reader = graphene.String()
+    handheld_last_seen = graphene.DateTime()
+    static_zone = graphene.String()
+    static_zone_last_update = graphene.DateTime()
+    receiving_date = graphene.DateTime()
+    current_units = graphene.Int()
+    storage_unit = graphene.String()
+    adjust_qty = graphene.Int()
+    created_at = graphene.DateTime()
+    updated_at = graphene.DateTime()
+    epc = graphene.String()
+    text3 = graphene.String()
         
 
 class ZohoItemAssetsTrackType(DjangoObjectType):
@@ -54,6 +76,35 @@ class ZohoItemAssetsTrackType(DjangoObjectType):
         fields = "__all__"
         
     assets = JSONScalar()
+    
+    assets_list = graphene.List(AssetType, description="List of assets")
+    
+    def resolve_assets_list(self, info):
+        list_assets = []
+        for asset in self.assets:
+            new_asset = AssetType(
+                id=asset.get('id', ''),
+                serial_number=asset.get('serialNumber', ''),
+                alt_serial=asset.get('altSerial', ''),
+                first_seen=asset.get('firstSeen', ''),
+                last_seen=asset.get('lastSeen', ''),
+                last_seen_antenna=asset.get('lastSeenAntenna', ''),
+                last_zone=asset.get('lastZone', ''),
+                handheld_reader=asset.get('handheldReader', ''),
+                handheld_last_seen=asset.get('handheldLastSeen', ''),
+                static_zone=asset.get('staticZone', ''),
+                static_zone_last_update=asset.get('staticZoneLastUpdate', ''),
+                receiving_date=asset.get('receivingDate', ''),
+                current_units=asset.get('currentUnits', ''),
+                storage_unit=asset.get('storageUnit', ''),
+                adjust_qty=asset.get('adjustQty', ''),
+                created_at=asset.get('createdAt', ''),
+                updated_at=asset.get('updatedAt', ''),
+                epc=asset.get('epc', ''),
+                text3=asset.get('text3', '')
+            )
+            list_assets.append(new_asset)
+        return list_assets
 
     def resolve_assets(self, info):
         return self.assets
@@ -99,7 +150,8 @@ class Query(graphene.ObjectType):
     )
     all_zoho_item_assets_track = graphene.List(
         ZohoItemAssetsTrackType,
-        item_id=graphene.String(required=False) 
+        item_id=graphene.String(required=False), 
+        list_ids=graphene.List(graphene.String, required=False) 
     )
     
 
@@ -154,19 +206,31 @@ class Query(graphene.ObjectType):
         
         return shipment_orders
     
-    def resolve_all_zoho_item_assets_track(self, info, item_id=None, **kwargs):
+    def resolve_all_zoho_item_assets_track(self, info, item_id=None, list_ids=None, **kwargs):
         if item_id:
             queryset = ZohoItemAssetsTrack.objects.filter(item_id=item_id)
+        elif list_ids:
+            queryset = ZohoItemAssetsTrack.objects.filter(item_id__in=list_ids)
         else:
             queryset = ZohoItemAssetsTrack.objects.all()
         
-        queryset = queryset.order_by('item_id', 'created_time', 'id').annotate(
+        queryset = queryset.order_by('item_id', '-created_time', 'id').annotate(
             next_assets=Window(
                 expression=Lead('assets', offset=1),
                 partition_by=[F('item_id')],
-                order_by=[F('created_time').asc(), F('id').asc()]
+                order_by=[F('created_time').desc(), F('id').asc()]
             )
         )
+        
+        queryset = queryset.annotate(
+            row_number=Window(
+                expression=RowNumber(),
+                partition_by=[F('item_id')],
+                order_by=[F('created_time').desc(), F('id').asc()]
+            )
+        )
+        
+        queryset = queryset.filter(row_number=1)
         
         return queryset
 
