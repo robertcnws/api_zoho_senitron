@@ -29,6 +29,7 @@ urlpatterns = [
     path('sync/senitron/', views.sync_with_senitron, name='sync_with_senitron'),
     path('create_zoho_sku_track_info/', views.create_zoho_sku_track_info, name='create_zoho_sku_track_info'),
     path('create_zoho_items_assets_track/', views.create_zoho_items_assets_track, name='create_zoho_items_assets_track'),
+    path('ignore_selected_errors_zoho_items/', views.ignore_selected_errors_zoho_items, name='ignore_selected_errors_zoho_items'),
     path('graphql/', csrf_exempt(GraphQLView.as_view(graphiql=True, schema=schema))),
 
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

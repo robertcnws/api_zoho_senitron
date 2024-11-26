@@ -2,7 +2,10 @@ import graphene
 from django.db.models import BigIntegerField
 from django.db.models.functions import Cast
 from graphene_django.types import DjangoObjectType
-from .models import LoginUser, ZohoInventoryItem, ZohoInventoryShipmentSalesOrder, ZohoSkuTrackInfo, ZohoPackage, ZohoShipmentOrder
+from django.db.models import Window, F
+from django.db.models.functions import Lead
+from .models import LoginUser, ZohoInventoryItem, ZohoInventoryShipmentSalesOrder, ZohoSkuTrackInfo, ZohoPackage, ZohoShipmentOrder, ZohoItemAssetsTrack
+from .scalars import JSONScalar
 from datetime import datetime
 
 class LoginUserType(DjangoObjectType):
@@ -38,6 +41,41 @@ class ZohoPackageType(DjangoObjectType):
         model = ZohoPackage
         fields = "__all__"
         
+        
+class DifferencesSerialsType(graphene.ObjectType):
+    news = graphene.List(graphene.String, description="New serial numbers")
+    losts = graphene.List(graphene.String, description="Lost serial numbers")
+        
+
+class ZohoItemAssetsTrackType(DjangoObjectType):
+    differences = graphene.Field(DifferencesSerialsType, description="Differences between the serial numbers of the continuous assets")
+    class Meta:
+        model = ZohoItemAssetsTrack
+        fields = "__all__"
+        
+    assets = JSONScalar()
+
+    def resolve_assets(self, info):
+        return self.assets
+    
+    def resolve_differences(self, info):
+        if hasattr(self, 'next_assets') and self.next_assets:
+            current_serials = set(
+                asset['serialNumber'] for asset in self.assets 
+                if 'serialNumber' in asset and asset['serialNumber']
+            )
+            next_serials = set(
+                asset['serialNumber'] for asset in self.next_assets 
+                if 'serialNumber' in asset and asset['serialNumber']
+            )
+            news = list(current_serials - next_serials)
+            losts = list(next_serials - current_serials)
+        else:
+            news = []
+            losts = []
+
+        return DifferencesSerialsType(news=news, losts=losts)
+        
 
 class Query(graphene.ObjectType):
     all_login_users = graphene.List(LoginUserType)
@@ -59,6 +97,11 @@ class Query(graphene.ObjectType):
         start_date=graphene.String(required=False),  
         end_date=graphene.String(required=False)    
     )
+    all_zoho_item_assets_track = graphene.List(
+        ZohoItemAssetsTrackType,
+        item_id=graphene.String(required=False) 
+    )
+    
 
     def resolve_all_login_users(self, info, **kwargs):
         return LoginUser.objects.all().order_by('username')
@@ -110,5 +153,21 @@ class Query(graphene.ObjectType):
                 raise Exception("Formato de fecha inválido. Usa 'YYYY-MM-DD'.")
         
         return shipment_orders
+    
+    def resolve_all_zoho_item_assets_track(self, info, item_id=None, **kwargs):
+        if item_id:
+            queryset = ZohoItemAssetsTrack.objects.filter(item_id=item_id)
+        else:
+            queryset = ZohoItemAssetsTrack.objects.all()
+        
+        queryset = queryset.order_by('item_id', 'created_time', 'id').annotate(
+            next_assets=Window(
+                expression=Lead('assets', offset=1),
+                partition_by=[F('item_id')],
+                order_by=[F('created_time').asc(), F('id').asc()]
+            )
+        )
+        
+        return queryset
 
 schema = graphene.Schema(query=Query)

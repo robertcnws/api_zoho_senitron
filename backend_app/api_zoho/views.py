@@ -1017,6 +1017,41 @@ def create_zoho_items_assets_track(request):
     else:
         message = 'No Items Assets Info to save'
     return JsonResponse({'message': message}, status=201)
+
+
+#############################################
+# IGNORE SELECTED ERRORS
+#############################################
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def ignore_selected_errors_zoho_items(request):
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    
+    errors = data.get('errors', [])
+    new_value = data.get('new_value', False)
+    
+    if not isinstance(errors, list):
+        return JsonResponse({'error': 'Errors should be a list'}, status=400)
+    
+    if not isinstance(new_value, bool):
+        return JsonResponse({'error': 'new_value should be a boolean'}, status=400)
+    
+    if not errors:
+        return JsonResponse({'error': 'Errors are missing'}, status=400)
+    
+    instances = ZohoInventoryItem.objects.filter(item_id__in=errors)
+    
+    if not instances.exists():
+        return JsonResponse({'error': 'Items not found'}, status=404)
+    
+    updated_count = instances.update(ignore_errors=new_value)
+    
+    return JsonResponse({'message': f'{updated_count} items updated successfully'}, status=200)
     
 
 #############################################

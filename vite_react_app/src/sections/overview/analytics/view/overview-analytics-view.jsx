@@ -6,7 +6,7 @@ import { fDateTime } from 'src/utils/format-time';
 import { LoadingContext } from 'src/auth/context/loading-context';
 import { Iconify } from 'src/components/iconify';
 import { Label } from 'src/components/label';
-import { Box, Card, CardHeader, Stack, Table, TableBody, TableCell, TableContainer, TableRow, LinearProgress } from '@mui/material';
+import { Box, Card, CardHeader, Stack, Table, TableBody, TableCell, TableContainer, TableRow, LinearProgress, Alert } from '@mui/material';
 import { paths } from 'src/routes/paths';
 import { useRouter } from 'src/routes/hooks';
 import { useSetState } from 'src/hooks/use-set-state';
@@ -31,7 +31,6 @@ import { AnalyticsOrderTimeline } from '../analytics-order-timeline';
 import { AnalyticsWidgetSummary } from '../analytics-widget-summary';
 import { ModalSublistItems } from './modal-sublist-items';
 import { AnalyticsCurrentVisits } from '../analytics-current-visits';
-
 
 const headersCSV = [
   { label: 'SKU', key: 'sku' },
@@ -72,6 +71,10 @@ export function OverviewAnalyticsView() {
   const intervalIdRef = useRef(null);
 
   const userLogged = useMemo(() => JSON.parse(localStorage.getItem('userLogged')), []);
+
+  const [hasIgnoredErrors, setHasIgnoredErrors] = useState(false);
+
+  // console.log('userLogged', userLogged);
 
   const itemsZohoData = useMemo(() => items || null, [items]);
 
@@ -140,6 +143,7 @@ export function OverviewAnalyticsView() {
           stockOnHand: zohoItem.stockOnHand || 0,
           quantity: item.count || 0,
           syncedWithSenitron: zohoItem.syncedWithSenitron,
+          ignoreErrors: zohoItem.ignoreErrors,
           difference:
             parseInt(zohoItem.stockOnHand || '0', 10) -
             parseInt(item.count || '0', 10),
@@ -149,6 +153,14 @@ export function OverviewAnalyticsView() {
     }
     return null;
   }, [itemsZohoData, senitronItems]);
+
+
+  const itemsIgnoreErrors = useMemo(() => {
+    if (itemsZohoSenitron) {
+      return itemsZohoSenitron.filter((item) => item.syncedWithSenitron && item.ignoreErrors);
+    }
+    return null;
+  }, [itemsZohoSenitron]);
 
 
   const { series, seriesPieChart } = useMemo(() => {
@@ -182,7 +194,8 @@ export function OverviewAnalyticsView() {
               ?.filter(
                 (it) =>
                   parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 &&
-                  it.syncedWithSenitron
+                  it.syncedWithSenitron &&
+                  !it.ignoreErrors
               )
               .reduce((acc, it) => acc + it.quantity, 0),
             10
@@ -192,7 +205,8 @@ export function OverviewAnalyticsView() {
               ?.filter(
                 (it) =>
                   parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 &&
-                  it.syncedWithSenitron
+                  it.syncedWithSenitron &&
+                  !it.ignoreErrors
               )
               .reduce((acc, it) => acc + it.stockOnHand, 0),
             10
@@ -204,7 +218,8 @@ export function OverviewAnalyticsView() {
               ?.filter(
                 (it) =>
                   parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 &&
-                  it.syncedWithSenitron
+                  it.syncedWithSenitron &&
+                  !it.ignoreErrors
               )
               .reduce((acc, it) => acc + it.quantity, 0),
             10
@@ -214,7 +229,8 @@ export function OverviewAnalyticsView() {
               ?.filter(
                 (it) =>
                   parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 &&
-                  it.syncedWithSenitron
+                  it.syncedWithSenitron &&
+                  !it.ignoreErrors
               )
               .reduce((acc, it) => acc + it.stockOnHand, 0),
             10
@@ -222,11 +238,11 @@ export function OverviewAnalyticsView() {
         );
 
       const tSenitronQty = itemsZohoSenitron
-        ?.filter((it) => it.syncedWithSenitron)
+        ?.filter((it) => it.syncedWithSenitron && !it.ignoreErrors)
         .reduce((acc, item) => acc + item.quantity, 0);
 
       const tOnHand = itemsZohoSenitron
-        ?.filter((it) => it.syncedWithSenitron)
+        ?.filter((it) => it.syncedWithSenitron && !it.ignoreErrors)
         .reduce((acc, item) => acc + item.stockOnHand, 0);
 
       const tErrors = errors;
@@ -282,10 +298,10 @@ export function OverviewAnalyticsView() {
           (it) => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron
         ).length;
         const skuMissingCount = currentItems.filter(
-          (it) => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron
+          (it) => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron && !it.ignoreErrors
         ).length;
         const skuExcessCount = currentItems.filter(
-          (it) => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron
+          (it) => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron && !it.ignoreErrors
         ).length;
         const payload = {
           sku_tracked: skuTrackedCount,
@@ -347,6 +363,47 @@ export function OverviewAnalyticsView() {
     [router]
   );
 
+  const [ignoreErrorsSelected, setIgnoreErrorsSelected] = React.useState([]);
+
+  const [valueIgnoreErrors, setValueIgnoreErrors] = React.useState(false);
+
+  const [isIgnore, setIsIgnore] = React.useState(true);
+
+  const handleSelectAllIgnoreErrors = () => {
+    if (ignoreErrorsSelected.length === modalDataFiltered.length) {
+      setIgnoreErrorsSelected([]);
+    } else {
+      const allItemIds = modalDataFiltered.map((item) => item.itemId);
+      setIgnoreErrorsSelected(allItemIds);
+    }
+  };
+
+  const handleCheckboxChange = (event, itemId) => {
+    if (event.target.checked) {
+      setIgnoreErrorsSelected((prev) => [...prev, itemId]);
+    } else {
+      setIgnoreErrorsSelected((prev) => prev.filter((id) => id !== itemId));
+    }
+  };
+
+  const handleUpdateIgnoreErrors = () => {
+    const payload = {
+      errors: ignoreErrorsSelected,
+      new_value: valueIgnoreErrors,
+    };
+    axios
+      .post(`${CONFIG.apiUrl}/api_zoho/ignore_selected_errors_zoho_items/`, payload)
+      .then(() => {
+        console.log('Items updated to ignore errors with value:', valueIgnoreErrors); 
+        setOpenModal(false);
+        setIgnoreErrorsSelected([]);
+      })
+      .catch((err) => {
+        console.error('Error updating items with ignore errors:', err);
+        setError('There was an error updating the items with ignore errors.');
+      });
+  }
+
 
   return (
     <>
@@ -384,8 +441,9 @@ export function OverviewAnalyticsView() {
       ) : (
         <>
           <DashboardContent maxWidth="xl">
+
             <Grid container spacing={3}>
-              <Grid xs={12} sm={10} md={10}>
+              <Grid xs={9.5} sm={9.5} md={9.5}>
                 <Typography variant="h4" sx={{ mb: { xs: 3, md: 5 } }}>
                   Hi {userLogged?.data.first_name || userLogged?.data.firstName} {userLogged?.data.last_name || userLogged?.data.lastName}, Welcome back 👋
                   <br />
@@ -432,6 +490,25 @@ export function OverviewAnalyticsView() {
                   </Stack>
                 </Typography >
               </Grid >
+              {itemsIgnoreErrors.length > 0 && (
+                <Grid xs={2.5} sm={2.5} md={2.5}>
+                  <Alert severity="warning" sx={{ mb: 2, cursor: 'pointer' }} onClick={
+                    () => {
+                      setOpenModal(true)
+                      setModalListItems(itemsIgnoreErrors)
+                      setModalTitle(`Items with errors ignored`)
+                      setModalButtonColor('warning.main')
+                      setHasIgnoredErrors(true)
+                      setValueIgnoreErrors(false)
+                      setIsIgnore(false)
+                    }
+                  }>
+                    <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                      {itemsIgnoreErrors.length} Items with errors ignored
+                    </Typography>
+                  </Alert>
+                </Grid>
+              )}
             </Grid >
 
             <Grid container spacing={3}>
@@ -458,6 +535,8 @@ export function OverviewAnalyticsView() {
                     setModalListItems(itemsZohoSenitron?.filter(it => it.syncedWithSenitron))
                     setModalTitle(`SKUs Tracked`)
                     setModalButtonColor('success.main')
+                    setHasIgnoredErrors(false)
+                    setValueIgnoreErrors(false)
                   }}
                 />
               </Grid>
@@ -484,6 +563,8 @@ export function OverviewAnalyticsView() {
                     setModalTitle(`SKUs Matched 100%`)
                     // setModalButtonColor('#8E33FF')
                     setModalButtonColor('info.main')
+                    setHasIgnoredErrors(false)
+                    setValueIgnoreErrors(false)
                   }}
                 />
               </Grid>
@@ -493,9 +574,9 @@ export function OverviewAnalyticsView() {
                   sx={{ cursor: 'pointer' }}
                   title="SKU Missing Items"
                   percent={linearRegresionCalculation(itemsSkuTrackInfo?.map((it) => it.skuMissing))}
-                  total={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron).length}
-                  quantity={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron).reduce((acc, it) => acc + it.quantity, 0)}
-                  stockOnHand={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron).reduce((acc, it) => acc + it.stockOnHand, 0)}
+                  total={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron && !it.ignoreErrors).length}
+                  quantity={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron && !it.ignoreErrors).reduce((acc, it) => acc + it.quantity, 0)}
+                  stockOnHand={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron && !it.ignoreErrors).reduce((acc, it) => acc + it.stockOnHand, 0)}
                   color="error"
                   icon={
                     <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-mismatch.svg`} />
@@ -506,9 +587,12 @@ export function OverviewAnalyticsView() {
                   }}
                   onClick={() => {
                     setOpenModal(true)
-                    setModalListItems(itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron))
+                    setModalListItems(itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron && !it.ignoreErrors))
                     setModalTitle(`SKUs with missing Items`)
                     setModalButtonColor('#F44336')
+                    setHasIgnoredErrors(true)
+                    setValueIgnoreErrors(true)
+                    setIsIgnore(true)
                   }}
                 />
               </Grid>
@@ -518,9 +602,9 @@ export function OverviewAnalyticsView() {
                   sx={{ cursor: 'pointer' }}
                   title="SKU Excess Items"
                   percent={linearRegresionCalculation(itemsSkuTrackInfo?.map((it) => it.skuExcess))}
-                  total={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron).length}
-                  quantity={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron).reduce((acc, it) => acc + it.quantity, 0)}
-                  stockOnHand={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron).reduce((acc, it) => acc + it.stockOnHand, 0)}
+                  total={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron && !it.ignoreErrors).length}
+                  quantity={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron && !it.ignoreErrors).reduce((acc, it) => acc + it.quantity, 0)}
+                  stockOnHand={itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron && !it.ignoreErrors).reduce((acc, it) => acc + it.stockOnHand, 0)}
                   color="warning"
                   icon={
                     <img alt="icon" src={`${CONFIG.assetsDir}/assets/icons/glass/ic-item-front-3.svg`} />
@@ -531,9 +615,12 @@ export function OverviewAnalyticsView() {
                   }}
                   onClick={() => {
                     setOpenModal(true)
-                    setModalListItems(itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron))
+                    setModalListItems(itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron && !it.ignoreErrors))
                     setModalTitle(`SKUs with excess Items`)
                     setModalButtonColor('warning.main')
+                    setHasIgnoredErrors(true)
+                    setValueIgnoreErrors(true)
+                    setIsIgnore(true)
                   }}
                 />
               </Grid>
@@ -614,6 +701,15 @@ export function OverviewAnalyticsView() {
                     handleFilterName={handleFilterName}
                     filters={filters}
                     table={table}
+                    userLogged={userLogged}
+                    hasIgnoredErrors={hasIgnoredErrors}
+                    setHasIgnoredErrors={setHasIgnoredErrors}
+                    ignoreErrorsSelected={ignoreErrorsSelected}
+                    setIgnoreErrorsSelected={setIgnoreErrorsSelected}
+                    handleCheckboxChange={handleCheckboxChange}
+                    handleSelectAllIgnoreErrors={handleSelectAllIgnoreErrors}
+                    isIgnore={isIgnore}
+                    setIsIgnore={setIsIgnore}
                   />
                 </Grid>
               )}
@@ -629,7 +725,7 @@ export function OverviewAnalyticsView() {
                 </Grid>
               )}
               <Grid xs={12} md={12} lg={12}>
-                <ItemListShortView updating={updating} setUpdating={setUpdating} setTitleLinearProgress={setTitleLinearProgress}/>
+                <ItemListShortView updating={updating} setUpdating={setUpdating} setTitleLinearProgress={setTitleLinearProgress} />
               </Grid>
             </Grid>
           </DashboardContent >
@@ -645,6 +741,16 @@ export function OverviewAnalyticsView() {
             handleFilterName={handleFilterName}
             handleViewRow={handleViewRow}
             table={table}
+            userLogged={userLogged}
+            hasIgnoredErrors={hasIgnoredErrors}
+            ignoreErrorsSelected={ignoreErrorsSelected}
+            setIgnoreErrorsSelected={setIgnoreErrorsSelected}
+            handleCheckboxChange={handleCheckboxChange}
+            handleSelectAllIgnoreErrors={handleSelectAllIgnoreErrors}
+            valueIgnoreErrors={valueIgnoreErrors}
+            handleUpdateIgnoreErrors={handleUpdateIgnoreErrors}
+            isIgnore={isIgnore}
+            setIsIgnore={setIsIgnore}
           />
         </>
       )}
@@ -741,24 +847,24 @@ function processingNumbersPieChart(arrayNumbers) {
 function linearRegresionCalculation(serie) {
   const n = serie.length;
   if (n < 2) return 0;
-  let sumaX = 0;
-  let sumaY = 0;
-  let sumaXY = 0;
-  let sumaX2 = 0;
+  let sumX = 0;
+  let sumY = 0;
+  let sumXY = 0;
+  let sumX2 = 0;
   for (let i = 0; i < n; i += 1) {
     const x = i;
     const y = serie[i];
-    sumaX += x;
-    sumaY += y;
-    sumaXY += x * y;
-    sumaX2 += x * x;
+    sumX += x;
+    sumY += y;
+    sumXY += x * y;
+    sumX2 += x * x;
   }
-  const pendiente = (n * sumaXY - sumaX * sumaY) / (n * sumaX2 - sumaX * sumaX);
-  const intercepto = (sumaY - pendiente * sumaX) / n;
+  const pendient = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+  const intercept = (sumY - pendient * sumX) / n;
 
-  const primerValor = pendiente * 0 + intercepto;
-  const ultimoValor = pendiente * (n - 1) + intercepto;
-  const cambioPorcentual = ((ultimoValor - primerValor) / primerValor);
-  return cambioPorcentual;
+  const firstValue = pendient * 0 + intercept;
+  const lastValue = pendient * (n - 1) + intercept;
+  const percentChange = ((lastValue - firstValue) / firstValue);
+  return percentChange;
 }
 

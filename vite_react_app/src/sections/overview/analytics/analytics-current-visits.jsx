@@ -29,6 +29,17 @@ export function AnalyticsCurrentVisits({
   handleViewRow,
   handleFilterName,
   filters,
+  userLogged,
+  hasIgnoredErrors,
+  setHasIgnoredErrors,
+  ignoreErrorsSelected,
+  setIgnoreErrorsSelected,
+  handleCheckboxChange,
+  handleSelectAllIgnoreErrors,
+  valueIgnoreErrors,
+  handleUpdateIgnoreErrors,
+  isIgnore,
+  setIsIgnore,
   ...other
 }) {
   const theme = useTheme();
@@ -94,7 +105,7 @@ export function AnalyticsCurrentVisits({
         dataPointSelection: (event, chartContext, config) => {
           const dataPointIndex = config.dataPointIndex;
           const list = handleViewSublists(dataPointIndex);
-    
+
           setModalTitle(
             dataPointIndex === 0 ? `SKUs Matched 100 %` :
               dataPointIndex === 1 ? `SKUs Matched between 90 % and 100 %` :
@@ -103,7 +114,7 @@ export function AnalyticsCurrentVisits({
                     dataPointIndex === 4 ? `SKUs Matched between 60 % and 70 %` :
                       dataPointIndex === 5 ? `SKUs Matched between 50 % and 60 %` : `SKUs Matched less than 50 %`
           );
-    
+
           setModalButtonColor(
             dataPointIndex === 0 ? hexAlpha(theme.palette.success.main, 0.8) :
               dataPointIndex === 1 ? hexAlpha(theme.palette.success.dark, 0.8) :
@@ -112,7 +123,9 @@ export function AnalyticsCurrentVisits({
                     dataPointIndex === 4 ? hexAlpha(theme.palette.warning.main, 0.8) :
                       dataPointIndex === 5 ? hexAlpha(theme.palette.warning.dark, 0.8) : hexAlpha(theme.palette.error.main, 0.8)
           );
-    
+
+          setHasIgnoredErrors(dataPointIndex !== 0);
+
           setModalDataFiltered(list);
           setOpenModal(true);
         },
@@ -163,6 +176,16 @@ export function AnalyticsCurrentVisits({
         filters={filters}
         handleFilterName={handleFilterName}
         handleViewRow={handleViewRow}
+        userLogged={userLogged}
+        hasIgnoredErrors={hasIgnoredErrors}
+        ignoreErrorsSelected={ignoreErrorsSelected}
+        setIgnoreErrorsSelected={setIgnoreErrorsSelected}
+        handleCheckboxChange={handleCheckboxChange}
+        handleSelectAllIgnoreErrors={handleSelectAllIgnoreErrors}
+        valueIgnoreErrors={valueIgnoreErrors}
+        handleUpdateIgnoreErrors={handleUpdateIgnoreErrors}
+        isIgnore={isIgnore}
+        setIsIgnore={setIsIgnore}
       />
     </>
   );

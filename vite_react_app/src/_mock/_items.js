@@ -42,6 +42,7 @@ const GET_ZOHO_INVENTORY_ITEMS = gql`
         hsnOrSac
         satItemKeyCode
         unitkeyCode
+        ignoreErrors
     }
   }
 `;
