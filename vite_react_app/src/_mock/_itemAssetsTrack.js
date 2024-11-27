@@ -11,6 +11,13 @@ const GET_ZOHO_ITEM_ASSETS_TRACK = gql`
         news
         losts
       }
+      historialDifferences {
+        date
+        differences {
+          news
+          losts
+        }
+      }  
     }
   }
 `;

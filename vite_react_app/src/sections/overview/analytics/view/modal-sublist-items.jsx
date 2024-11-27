@@ -43,8 +43,6 @@ export function ModalSublistItems({
 
   const { isMobile } = useContext(LoadingContext);
 
-
-
   const TABLE_HEAD = [
     { id: 'no', label: '#' },
     { id: 'sku', label: 'SKU', width: 300 },
@@ -84,64 +82,60 @@ export function ModalSublistItems({
     { id: '', label: 'Actions', width: 200 },
   ];
 
+  const handleClose = (modalId) => {
+    setOpenModal((prev) => ({ ...prev, [modalId]: false }));
+  };
+
   return (
     <>
       <ConfirmDialog
-        open={openModal}
+        open={openModal.subListItems}
         onClose={() => {
           setIgnoreErrorsSelected([]);
-          setOpenModal(false)
+          handleClose('subListItems');
         }}
         title={`${modalTitle} (${modalDataFiltered?.length} items)`}
         maxWidth='lg'
         content={
           <>
-            {modalDataFiltered?.length > 0 ? (
-              <Box sx={{ width: '100%', bgcolor: 'background.paper', p: 1 }}>
-                <Stack direction="row" alignItems="center" spacing={1} flexGrow={1} sx={{ width: 1 }}>
-                  <TextField
-                    fullWidth
-                    value={filters.state.name}
-                    onChange={handleFilterName}
-                    placeholder="Search by item (NAME, SKU, or ID)..."
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled' }} />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                  {/* <Button
-                style={{ height: '50px' }}
-                color="inherit"
-                variant="outlined"
-                startIcon={<Iconify icon="solar:printer-minimalistic-bold" />}
-                onClick={() => { generatePrintablePDF({ data: modalDataFiltered, title: modalTitle }) }}
-              >
-                Print
-              </Button> */}
-                  <IconButton onClick={popover.onOpen}>
-                    <Iconify icon="eva:more-vertical-fill" />
-                  </IconButton>
-                </Stack>
-                <br />
-                {ignoreErrorsSelected.length > 0 && (
-                  <>
-                    <Box sx={{ display: 'flex', width: '100%' }}>
-                      <Alert
-                        severity={isIgnore ? 'error' : 'success'}
-                        onClick={() => {
-                          console.log('ignoreErrorsSelected', ignoreErrorsSelected);
-                        }}
-                        sx={{ flexGrow: 1 }}
-                      >
-                        {ignoreErrorsSelected.length} items to {isIgnore ? 'ignore' : 'restore'} errors have been selected.
-                      </Alert>
-                    </Box>
-                    <br />
-                  </>
-                )}
+            <Box sx={{ width: '100%', bgcolor: 'background.paper', p: 1 }}>
+              <Stack direction="row" alignItems="center" spacing={1} flexGrow={1} sx={{ width: 1 }}>
+                <TextField
+                  fullWidth
+                  value={filters.state.name}
+                  onChange={handleFilterName}
+                  placeholder="Search by item (NAME, SKU, or ID)..."
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled' }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+                <IconButton onClick={popover.onOpen}>
+                  <Iconify icon="eva:more-vertical-fill" />
+                </IconButton>
+              </Stack>
+              <br />
+              {ignoreErrorsSelected.length > 0 && (
+                <>
+                  <Box sx={{ display: 'flex', width: '100%' }}>
+                    <Alert
+                      severity={isIgnore ? 'error' : 'success'}
+                      onClick={() => {
+                        console.log('ignoreErrorsSelected', ignoreErrorsSelected);
+                      }}
+                      sx={{ flexGrow: 1 }}
+                    >
+                      {ignoreErrorsSelected.length} items to {isIgnore ? 'ignore' : 'restore'} errors have been selected.
+                    </Alert>
+                  </Box>
+                  <br />
+                </>
+              )}
+
+              {modalDataFiltered?.length > 0 ? (
 
                 <TableContainer sx={{ maxHeight: 440 }}>
                   <Table size={table?.dense ? 'small' : 'medium'} sx={{ minWidth: 960 }} stickyHeader>
@@ -214,16 +208,17 @@ export function ModalSublistItems({
                     </TableBody>
                   </Table>
                 </TableContainer>
-              </Box>
-            ) : (
-              <TableContainer sx={{ width: '100%', bgcolor: 'background.paper', p: 1 }}>
-                <Table>
-                  <TableBody>
-                    <TableNoData notFound={modalDataFiltered?.length === 0} />
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            )}
+              ) : (
+                <TableContainer sx={{ width: '100%', bgcolor: 'background.paper', p: 1 }}>
+                  <Table>
+                    <TableBody>
+                      <TableNoData notFound={modalDataFiltered?.length === 0} />
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </Box>
+
           </>
         }
       />

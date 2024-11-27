@@ -17,6 +17,7 @@ export function AnalyticsCurrentVisits({
   chart,
   openModal,
   setOpenModal,
+  handleOpenModal,
   modalTitle,
   headersCSV,
   setModalTitle,
@@ -127,7 +128,7 @@ export function AnalyticsCurrentVisits({
           setHasIgnoredErrors(dataPointIndex !== 0);
 
           setModalDataFiltered(list);
-          setOpenModal(true);
+          handleOpenModal('subListItems');
         },
       },
     },

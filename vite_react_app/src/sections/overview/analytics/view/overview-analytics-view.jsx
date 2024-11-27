@@ -75,7 +75,20 @@ export function OverviewAnalyticsView() {
 
   const [categories, setCategories] = useState(['Items']);
 
-  const [openModal, setOpenModal] = useState(false);
+  const [openModal, setOpenModal] = useState({
+    subListItems: false,
+    subListItemsSerials: false,
+    itemSerialsDetails: false,
+  });
+
+  const handleOpenModal = (modalId) => {
+    setOpenModal((prev) => ({ ...prev, [modalId]: true }));
+  };
+
+  const handleCloseModal = (modalId) => {
+    setOpenModal((prev) => ({ ...prev, [modalId]: false }));
+  };
+
   const [modalListItems, setModalListItems] = useState(null);
   const [modalTitle, setModalTitle] = useState(null);
   const [modalButtonColor, setModalButtonColor] = useState(null);
@@ -101,20 +114,37 @@ export function OverviewAnalyticsView() {
   const itemsSkuTrackInfo = useMemo(() => itemsSkusTrack || null, [itemsSkusTrack]);
 
   const itemsAssetsTrackInfo = useMemo(
-    () => itemsAssetsTrack?.filter((it) => it.differences.news.length > 0 || it.differences.losts.length > 0).sort((a, b) => a.differences.losts.length - b.differences.losts.length)
-    || null, [itemsAssetsTrack]
+    () => itemsAssetsTrack?.filter(
+      (it) =>
+        (it.historialDifferences.some((h, index) => (h.differences.news.length > 0 || h.differences.losts.length > 0) && index !== it.historialDifferences.length - 1))
+    )
+      .sort((a, b) => a.sku.localeCompare(b.sku)) || null,
+    [itemsAssetsTrack]
   );
 
   const totalsNewsTrack = useMemo(() => {
     if (itemsAssetsTrackInfo) {
-      return itemsAssetsTrackInfo.reduce((acc, item) => acc + item.differences.news.length, 0);
+      return itemsAssetsTrackInfo?.reduce(
+        (acc, item) =>
+          acc + item.historialDifferences.reduce(
+            (acch, h, index) =>
+              acch + (index !== item.historialDifferences.length - 1 ? h.differences.news.length : 0), 0
+          ), 0
+        );
     }
     return 0;
   }, [itemsAssetsTrackInfo]);
 
+
   const totalsLostsTrack = useMemo(() => {
     if (itemsAssetsTrackInfo) {
-      return itemsAssetsTrackInfo?.reduce((acc, item) => acc + item.differences.losts.length, 0);
+      return itemsAssetsTrackInfo?.reduce(
+        (acc, item) =>
+          acc + item.historialDifferences.reduce(
+            (acch, h, index) =>
+              acch + (index !== item.historialDifferences.length - 1 ? h.differences.losts.length : 0), 0
+          ), 0
+      );
     }
     return 0;
   }, [itemsAssetsTrackInfo]);
@@ -432,7 +462,7 @@ export function OverviewAnalyticsView() {
       .post(`${CONFIG.apiUrl}/api_zoho/ignore_selected_errors_zoho_items/`, payload)
       .then(() => {
         console.log('Items updated to ignore errors with value:', valueIgnoreErrors);
-        setOpenModal(false);
+        handleCloseModal('subListItems');
         setIgnoreErrorsSelected([]);
       })
       .catch((err) => {
@@ -535,7 +565,7 @@ export function OverviewAnalyticsView() {
                     sx={{ mb: 2, cursor: 'pointer' }}
                     onClick={
                       () => {
-                        setOpenModal(true)
+                        handleOpenModal('subListItems')
                         setModalListItems(itemsIgnoreErrors)
                         setModalTitle(`SKUs with errors ignored`)
                         setModalButtonColor('warning.main')
@@ -572,7 +602,7 @@ export function OverviewAnalyticsView() {
                     series: itemsSkuTrackInfo?.map((it) => it.skuTracked).slice(-8),
                   }}
                   onClick={() => {
-                    setOpenModal(true)
+                    handleOpenModal('subListItems')
                     setModalListItems(itemsZohoSenitron?.filter(it => it.syncedWithSenitron))
                     setModalTitle(`SKUs Tracked`)
                     setModalButtonColor('success.main')
@@ -599,7 +629,7 @@ export function OverviewAnalyticsView() {
                     series: itemsSkuTrackInfo?.map((it) => it.skuMatched).slice(-8),
                   }}
                   onClick={() => {
-                    setOpenModal(true)
+                    handleOpenModal('subListItems')
                     setModalListItems(itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron))
                     setModalTitle(`SKUs Matched 100%`)
                     // setModalButtonColor('#8E33FF')
@@ -627,7 +657,7 @@ export function OverviewAnalyticsView() {
                     series: itemsSkuTrackInfo?.map((it) => it.skuMissing).slice(-8),
                   }}
                   onClick={() => {
-                    setOpenModal(true)
+                    handleOpenModal('subListItems')
                     setModalListItems(itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron && !it.ignoreErrors))
                     setModalTitle(`SKUs with missing Items`)
                     setModalButtonColor('#F44336')
@@ -655,7 +685,7 @@ export function OverviewAnalyticsView() {
                     series: itemsSkuTrackInfo?.map((it) => it.skuExcess).slice(-8),
                   }}
                   onClick={() => {
-                    setOpenModal(true)
+                    handleOpenModal('subListItems')
                     setModalListItems(itemsZohoSenitron?.filter(it => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron && !it.ignoreErrors))
                     setModalTitle(`SKUs with excess Items`)
                     setModalButtonColor('warning.main')
@@ -729,6 +759,7 @@ export function OverviewAnalyticsView() {
                     }}
                     openModal={openModal}
                     setOpenModal={setOpenModal}
+                    handleOpenModal={handleOpenModal}
                     modalTitle={modalTitle}
                     headersCSV={headersCSV}
                     setModalTitle={setModalTitle}
@@ -770,9 +801,18 @@ export function OverviewAnalyticsView() {
                 <Grid xs={12} md={5} lg={4}>
                   <Box sx={{ gap: 3, display: 'flex', flexDirection: 'column' }}>
                     <BankingContacts
-                      title="SKUs Serial Changes"
-                      subheader={`${itemsAssetsTrackInfo?.length} SKUs serial changes at ${fDateTime(itemsAssetsTrackInfo[0]?.createdTime)}`}
+                      title="SKUs Shipped / Received"
+                      subheader={`
+                        ${itemsAssetsTrackInfo?.length} 
+                        ${itemsAssetsTrackInfo[0]?.createdTime ? `SKUs with last changes at ${fDateTime(itemsAssetsTrackInfo[0]?.createdTime)}` : `SKUs without changes`
+                        }`}
                       list={itemsAssetsTrackInfo}
+                      openModal={openModal}
+                      setOpenModal={setOpenModal}
+                      handleOpenModal={handleOpenModal}
+                      table={table}
+                      filters={filters}
+                      handleFilterName={handleFilterName}
                     />
                   </Box>
                 </Grid>
@@ -799,7 +839,7 @@ export function OverviewAnalyticsView() {
                       }}
                     >
                       <BookingTotalIncomes
-                        title="Total Serial Numbers (News & Losts)"
+                        title="Total Values (Received & Shipped)"
                         total={totalsNewsTrack + totalsLostsTrack}
                         percent={2.6}
                         chart={{
@@ -809,7 +849,7 @@ export function OverviewAnalyticsView() {
                       />
 
                       <BookingBooked
-                        title="Serial Numbers Status"
+                        title="Items Totals"
                         data={
                           [
                             { status: 'Canceled', value: totalsLostsTrack + totalsNewsTrack, quantity: totalsLostsTrack },
@@ -823,8 +863,8 @@ export function OverviewAnalyticsView() {
                     <BookingCheckInWidgets
                       chart={{
                         series: [
-                          { label: 'New Serials', percent: parseFloat(totalsNewsTrack / (totalsNewsTrack + totalsLostsTrack) * 100).toFixed(2), total: totalsNewsTrack },
-                          { label: 'Lost Serials', percent: parseFloat(totalsLostsTrack / (totalsNewsTrack + totalsLostsTrack) * 100).toFixed(2), total: totalsLostsTrack },
+                          { label: 'Received', percent: parseFloat((totalsNewsTrack / (totalsNewsTrack + totalsLostsTrack) * 100) || 0).toFixed(2), total: totalsNewsTrack },
+                          { label: 'Shipped', percent: parseFloat((totalsLostsTrack / (totalsNewsTrack + totalsLostsTrack) * 100) || 0).toFixed(2), total: totalsLostsTrack },
                         ],
                         colors: [theme.palette.success.light, theme.palette.warning.light],
                       }}

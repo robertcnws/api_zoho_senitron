@@ -9,6 +9,7 @@ from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.db.models import Max
 from .models import AppConfig, ZohoInventoryItem, ZohoInventoryShipmentSalesOrder, LoginUser, ZohoSkuTrackInfo, ZohoShipmentOrder, ZohoPackage, ZohoItemAssetsTrack
 from api_senitron.models import SenitronItem, TimelineItem
 from .manage_instances import create_inventory_item_instance, \
@@ -26,6 +27,8 @@ from django.forms.models import model_to_dict
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from tenacity import retry, wait_exponential, stop_after_attempt, retry_if_exception_type
+from datetime import timedelta
+from django.utils import timezone
 import logging
 import time
 
@@ -1004,6 +1007,12 @@ def create_zoho_items_assets_track(request):
     data = json.loads(request.body)
     info = data.get('items', [])
     if len(info) > 0:
+        latest_created_time = ZohoItemAssetsTrack.objects.aggregate(Max('created_time'))['created_time__max']
+        if latest_created_time:
+            if timezone.is_naive(latest_created_time):
+                latest_created_time = timezone.make_aware(latest_created_time, timezone.get_current_timezone())
+            previous_day = latest_created_time - timedelta(days=1)
+                
         date = dt.now()
         items_to_insert = []
         for data in info:
@@ -1011,6 +1020,12 @@ def create_zoho_items_assets_track(request):
             items_to_insert.append(new_item)
         if items_to_insert:
             with transaction.atomic():
+                print('latest_created_time', latest_created_time)
+                print('previous_day', previous_day)
+                if latest_created_time:
+                    deleted_count, _ = ZohoItemAssetsTrack.objects.filter(created_time__lt=previous_day).delete()
+                    logger.info(f"Deleted {deleted_count} old ZohoItemAssetsTrack records.")
+                    
                 ZohoItemAssetsTrack.objects.bulk_create(items_to_insert, batch_size=200, ignore_conflicts=True)
             message = 'Items Assets Info saved successfully'
         message = 'Items Assets Info saved successfully'

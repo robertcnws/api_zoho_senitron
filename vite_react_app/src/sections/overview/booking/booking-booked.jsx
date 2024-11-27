@@ -18,7 +18,7 @@ export function BookingBooked({ title, subheader, data, ...other }) {
         {data.map((progress) => (
           <li key={progress.status} style={{ cursor: 'pointer'}}>
             <Box sx={{ mb: 1, display: 'flex', alignItems: 'center' }}>
-              <Box sx={{ typography: 'overline', flexGrow: 1 }}>{progress.status === 'Canceled' ? 'Lost Serials' : 'New Serials'}</Box>
+              <Box sx={{ typography: 'overline', flexGrow: 1 }}>{progress.status === 'Canceled' ? 'Shipped Items' : 'Received Items'}</Box>
               <Box sx={{ typography: 'subtitle1' }}>{fShortenNumber(progress.quantity)}</Box>
             </Box>
 

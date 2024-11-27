@@ -7,6 +7,7 @@ from django.db.models.functions import Lead, RowNumber
 from .models import LoginUser, ZohoInventoryItem, ZohoInventoryShipmentSalesOrder, ZohoSkuTrackInfo, ZohoPackage, ZohoShipmentOrder, ZohoItemAssetsTrack
 from .scalars import JSONScalar
 from datetime import datetime
+from django.utils import timezone
 
 class LoginUserType(DjangoObjectType):
     class Meta:
@@ -47,6 +48,11 @@ class DifferencesSerialsType(graphene.ObjectType):
     losts = graphene.List(graphene.String, description="Lost serial numbers")
     
     
+class HistoryDifferencesSerialsType(graphene.ObjectType):
+    date = graphene.DateTime()
+    differences = graphene.Field(DifferencesSerialsType, description="Differences between the serial numbers of the continuous assets")
+    
+    
 class AssetType(graphene.ObjectType):
     id = graphene.Int()
     serial_number = graphene.String()
@@ -71,6 +77,7 @@ class AssetType(graphene.ObjectType):
 
 class ZohoItemAssetsTrackType(DjangoObjectType):
     differences = graphene.Field(DifferencesSerialsType, description="Differences between the serial numbers of the continuous assets")
+    historial_differences = graphene.List(HistoryDifferencesSerialsType, description="History of differences between the serial numbers of the continuous assets")
     class Meta:
         model = ZohoItemAssetsTrack
         fields = "__all__"
@@ -126,6 +133,49 @@ class ZohoItemAssetsTrackType(DjangoObjectType):
             losts = []
 
         return DifferencesSerialsType(news=news, losts=losts)
+    
+    
+    # def resolve_historial_differences(self, info):
+    #     from django.utils import timezone
+        
+    #     prior_tracks = ZohoItemAssetsTrack.objects.filter(
+    #         item_id=self.item_id,
+    #         created_time__lt=self.created_time
+    #     ).only('created_time', 'assets').order_by('created_time')  
+
+    #     historial = []
+    #     previous_serials = set()
+
+    #     for track in prior_tracks:
+            
+    #         if timezone.is_naive(track.created_time):
+    #             track_created_time = timezone.make_aware(
+    #                 track.created_time, 
+    #                 timezone.get_current_timezone()
+    #             )
+    #         else:
+    #             track_created_time = track.created_time
+            
+    #         current_serials = set(
+    #             asset.get('serialNumber') for asset in track.assets 
+    #             if asset.get('serialNumber')
+    #         )
+            
+    #         news = list(current_serials - previous_serials)
+    #         losts = list(previous_serials - current_serials)
+            
+    #         historial.append(
+    #             HistoryDifferencesSerialsType(
+    #                 date=track_created_time,
+    #                 differences=DifferencesSerialsType(news=news, losts=losts)
+    #             )
+    #         )
+            
+    #         previous_serials = current_serials
+            
+    #     historial.reverse()
+
+    #     return historial
         
 
 class Query(graphene.ObjectType):
@@ -207,31 +257,52 @@ class Query(graphene.ObjectType):
         return shipment_orders
     
     def resolve_all_zoho_item_assets_track(self, info, item_id=None, list_ids=None, **kwargs):
+        from itertools import groupby
+        from operator import attrgetter
+        from django.utils import timezone
+
         if item_id:
             queryset = ZohoItemAssetsTrack.objects.filter(item_id=item_id)
         elif list_ids:
             queryset = ZohoItemAssetsTrack.objects.filter(item_id__in=list_ids)
         else:
             queryset = ZohoItemAssetsTrack.objects.all()
-        
-        queryset = queryset.order_by('item_id', '-created_time', 'id').annotate(
-            next_assets=Window(
-                expression=Lead('assets', offset=1),
-                partition_by=[F('item_id')],
-                order_by=[F('created_time').desc(), F('id').asc()]
-            )
-        )
-        
-        queryset = queryset.annotate(
-            row_number=Window(
-                expression=RowNumber(),
-                partition_by=[F('item_id')],
-                order_by=[F('created_time').desc(), F('id').asc()]
-            )
-        )
-        
-        queryset = queryset.filter(row_number=1)
-        
-        return queryset
+
+        queryset = queryset.order_by('item_id', 'created_time', 'id')
+        tracks = list(queryset)
+        grouped = groupby(tracks, key=attrgetter('item_id'))
+        result = []
+
+        for item_id, group in grouped:
+            group_list = list(group)
+            historial = []
+            previous_serials = set()
+            for track in group_list:
+                if timezone.is_naive(track.created_time):
+                    track_created_time = timezone.make_aware(
+                        track.created_time, 
+                        timezone.get_current_timezone()
+                    )
+                else:
+                    track_created_time = track.created_time
+                current_serials = set(
+                    asset.get('serialNumber') for asset in track.assets 
+                    if asset.get('serialNumber')
+                )
+                news = list(current_serials - previous_serials)
+                losts = list(previous_serials - current_serials)
+                historial.append(
+                    HistoryDifferencesSerialsType(
+                        date=track_created_time,
+                        differences=DifferencesSerialsType(news=news, losts=losts)
+                    )
+                )
+                previous_serials = current_serials
+            historial.reverse()
+            most_recent_track = group_list[-1]
+            most_recent_track.historial_differences = historial
+            result.append(most_recent_track)
+
+        return result
 
 schema = graphene.Schema(query=Query)
