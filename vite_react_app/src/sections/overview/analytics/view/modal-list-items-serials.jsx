@@ -49,10 +49,10 @@ export function ModalListItemsSerials({
                         {itemsAssetsTrackInfo ? (
                             <Box sx={{ gap: 3, display: 'flex', flexDirection: 'column' }}>
                                 <BankingContacts
-                                    title="SKUs Shipped / Received"
+                                    title="Items Shipped / Received"
                                     subheader={`
                   ${itemsAssetsTrackInfo?.length} 
-                  ${itemsAssetsTrackInfo[0]?.createdTime ? `SKUs with last changes at ${fDateTime(itemsAssetsTrackInfo[0]?.createdTime)}` : `SKUs without changes`
+                  ${itemsAssetsTrackInfo[0]?.createdTime ? ` Items with last changes at ${fDateTime(itemsAssetsTrackInfo[0]?.createdTime)}` : `SKUs without changes`
                                         }`}
                                     list={itemsAssetsTrackInfo}
                                     openModal={openModal}

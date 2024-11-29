@@ -18,8 +18,8 @@ export function BookingCheckInWidgets({ chart, ...other }) {
   const smUp = useResponsive('up', 'sm');
 
   const chartColors = chart.colors ?? [
-    [theme.palette.primary.light, theme.palette.primary.main],
     [theme.palette.warning.light, theme.palette.warning.main],
+    [theme.palette.error.light, theme.palette.error.main],
   ];
 
   const chartOptions = useChart({
@@ -61,7 +61,7 @@ export function BookingCheckInWidgets({ chart, ...other }) {
           />
         }
       >
-        {chart.series.map((item) => (
+        {chart.series.map((item, index) => (
           <Box
             key={item.label}
             sx={{
@@ -73,6 +73,9 @@ export function BookingCheckInWidgets({ chart, ...other }) {
               alignItems: 'center',
               justifyContent: { sm: 'center' },
               cursor: 'pointer',
+              color: chartColors[index][1],
+              // bgcolor: chartColors[index][0],
+              // opacity: 0.5,
             }}
           >
             <Chart
@@ -85,8 +88,8 @@ export function BookingCheckInWidgets({ chart, ...other }) {
                     type: 'gradient',
                     gradient: {
                       colorStops: [
-                        { offset: 0, color: chartColors[1][0], opacity: 1 },
-                        { offset: 100, color: chartColors[1][1], opacity: 1 },
+                        { offset: 0, color: chartColors[index][0], opacity: 1 },
+                        { offset: 100, color: chartColors[index][1], opacity: 1 },
                       ],
                     },
                   },
@@ -98,7 +101,7 @@ export function BookingCheckInWidgets({ chart, ...other }) {
 
             <div>
               <Box sx={{ mb: 0.5, typography: 'h5' }}>{fNumber(item.total)}</Box>
-              <Box sx={{ typography: 'body2', color: 'text.secondary' }}>{item.label}</Box>
+              <Box sx={{ typography: 'body2', color: chartColors[index][1] }}><b>{item.label}</b></Box>
             </div>
           </Box>
         ))}

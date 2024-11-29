@@ -58,8 +58,8 @@ import { ItemTableFiltersResult } from '../item-table-filters-result';
 const STATUS_OPTIONS = [
     { value: 'all', label: 'All SKUs' },
     { value: 'lost', label: 'Losts Shipped SKUs' },
+    { value: 'not_matched', label: 'Shipped SKUs NOT reconciled' },
     { value: 'matched', label: 'Shipped SKUs matched' },
-    { value: 'not_matched', label: 'Shipped SKUs NOT matched' },
 
 ];
 
@@ -72,7 +72,17 @@ const headersCSV = [
 
 // ----------------------------------------------------------------------
 
-export function ItemListShippedLogsView({ listSerials, listShipments, updating, setUpdating, setTitleLinearProgress }) {
+export function ItemListShippedLogsView({ 
+    listSerials, 
+    listShipments, 
+    itemsZohoSenitron,
+    setTotalsItemsNoReconciled,
+    setTotalsItemsLost,
+    setTotalsItemsAll,
+    updating, 
+    setUpdating, 
+    setTitleLinearProgress 
+}) {
 
     const date = fDate(new Date(), 'YYYY-MM-DD');
 
@@ -141,13 +151,32 @@ export function ItemListShippedLogsView({ listSerials, listShipments, updating, 
                     receivedSerialsQuantity: senitronItem?.historialDifferences.reduce(
                         (acc, h, index) => acc + (index !== senitronItem.historialDifferences.length - 1 ? h.differences.news.length : 0), 0
                     ) || 0,
+                    isReconciled: false,
                 };
             });
 
-            setTableData(rData);
-        }
-    }, [listSerials, listShipments, handleShippedSerialQuantity]);
+            const rDataZohoSenitron = rData?.map((item) => {
+                const senitronItem = itemsZohoSenitron?.find((sItem) => sItem?.itemId === item.itemId);
+                return {
+                    ...item,
+                    isReconciled: parseInt(senitronItem.stockOnHand, 10) - parseInt(senitronItem.quantity, 10) === 0,
+                }
 
+            });
+
+            setTableData(rDataZohoSenitron);
+        }
+    }, [listSerials, listShipments, itemsZohoSenitron, handleShippedSerialQuantity]);
+
+    setTotalsItemsLost(useMemo(() => 
+        tableData?.filter((item) => item.differenceShipped < 0 && !item.isReconciled).length, 
+    [tableData]));
+
+    setTotalsItemsNoReconciled(useMemo(() =>
+        tableData?.filter((item) => item.differenceShipped > 0 && !item.isReconciled).length,
+    [tableData]));
+
+    setTotalsItemsAll(useMemo(() => tableData?.length, [tableData]));
 
     const dataFiltered = applyFilter({
         inputData: tableData,
@@ -243,8 +272,9 @@ export function ItemListShippedLogsView({ listSerials, listShipments, updating, 
                             value={tab.value}
                             label={tab.label}
                             sx={{
-                                bgcolor: tab.value === 'lost' && tableData.filter((it) => it.differenceShipped < 0).length > 0 ? 'error.main' : 'transparent',
-                                color: tab.value === 'lost' && tableData.filter((it) => it.differenceShipped < 0).length > 0 ? 'white' : 'inherit',
+                                bgcolor: tab.value === 'lost' && tableData.filter((it) => it.differenceShipped < 0 && !it.isReconciled).length > 0 ? 'error.main' :
+                                    tab.value === 'not_matched' && tableData.filter((it) => it.differenceShipped > 0 && !it.isReconciled).length > 0 ? 'warning.main' : 'transparent',
+                                color: tab.value === 'lost' && tableData.filter((it) => it.differenceShipped < 0 && !it.isReconciled).length > 0 ? 'white' : 'inherit',
                                 px: 1.5,
                                 py: 1,
                                 borderRadius: '8px',
@@ -252,7 +282,7 @@ export function ItemListShippedLogsView({ listSerials, listShipments, updating, 
                             icon={
                                 <Label
                                     variant={
-                                        ((tab.value === 'lost' || tab.value === filters.state.status) && 'filled') ||
+                                        ((tab.value === 'lost' || tab.value === 'not_matched' || tab.value === filters.state.status) && 'filled') ||
                                         'soft'
                                     }
                                     color={
@@ -265,9 +295,9 @@ export function ItemListShippedLogsView({ listSerials, listShipments, updating, 
                                     {tab.value === 'matched' ?
                                         tableData.filter((it) => it.differenceShipped === 0).length :
                                         tab.value === 'not_matched' ?
-                                            tableData.filter((it) => it.differenceShipped > 0).length :
+                                            tableData.filter((it) => it.differenceShipped > 0 && !it.isReconciled).length :
                                             tab.value === 'lost' ?
-                                                tableData.filter((it) => it.differenceShipped < 0).length :
+                                                tableData.filter((it) => it.differenceShipped < 0 && !it.isReconciled).length :
                                                 tableData.length
                                     }
                                 </Label>
@@ -330,16 +360,20 @@ export function ItemListShippedLogsView({ listSerials, listShipments, updating, 
                                             <TableRow key={row.itemId}>
                                                 <TableCell>{row.sku}</TableCell>
                                                 <TableCell>{row.itemTotalQty}</TableCell>
-                                                <TableCell>{row.shippedSerialsQuantity}</TableCell>
+                                                <TableCell>
+                                                    {!row.isReconciled ? row.shippedSerialsQuantity : row.itemTotalQty}
+                                                </TableCell>
                                                 <TableCell>
                                                     <Label
                                                         sx={{ cursor: 'pointer' }}
                                                         variant="soft"
                                                         color={
-                                                            (row.differenceShipped === 0 ? 'success' : row.differenceShipped > 0 ? 'warning' : 'error')
+                                                            (row.differenceShipped === 0 ? 'success' : 
+                                                                row.differenceShipped > 0 && !row.isReconciled ? 'warning' : 
+                                                                row.differenceShipped < 0 && !row.isReconciled ? 'error' : 'info')
                                                         }
                                                     >
-                                                        {row.differenceShipped}
+                                                        {!row.isReconciled ? row.differenceShipped : 0}
                                                     </Label>
                                                 </TableCell>
                                             </TableRow>
@@ -398,11 +432,11 @@ function applyFilter({ inputData, comparator, filters }) {
         );
     }
     if (status === 'lost') {
-        inputData = inputData.filter((item) => item.differenceShipped < 0);
+        inputData = inputData.filter((item) => item.differenceShipped < 0 && !item.isReconciled);
     } else if (status === 'matched') {
         inputData = inputData.filter((item) => item.differenceShipped === 0);
     } else if (status === 'not_matched') {
-        inputData = inputData.filter((item) => item.differenceShipped > 0);
+        inputData = inputData.filter((item) => item.differenceShipped > 0 && !item.isReconciled);
     }
     return inputData;
 }

@@ -326,6 +326,10 @@ export function OverviewAnalyticsView() {
   /**
    * Shipments
    */
+  
+  const [totalsItemsNoReconciled, setTotalsItemsNoReconciled] = useState(0);
+  const [totalsItemsLost, setTotalsItemsLost] = useState(0);
+  const [totalsItemsAll, setTotalsItemsAll] = useState(0);
 
   const parseLineItems = (lineItems) => {
     if (typeof lineItems === 'string') {
@@ -446,6 +450,7 @@ export function OverviewAnalyticsView() {
   }, {});
 
   const finalGroupedArray = Object.values(groupedItems);
+  
 
   // console.log('finalGroupedArray', finalGroupedArray);
 
@@ -945,6 +950,10 @@ export function OverviewAnalyticsView() {
                     <ItemListShippedLogsView
                       listSerials={itemsAssetsTrackInfo}
                       listShipments={finalGroupedArray}
+                      setTotalsItemsNoReconciled={setTotalsItemsNoReconciled}
+                      setTotalsItemsLost={setTotalsItemsLost}
+                      setTotalsItemsAll={setTotalsItemsAll}
+                      itemsZohoSenitron={itemsZohoSenitron}
                       updating={updating}
                       setUpdating={setUpdating}
                       setTitleLinearProgress={setTitleLinearProgress}
@@ -953,22 +962,6 @@ export function OverviewAnalyticsView() {
                   </Box>
                 </Grid>
                 <Grid xs={12} md={5} lg={4}>
-                  {/* <Box sx={{ gap: 3, display: 'flex', flexDirection: 'column' }}>
-                    <BankingContacts
-                      title="SKUs Shipped / Received"
-                      subheader={`
-                        ${itemsAssetsTrackInfo?.length} 
-                        ${itemsAssetsTrackInfo[0]?.createdTime ? `SKUs with last changes at ${fDateTime(itemsAssetsTrackInfo[0]?.createdTime)}` : `SKUs without changes`
-                        }`}
-                      list={itemsAssetsTrackInfo}
-                      openModal={openModal}
-                      setOpenModal={setOpenModal}
-                      handleOpenModal={handleOpenModal}
-                      table={table}
-                      filters={filters}
-                      handleFilterName={handleFilterName}
-                    />
-                  </Box> */}
                   <Box
                     sx={{
                       p: { md: 1 },
@@ -980,7 +973,7 @@ export function OverviewAnalyticsView() {
                     }}
                   >
                     <BookingTotalIncomes
-                      title="SKUs read on"
+                      title="Items read on"
                       // total={finalGroupedArray.filter((item) => item.date === startDate).reduce((acc, item) => acc + item.itemTotalQty, 0)}
                       total={totalsNewsTrack + totalsLostsTrack}
                       percent={2.6}
@@ -995,7 +988,7 @@ export function OverviewAnalyticsView() {
                     />
 
                     <BookingBooked
-                      title="Totals"
+                      title="Items Totals"
                       data={
                         [
                           { status: 'Canceled', value: totalsLostsTrack + totalsNewsTrack, quantity: totalsLostsTrack },
@@ -1012,10 +1005,10 @@ export function OverviewAnalyticsView() {
                   <BookingCheckInWidgets
                     chart={{
                       series: [
-                        { label: 'To reconcile', percent: parseFloat((totalsNewsTrack / (totalsNewsTrack + totalsLostsTrack) * 100) || 0).toFixed(2), total: totalsNewsTrack },
-                        { label: 'Losts', percent: parseFloat((totalsLostsTrack / (totalsNewsTrack + totalsLostsTrack) * 100) || 0).toFixed(2), total: totalsLostsTrack },
+                        { label: 'To reconcile', percent: (parseFloat((totalsItemsNoReconciled / totalsItemsAll)) * 100 || 0).toFixed(2), total: totalsItemsNoReconciled },
+                        { label: 'Losts', percent: (parseFloat((totalsItemsLost / totalsItemsAll)) * 100 || 0).toFixed(2), total: totalsItemsLost },
                       ],
-                      colors: [theme.palette.success.light, theme.palette.warning.light],
+                      // colors: [theme.palette.warning.light, theme.palette.error.light],
                     }}
                     sx={{ boxShadow: { md: 'none' } }}
                   />
