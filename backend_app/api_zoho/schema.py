@@ -253,6 +253,20 @@ class Query(graphene.ObjectType):
                 return shipment_orders.filter(date__range=(start_date_parsed, end_date_parsed))
             except ValueError:
                 raise Exception("Formato de fecha inválido. Usa 'YYYY-MM-DD'.")
+            
+        elif start_date:
+            try:
+                start_date_parsed = datetime.strptime(start_date, '%Y-%m-%d')
+                return shipment_orders.filter(date__gte=start_date_parsed)
+            except ValueError:
+                raise Exception("Formato de fecha inválido. Usa 'YYYY-MM-DD'.")
+        
+        elif end_date:
+            try:
+                end_date_parsed = datetime.strptime(end_date, '%Y-%m-%d')
+                return shipment_orders.filter(date__lte=end_date_parsed)
+            except ValueError:
+                raise Exception("Formato de fecha inválido. Usa 'YYYY-MM-DD'.")
         
         return shipment_orders
     

@@ -12,13 +12,16 @@ import { usePopover, CustomPopover } from 'src/components/custom-popover';
 import { CONFIG } from 'src/config-global';
 import axios from 'axios';
 import { LoadingContext } from 'src/auth/context/loading-context';
-import { Checkbox, FormControl, InputLabel, OutlinedInput, Select } from '@mui/material';
+import { Checkbox, FormControl, InputLabel, ListItemText, OutlinedInput, Select } from '@mui/material';
 import { generatePrintablePDF } from 'src/utils/printable-pdf';
 import ExportCSV from 'src/utils/export-csv';
+import { Label } from 'src/components/label';
+import { fDate } from 'src/utils/format-time';
+import { height } from '@mui/system';
 
 // ----------------------------------------------------------------------
 
-export function ItemTableToolbar({ filters, onResetPage, options, dataFiltered, headersCSV, setUpdating, title, setTitleLinearProgress}) {
+export function ItemTableToolbar({ filters, onResetPage, options, dataFiltered, headersCSV, setUpdating, isListAll = true, title, setTitleLinearProgress }) {
   const popover = usePopover();
 
   const { setLoading, setError, setComponent } = useContext(LoadingContext);
@@ -77,11 +80,25 @@ export function ItemTableToolbar({ filters, onResetPage, options, dataFiltered, 
         </FormControl> */}
 
         <Stack direction="row" alignItems="center" spacing={2} flexGrow={1} sx={{ width: 1 }}>
+          {!isListAll && (
+            <Label color='info' sx={{ height: 55, width: 100 }}>
+              <ListItemText
+                primary='SKUs on'
+                secondary={fDate(new Date())}
+                primaryTypographyProps={{ variant: 'body2', noWrap: true }}
+                secondaryTypographyProps={{
+                  mt: 0.5,
+                  component: 'span',
+                  variant: 'caption',
+                }}
+              />
+            </Label>
+          )}
           <TextField
             fullWidth
             value={filters.state.name}
             onChange={handleFilterName}
-            placeholder="Search by item (NAME, SKU, ID or STOCK ON HAND)..."
+            placeholder={isListAll ? "Search by item (NAME, SKU, ID or STOCK ON HAND)..." : "Search by item SKU..."}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -113,66 +130,69 @@ export function ItemTableToolbar({ filters, onResetPage, options, dataFiltered, 
             <Iconify icon="solar:printer-minimalistic-bold" />
             Print
           </MenuItem>
-
-          <MenuItem
-            onClick={() => {
-              popover.onClose();
-            }}
-          >
-            {/* <Iconify icon="solar:export-bold" />
+          {isListAll && (
+            <>
+              <MenuItem
+                onClick={() => {
+                  popover.onClose();
+                }}
+              >
+                {/* <Iconify icon="solar:export-bold" />
             Export CSV */}
-            <ExportCSV data={dataFiltered} headers={headersCSV} buttonText="Export CSV" docName={title} />
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
-              popover.onClose();
-              // setLoading(true);
-              // setComponent('zoho inventory items');
-              setUpdating(true);
-              setTitleLinearProgress('Fetching Item Updates from Zoho...');
-              axios
-                .post(`${CONFIG.apiUrl}/api_zoho/load/inventory_items/`)
-                .then(() => {
-                  console.log('Inventory items fetched');
-                })
-                .catch((err) => {
-                  console.error('Error fetching inventory items:', err);
-                  setError('There was an error fetching the inventory items.');
-                })
-                .finally(() => {
-                  setUpdating(false);
-                });
-            }}
-          >
-            <Iconify icon="mdi:update" />
-            Fetch Updates from Zoho
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
-              popover.onClose();
-              // setLoading(true);
-              // setComponent('senitron items');
-              setUpdating(true);
-              setTitleLinearProgress('Fetching Item Updates from Senitron...');
-              axios
-                .post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_item_assets/`)
-                .then(() => {
-                  console.log('Zoho Inventory items fetched');
-                  console.log('Senitron Inventory items fetched');
-                })
-                .catch((err) => {
-                  console.error('Error fetching senitron inventory items assets:', err);
-                  setError('There was an error fetching senitron inventory items assets.');
-                })
-                .finally(() => {
-                  // setLoading(false);
-                  setUpdating(false);
-                });
-            }}
-          >
-            <Iconify icon="mdi:sync" />
-            Sync with Senitron
-          </MenuItem>
+                <ExportCSV data={dataFiltered} headers={headersCSV} buttonText="Export CSV" docName={title} />
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  popover.onClose();
+                  // setLoading(true);
+                  // setComponent('zoho inventory items');
+                  setUpdating(true);
+                  setTitleLinearProgress('Fetching Item Updates from Zoho...');
+                  axios
+                    .post(`${CONFIG.apiUrl}/api_zoho/load/inventory_items/`)
+                    .then(() => {
+                      console.log('Inventory items fetched');
+                    })
+                    .catch((err) => {
+                      console.error('Error fetching inventory items:', err);
+                      setError('There was an error fetching the inventory items.');
+                    })
+                    .finally(() => {
+                      setUpdating(false);
+                    });
+                }}
+              >
+                <Iconify icon="mdi:update" />
+                Fetch Updates from Zoho
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  popover.onClose();
+                  // setLoading(true);
+                  // setComponent('senitron items');
+                  setUpdating(true);
+                  setTitleLinearProgress('Fetching Item Updates from Senitron...');
+                  axios
+                    .post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_item_assets/`)
+                    .then(() => {
+                      console.log('Zoho Inventory items fetched');
+                      console.log('Senitron Inventory items fetched');
+                    })
+                    .catch((err) => {
+                      console.error('Error fetching senitron inventory items assets:', err);
+                      setError('There was an error fetching senitron inventory items assets.');
+                    })
+                    .finally(() => {
+                      // setLoading(false);
+                      setUpdating(false);
+                    });
+                }}
+              >
+                <Iconify icon="mdi:sync" />
+                Sync with Senitron
+              </MenuItem>
+            </>
+          )}
         </MenuList>
       </CustomPopover>
     </>

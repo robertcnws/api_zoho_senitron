@@ -9,16 +9,18 @@ import { varAlpha } from 'src/theme/styles';
 
 // ----------------------------------------------------------------------
 
-export function BookingBooked({ title, subheader, data, ...other }) {
+export function BookingBooked({ title, subheader, data, openModal, setOpenModal, handleOpenModal, ...other }) {
   return (
     <Card {...other}>
       <CardHeader title={title} subheader={subheader} />
 
       <Box component="ul" sx={{ p: 3, gap: 3, display: 'flex', flexDirection: 'column' }}>
         {data.map((progress) => (
-          <li key={progress.status} style={{ cursor: 'pointer'}}>
-            <Box sx={{ mb: 1, display: 'flex', alignItems: 'center' }}>
-              <Box sx={{ typography: 'overline', flexGrow: 1 }}>{progress.status === 'Canceled' ? 'Shipped Items' : 'Received Items'}</Box>
+          <li key={progress.status} style={{ cursor: 'pointer' }}>
+            <Box sx={{ mb: 1, display: 'flex', alignItems: 'center' }} onClick={() => {
+              handleOpenModal('listItemsSerials');
+            }}>
+              <Box sx={{ typography: 'overline', flexGrow: 1 }}>{progress.status === 'Canceled' ? 'Shipped SKUs' : 'Received SKUs'}</Box>
               <Box sx={{ typography: 'subtitle1' }}>{fShortenNumber(progress.quantity)}</Box>
             </Box>
 

@@ -4,7 +4,7 @@ import Typography from '@mui/material/Typography';
 import Grid from '@mui/material/Unstable_Grid2';
 import axios from 'axios';
 import AnimatedIcon from 'src/components/animate/animated-icon';
-import { fDateTime } from 'src/utils/format-time';
+import { fDate, fDateTime } from 'src/utils/format-time';
 import { LoadingContext } from 'src/auth/context/loading-context';
 import { Iconify } from 'src/components/iconify';
 import { Label } from 'src/components/label';
@@ -16,6 +16,8 @@ import MatchGauge from 'src/components/chart/gauge-chart';
 import { TableNoData, useTable, getComparator } from 'src/components/table';
 import { CONFIG } from 'src/config-global';
 import { useItemsQuery, useSenitronItemsQuery } from 'src/_mock/_items';
+import { SHIPMENTS_STATUS_OPTIONS, useShipmentsQuery } from 'src/_mock/_shipment';
+import { usePackagesQuery } from 'src/_mock/_package';
 import { useSkuTrackInfoQuery } from 'src/_mock/_sku_track_info';
 import { useItemAssetsTrackQuery } from 'src/_mock/_itemAssetsTrack';
 import { DashboardContent } from 'src/layouts/dashboard';
@@ -32,18 +34,18 @@ import {
 import { useTimelineItemsQuery } from 'src/_mock/_timelineItems';
 
 import { ItemListShortView } from 'src/sections/item/view';
+import { ItemListShippedLogsView } from 'src/sections/item/view/item-list-shipped-logs';
 
 import { AnalyticsOrderTimeline } from '../analytics-order-timeline';
 import { AnalyticsWidgetSummary } from '../analytics-widget-summary';
 import { ModalSublistItems } from './modal-sublist-items';
 import { AnalyticsCurrentVisits } from '../analytics-current-visits';
-import { BookingCustomerReviews } from '../../booking/booking-customer-reviews';
-import { BookingAvailable } from '../../booking/booking-available';
-import { BookingStatistics } from '../../booking/booking-statistics';
+import { BankingContacts } from '../banking-contacts';
 import { BookingCheckInWidgets } from '../../booking/booking-check-in-widgets';
 import { BookingBooked } from '../../booking/booking-booked';
 import { BookingTotalIncomes } from '../../booking/booking-total-incomes';
-import { BankingContacts } from '../banking-contacts';
+import { ModalListItemsSerials } from './modal-list-items-serials';
+
 
 
 
@@ -79,6 +81,7 @@ export function OverviewAnalyticsView() {
     subListItems: false,
     subListItemsSerials: false,
     itemSerialsDetails: false,
+    listItemsSerials: false,
   });
 
   const handleOpenModal = (modalId) => {
@@ -130,7 +133,7 @@ export function OverviewAnalyticsView() {
             (acch, h, index) =>
               acch + (index !== item.historialDifferences.length - 1 ? h.differences.news.length : 0), 0
           ), 0
-        );
+      );
     }
     return 0;
   }, [itemsAssetsTrackInfo]);
@@ -319,6 +322,134 @@ export function OverviewAnalyticsView() {
     }
     return { percentage: null, totalErrors: null, totalRFIDCorrect: null };
   }, [itemsZohoSenitron]);
+
+  /**
+   * Shipments
+   */
+
+  const parseLineItems = (lineItems) => {
+    if (typeof lineItems === 'string') {
+      try {
+        return JSON.parse(lineItems).filter(item => item.sku);
+      } catch (err) {
+        console.error('Error al parsear lineItems:', err);
+        return [];
+      }
+    } else {
+      return (lineItems || []).filter(item => item.sku);
+    }
+  }
+
+  const parsePackages = (packages, date = null) => {
+    if (typeof packages === 'string') {
+      try {
+        const parsedPackages = JSON.parse(packages)
+          .filter(pkg => pkg.package_id)
+          .map(pkg => ({ ...pkg, date }));
+        return parsedPackages;
+      } catch (err) {
+        console.error('Error al parsear packages:', err);
+        return [];
+      }
+    } else {
+      return (packages || []).filter(pkg => pkg.package_id).map(pkg => ({ ...pkg, date }));
+    }
+  };
+
+  const startDate = fDate(new Date(), 'YYYY-MM-DD');
+  const endDate = fDate(new Date(), 'YYYY-MM-DD');
+
+  // console.log('startDate', startDate);
+  // console.log('endDate', endDate);
+
+  // const { data: shipments } = useShipmentsQuery(startDate, endDate);
+
+  const { data: shipments } = useShipmentsQuery(null, null);
+
+  const allShipments = useMemo(() => shipments || null, [shipments]);
+
+  // console.log('allShipments', allShipments);
+
+  const allPackages = useMemo(() => {
+    if (allShipments) {
+      const packages = [];
+      allShipments.forEach(shipment => {
+        const parsedPackage = parsePackages(shipment.packages, shipment.date);
+        packages.push(parsedPackage);
+      });
+      return packages;
+    }
+    return null;
+  }, [allShipments]);
+
+  const { data: linePackages } = usePackagesQuery(null, null, allPackages?.flatMap(pkgs => pkgs.map(pkg => pkg.package_id)));
+
+  const allLinePackages = useMemo(() => linePackages || null, [linePackages]);
+
+  const dataItems = useMemo(() => {
+    if (linePackages) {
+      const itemsPacks = linePackages?.map(pkg => ({
+        packageId: pkg.packageId,
+        packageNumber: pkg.packageNumber,
+        shipmentId: pkg.shipmentId,
+        shipmentNumber: pkg.shipmentNumber,
+        totalQuantity: pkg.totalQuantity,
+        date: pkg.date,
+        items: parseLineItems(pkg.lineItems) || [],
+      }));
+      return itemsPacks;
+    }
+    return [];
+  }, [linePackages]);
+
+
+  const mergeItems = useMemo(() => {
+    if (allShipments && allPackages && allLinePackages && dataItems) {
+      const merged = dataItems?.flatMap(itemList => itemList.items.map(item => ({
+        itemId: item.item_id,
+        sku: item.sku,
+        name: item.name,
+        quantity: item.quantity,
+        shipmentId: itemList.shipmentId,
+        shipmentNumber: itemList.shipmentNumber,
+        packageId: itemList.packageId,
+        packageNumber: itemList.packageNumber,
+        date: itemList.date,
+      })));
+      return merged;
+    }
+    return [];
+  }, [allShipments, allPackages, allLinePackages, dataItems]);
+
+
+  const groupedItems = mergeItems.reduce((acc, currentItem) => {
+    const { itemId, name, sku, packageId, quantity, shipmentId, shipmentNumber, packageNumber, date } = currentItem;
+    if (!acc[itemId]) {
+      acc[itemId] = {
+        itemId,
+        name,
+        sku,
+        date,
+        itemTotalQty: 0,
+        linePackages: []
+      };
+    }
+    acc[itemId].itemTotalQty += quantity;
+    acc[itemId].linePackages.push({
+      packageId,
+      packageNumber,
+      quantity,
+      shipmentId,
+      shipmentNumber
+    });
+    return acc;
+  }, {});
+
+  const finalGroupedArray = Object.values(groupedItems);
+
+  // console.log('finalGroupedArray', finalGroupedArray);
+
+  // Data loaded validation
 
   const [dataLoaded, setDataLoaded] = useState(false);
 
@@ -798,8 +929,31 @@ export function OverviewAnalyticsView() {
               )}
 
               <Grid container xs={12}>
+
+                <Grid xs={12} md={7} lg={8}>
+                  <Box
+                    sx={{
+                      mb: 1,
+                      p: { md: 1 },
+                      display: 'flex',
+                      gap: { xs: 3, md: 1 },
+                      borderRadius: { md: 2 },
+                      flexDirection: 'column',
+                      bgcolor: { md: 'background.neutral' },
+                    }}
+                  >
+                    <ItemListShippedLogsView
+                      listSerials={itemsAssetsTrackInfo}
+                      listShipments={finalGroupedArray}
+                      updating={updating}
+                      setUpdating={setUpdating}
+                      setTitleLinearProgress={setTitleLinearProgress}
+                    />
+
+                  </Box>
+                </Grid>
                 <Grid xs={12} md={5} lg={4}>
-                  <Box sx={{ gap: 3, display: 'flex', flexDirection: 'column' }}>
+                  {/* <Box sx={{ gap: 3, display: 'flex', flexDirection: 'column' }}>
                     <BankingContacts
                       title="SKUs Shipped / Received"
                       subheader={`
@@ -814,69 +968,65 @@ export function OverviewAnalyticsView() {
                       filters={filters}
                       handleFilterName={handleFilterName}
                     />
-                  </Box>
-                </Grid>
-                <Grid xs={12} md={7} lg={8}>
+                  </Box> */}
                   <Box
                     sx={{
-                      mb: 1,
                       p: { md: 1 },
-                      display: 'flex',
-                      gap: { xs: 3, md: 1 },
+                      display: 'grid',
+                      gap: { xs: 3, md: 0 },
                       borderRadius: { md: 2 },
-                      flexDirection: 'column',
-                      bgcolor: { md: 'background.neutral' },
+                      bgcolor: { md: 'background.paper' },
+                      gridTemplateColumns: { xs: 'repeat(1, 1fr)', md: 'repeat(2, 1fr)' },
                     }}
                   >
-                    <Box
-                      sx={{
-                        p: { md: 1 },
-                        display: 'grid',
-                        gap: { xs: 3, md: 0 },
-                        borderRadius: { md: 2 },
-                        bgcolor: { md: 'background.paper' },
-                        gridTemplateColumns: { xs: 'repeat(1, 1fr)', md: 'repeat(2, 1fr)' },
-                      }}
-                    >
-                      <BookingTotalIncomes
-                        title="Total Values (Received & Shipped)"
-                        total={totalsNewsTrack + totalsLostsTrack}
-                        percent={2.6}
-                        chart={{
-                          categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'],
-                          series: [{ data: [10, 41, 80, 100, 60, 120, 69, 91, 160] }],
-                        }}
-                      />
-
-                      <BookingBooked
-                        title="Items Totals"
-                        data={
-                          [
-                            { status: 'Canceled', value: totalsLostsTrack + totalsNewsTrack, quantity: totalsLostsTrack },
-                            { status: 'Sold', value: totalsNewsTrack + totalsNewsTrack, quantity: totalsNewsTrack },
-                          ]
-                        }
-                        sx={{ boxShadow: { md: 'none' } }}
-                      />
-                    </Box>
-
-                    <BookingCheckInWidgets
+                    <BookingTotalIncomes
+                      title="SKUs read on"
+                      // total={finalGroupedArray.filter((item) => item.date === startDate).reduce((acc, item) => acc + item.itemTotalQty, 0)}
+                      total={totalsNewsTrack + totalsLostsTrack}
+                      percent={2.6}
+                      // chart={{
+                      //   categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'],
+                      //   series: [{ data: [10, 41, 80, 100, 60, 120, 69, 91, 160] }],
+                      // }}
                       chart={{
-                        series: [
-                          { label: 'Received', percent: parseFloat((totalsNewsTrack / (totalsNewsTrack + totalsLostsTrack) * 100) || 0).toFixed(2), total: totalsNewsTrack },
-                          { label: 'Shipped', percent: parseFloat((totalsLostsTrack / (totalsNewsTrack + totalsLostsTrack) * 100) || 0).toFixed(2), total: totalsLostsTrack },
-                        ],
-                        colors: [theme.palette.success.light, theme.palette.warning.light],
+                        categories: [],
+                        series: [{ data: [] }],
                       }}
+                    />
+
+                    <BookingBooked
+                      title="Totals"
+                      data={
+                        [
+                          { status: 'Canceled', value: totalsLostsTrack + totalsNewsTrack, quantity: totalsLostsTrack },
+                          { status: 'Sold', value: totalsNewsTrack + totalsNewsTrack, quantity: totalsNewsTrack },
+                        ]
+                      }
                       sx={{ boxShadow: { md: 'none' } }}
+                      openModal={openModal}
+                      setOpenModal={setOpenModal}
+                      handleOpenModal={handleOpenModal}
                     />
                   </Box>
+
+                  <BookingCheckInWidgets
+                    chart={{
+                      series: [
+                        { label: 'To reconcile', percent: parseFloat((totalsNewsTrack / (totalsNewsTrack + totalsLostsTrack) * 100) || 0).toFixed(2), total: totalsNewsTrack },
+                        { label: 'Losts', percent: parseFloat((totalsLostsTrack / (totalsNewsTrack + totalsLostsTrack) * 100) || 0).toFixed(2), total: totalsLostsTrack },
+                      ],
+                      colors: [theme.palette.success.light, theme.palette.warning.light],
+                    }}
+                    sx={{ boxShadow: { md: 'none' } }}
+                  />
                 </Grid>
               </Grid>
 
               <Grid xs={12} md={12} lg={12}>
                 <ItemListShortView updating={updating} setUpdating={setUpdating} setTitleLinearProgress={setTitleLinearProgress} />
               </Grid>
+
+
             </Grid>
           </DashboardContent >
 
@@ -902,6 +1052,17 @@ export function OverviewAnalyticsView() {
             isIgnore={isIgnore}
             setIsIgnore={setIsIgnore}
           />
+
+          <ModalListItemsSerials
+            openModal={openModal}
+            setOpenModal={setOpenModal}
+            handleOpenModal={handleOpenModal}
+            filters={filters}
+            handleFilterName={handleFilterName}
+            itemsAssetsTrackInfo={itemsAssetsTrackInfo}
+            table={table}
+          />
+
         </>
       )}
     </>

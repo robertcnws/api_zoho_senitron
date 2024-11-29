@@ -9,6 +9,7 @@ import { CONFIG } from 'src/config-global';
 import { Iconify } from 'src/components/iconify';
 import { SvgColor } from 'src/components/svg-color';
 import { Chart, useChart } from 'src/components/chart';
+import { fDate } from 'src/utils/format-time';
 
 // ----------------------------------------------------------------------
 
@@ -45,9 +46,9 @@ export function BookingTotalIncomes({ title, total, percent, chart, sx, ...other
           {fPercent(percent)}
         </Box>
       </Box>
-      <Box component="span" sx={{ opacity: 0.64, typography: 'body2' }}>
+      {/* <Box component="span" sx={{ opacity: 0.64, typography: 'body2' }}>
         last month
-      </Box>
+      </Box> */}
     </Box>
   );
 
@@ -66,6 +67,7 @@ export function BookingTotalIncomes({ title, total, percent, chart, sx, ...other
       <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between' }}>
         <div>
           <Box sx={{ mb: 1, typography: 'subtitle2' }}>{title}</Box>
+          <Box sx={{ mb: 1, fontSize: '11px' }}>{fDate(new Date())}</Box>
           <Box sx={{ typography: 'h3' }}>{total}</Box>
         </div>
 

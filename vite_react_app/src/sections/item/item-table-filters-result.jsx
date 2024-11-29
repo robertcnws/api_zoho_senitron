@@ -6,7 +6,7 @@ import { chipProps, FiltersBlock, FiltersResult } from 'src/components/filters-r
 
 // ----------------------------------------------------------------------
 
-export function ItemTableFiltersResult({ filters, onResetPage, totalResults, sx }) {
+export function ItemTableFiltersResult({ filters, onResetPage, totalResults, hasNotAll=true, sx }) {
   const handleRemoveKeyword = useCallback(() => {
     onResetPage();
     filters.setState({ name: '' });
@@ -14,8 +14,8 @@ export function ItemTableFiltersResult({ filters, onResetPage, totalResults, sx 
 
   const handleRemoveStatus = useCallback(() => {
     onResetPage();
-    filters.setState({ status: 'synced' });
-  }, [filters, onResetPage]);
+    filters.setState({ status: hasNotAll ? 'synced' : 'all' });
+  }, [filters, onResetPage, hasNotAll]);
 
   const handleRemoveSynced = useCallback(
     (inputValue) => {
@@ -31,8 +31,8 @@ export function ItemTableFiltersResult({ filters, onResetPage, totalResults, sx 
   const handleReset = useCallback(() => {
     onResetPage();
     filters.onResetState();
-    filters.setState({ status: 'synced' });
-  }, [filters, onResetPage]);
+    filters.setState({ status: hasNotAll ? 'synced' : 'all' });
+  }, [filters, onResetPage, hasNotAll]);
 
   return (
     <FiltersResult totalResults={totalResults} onReset={handleReset} sx={sx}>
@@ -45,8 +45,8 @@ export function ItemTableFiltersResult({ filters, onResetPage, totalResults, sx 
         />
       </FiltersBlock>
 
-      <FiltersBlock label="Tracked Inventory:" isShow={!!filters.state.syncedWithSenitron.length}>
-        {filters.state.syncedWithSenitron.map((item) => (
+      <FiltersBlock label="Tracked Inventory:" isShow={!!filters.state.syncedWithSenitron?.length}>
+        {filters.state.syncedWithSenitron?.map((item) => (
           <Chip {...chipProps} key={item} label={item} onDelete={() => handleRemoveSynced(item)} />
         ))}
       </FiltersBlock>

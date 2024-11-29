@@ -1,8 +1,6 @@
 import { useState, useCallback, useEffect, useContext, useMemo } from 'react';
 
-import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
-import Tabs from '@mui/material/Tabs';
 import Card from '@mui/material/Card';
 import Table from '@mui/material/Table';
 import Button from '@mui/material/Button';
@@ -21,14 +19,11 @@ import { useSetState } from 'src/hooks/use-set-state';
 
 import { fIsAfter, fIsBetween } from 'src/utils/format-time';
 
-import { varAlpha } from 'src/theme/styles';
 import { DashboardContent } from 'src/layouts/dashboard';
 import { SHIPMENTS_STATUS_OPTIONS, useShipmentsQuery } from 'src/_mock/_shipment';
 import { usePackagesQuery } from 'src/_mock/_package';
-import { CONFIG } from 'src/config-global';
 
 
-import { Label } from 'src/components/label';
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
@@ -49,9 +44,6 @@ import {
   TablePaginationCustom,
 } from 'src/components/table';
 
-import { ShipmentTableRow } from '../shipment-table-row';
-import { ShipmentTableToolbar } from '../shipment-table-toolbar';
-import { ShipmentTableFiltersResult } from '../shipment-table-filters-result';
 import { ShipmentTableRowListBySku } from '../shipment-table-row-list-by-sku';
 import { ShipmentTableToolbarListBySku } from '../shipment-table-toolbar-list-by-sku';
 import { ShipmentTableFiltersResultListBySku } from '../shipment-table-filters-result-list-by-sku';

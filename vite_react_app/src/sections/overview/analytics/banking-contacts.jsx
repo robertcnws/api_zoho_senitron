@@ -46,18 +46,18 @@ export function BankingContacts({
         <CardHeader
           title={title}
           subheader={subheader}
-          action={
-            <Button
-              size="small"
-              color="inherit"
-              endIcon={<Iconify icon="eva:arrow-ios-forward-fill" width={18} sx={{ ml: -0.5 }} />}
-              onClick={() => {
-                handleOpenModal('subListItemsSerials');
-              }}
-            >
-              View all
-            </Button>
-          }
+          // action={
+          //   <Button
+          //     size="small"
+          //     color="inherit"
+          //     endIcon={<Iconify icon="eva:arrow-ios-forward-fill" width={18} sx={{ ml: -0.5 }} />}
+          //     onClick={() => {
+          //       handleOpenModal('subListItemsSerials');
+          //     }}
+          //   >
+          //     View all
+          //   </Button>
+          // }
         />
 
         <Scrollbar sx={{ maxHeight: 394, minHeight: 394 }}>
@@ -71,9 +71,9 @@ export function BankingContacts({
                 minWidth: 360,
               }}
             >
-              {list.map((item) => (
+              {list.map((item, index) => (
                 <Item
-                  key={item.itemId}
+                  key={`${item.itemId}-${index}`}
                   item={item}
                   setModalDataFiltered={setModalDataFiltered}
                   handleOpenModal={handleOpenModal}
@@ -131,7 +131,7 @@ function Item({ item, sx, setModalDataFiltered, handleOpenModal, ...other }) {
                 <span>
                   {item.historialDifferences.reduce(
                     (acc, h, index) => acc + (index !== item.historialDifferences.length - 1 ? h.differences.news.length : 0), 0)
-                  } New(s)
+                  } Received
                 </span>
               </Box>
             )}
@@ -144,7 +144,7 @@ function Item({ item, sx, setModalDataFiltered, handleOpenModal, ...other }) {
                 <span>
                   {item.historialDifferences.reduce(
                     (acc, h, index) => acc + (index !== item.historialDifferences.length - 1 ? h.differences.losts.length : 0), 0)
-                  } Lost(s)
+                  } Shipped
                 </span>
               </Box>
             )}

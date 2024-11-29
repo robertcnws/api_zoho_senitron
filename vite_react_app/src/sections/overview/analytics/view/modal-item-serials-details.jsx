@@ -31,8 +31,8 @@ export function ModalItemSerialsDetails({
 
   const TABLE_HEAD = [
     { id: 'createdTime', label: 'Date', width: 300 },
-    { id: 'news', label: 'New Serials', width: 300 },
-    { id: 'losts', label: 'Lost Serials', width: 300 },
+    { id: 'news', label: 'Received (Serials)', width: 300 },
+    { id: 'losts', label: 'Shipped (Serials)', width: 300 },
   ];
 
   const max = useMemo(
@@ -80,7 +80,7 @@ export function ModalItemSerialsDetails({
                 <br />
 
                 <TableContainer sx={{ maxHeight: 440 }}>
-                  <Table size={table?.dense ? 'small' : 'medium'} sx={{ minWidth: 960 }} stickyHeader>
+                  <Table size={table?.dense ? 'small' : 'medium'} sx={{ minWidth: 500 }} stickyHeader>
                     <TableHeadCustom
                       order={table?.order}
                       orderBy={table?.orderBy}
@@ -92,11 +92,15 @@ export function ModalItemSerialsDetails({
                       {modalDataFiltered?.historialDifferences.map((row, index) => (
                         <>
                           {index !== handleLength(modalDataFiltered?.historialDifferences) - 1 && (
-                            <TableRow key={index}>
-                              <TableCell>{fDateTime(row.date)}</TableCell>
-                              <TableCell>{row.differences.news.join(', ')}</TableCell>
-                              <TableCell>{row.differences.losts.join(', ')}</TableCell>
-                            </TableRow>
+                            <>
+                              {(row.differences.news.length > 0 || row.differences.losts.length > 0) && (
+                                <TableRow key={`${index}-${fDateTime(row.date)}`}>
+                                  <TableCell>{fDateTime(row.date)}</TableCell>
+                                  <TableCell>{row.differences.news.join(', ')}</TableCell>
+                                  <TableCell>{row.differences.losts.join(', ')}</TableCell>
+                                </TableRow>
+                              )}
+                            </>
                           )}
                         </>
                       ))}
