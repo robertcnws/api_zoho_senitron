@@ -81,7 +81,7 @@ export function ItemTableToolbar({ filters, onResetPage, options, dataFiltered, 
 
         <Stack direction="row" alignItems="center" spacing={2} flexGrow={1} sx={{ width: 1 }}>
           {!isListAll && (
-            <Label color='info' sx={{ height: 55, width: 100 }}>
+            <Label color='info' sx={{ height: 55, width: dataFiltered?.length > 0 ? 100 : '100%' }}>
               <ListItemText
                 primary='SKUs on'
                 secondary={fDate(new Date())}
@@ -94,19 +94,21 @@ export function ItemTableToolbar({ filters, onResetPage, options, dataFiltered, 
               />
             </Label>
           )}
-          <TextField
-            fullWidth
-            value={filters.state.name}
-            onChange={handleFilterName}
-            placeholder={isListAll ? "Search by item (NAME, SKU, ID or STOCK ON HAND)..." : "Search by item SKU..."}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled' }} />
-                </InputAdornment>
-              ),
-            }}
-          />
+          {dataFiltered?.length > 0 && (
+            <TextField
+              fullWidth
+              value={filters.state.name}
+              onChange={handleFilterName}
+              placeholder={isListAll ? "Search by item (NAME, SKU, ID or STOCK ON HAND)..." : "Search by item SKU..."}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled' }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+          )}
 
           <IconButton onClick={popover.onOpen}>
             <Iconify icon="eva:more-vertical-fill" />
@@ -130,6 +132,35 @@ export function ItemTableToolbar({ filters, onResetPage, options, dataFiltered, 
             <Iconify icon="solar:printer-minimalistic-bold" />
             Print
           </MenuItem>
+          {!isListAll && (
+            <MenuItem
+              onClick={() => {
+                popover.onClose();
+                // setLoading(true);
+                setUpdating(true);
+                setTitleLinearProgress('Fetching updates shipments from Zoho...');
+                const date = fDate(new Date(), 'YYYY-MM-DD');
+                axios
+                  .post(`${CONFIG.apiUrl}/api_zoho/load/inventory_shipments/`, {
+                    start_date: date,
+                  })
+                  .then(() => {
+                    console.log('Inventory shipments and packages fetched');
+                  })
+                  .catch((err) => {
+                    console.error('Error fetching inventory shipments and packages:', err);
+                    setError('There was an error fetching the inventory shipments and packages.');
+                  })
+                  .finally(() => {
+                    // setLoading(false);
+                    setUpdating(false);
+                  });
+              }}
+            >
+              <Iconify icon="mdi:update" />
+              {`Fetch Updates from Zoho (${fDate(new Date(), 'YYYY-MM-DD')})`}
+            </MenuItem>
+          )}
           {isListAll && (
             <>
               <MenuItem

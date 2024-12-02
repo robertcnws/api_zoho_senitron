@@ -215,22 +215,22 @@ export function ItemListShippedLogsView({
         [router, filters]
     );
 
-    if (!tableData || tableData.length === 0) {
-        return (
-            <DashboardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2.5 }}>
-                    <Typography variant="h6">Shipped Logs</Typography>
-                </Box>
-                <TableContainer sx={{ width: '100%', bgcolor: 'background.paper', p: 1 }}>
-                    <Table>
-                        <TableBody>
-                            <TableNoData notFound={tableData.length === 0} />
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-            </DashboardContent>
-        );
-    }
+    // if (!tableData || tableData.length === 0) {
+    //     return (
+    //         <DashboardContent>
+    //             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2.5 }}>
+    //                 <Typography variant="h6">Shipped Logs</Typography>
+    //             </Box>
+    //             <TableContainer sx={{ width: '100%', bgcolor: 'background.paper', p: 1 }}>
+    //                 <Table>
+    //                     <TableBody>
+    //                         <TableNoData notFound={tableData.length === 0} />
+    //                     </TableBody>
+    //                 </Table>
+    //             </TableContainer>
+    //         </DashboardContent>
+    //     );
+    // }
 
     if (updating) {
         return (
@@ -267,56 +267,58 @@ export function ItemListShippedLogsView({
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2.5 }}>
                     <Typography variant="h6">Shipped Logs</Typography>
                 </Box>
-                <Tabs
-                    value={filters.state.status}
-                    onChange={handleFilterStatus}
-                    sx={{
-                        bgcolor: 'whitesmoke',
-                        px: 2.5,
-                        boxShadow: (theme) =>
-                            `inset 0 -2px 0 0 ${varAlpha(theme.vars.palette.grey['500Channel'], 0.08)}`,
-                    }}
-                >
-                    {STATUS_OPTIONS.map((tab) => (
-                        <Tab
-                            key={tab.value}
-                            iconPosition="end"
-                            value={tab.value}
-                            label={tab.label}
-                            sx={{
-                                bgcolor: tab.value === 'lost' && tableData.filter((it) => it.differenceShipped < 0 && !it.isReconciled).length > 0 ? 'error.main' :
-                                    tab.value === 'not_matched' && tableData.filter((it) => it.differenceShipped > 0 && !it.isReconciled).length > 0 ? 'warning.main' : 'transparent',
-                                color: tab.value === 'lost' && tableData.filter((it) => it.differenceShipped < 0 && !it.isReconciled).length > 0 ? 'white' : 'inherit',
-                                px: 1.5,
-                                py: 1,
-                                borderRadius: '8px',
-                            }}
-                            icon={
-                                <Label
-                                    variant={
-                                        ((tab.value === 'lost' || tab.value === 'not_matched' || tab.value === filters.state.status) && 'filled') ||
-                                        'soft'
-                                    }
-                                    color={
-                                        (tab.value === 'matched' && 'success') ||
-                                        (tab.value === 'not_matched' && 'warning') ||
-                                        (tab.value === 'lost' && 'error') ||
-                                        'default'
-                                    }
-                                >
-                                    {tab.value === 'matched' ?
-                                        tableData.filter((it) => it.differenceShipped === 0).length :
-                                        tab.value === 'not_matched' ?
-                                            tableData.filter((it) => it.differenceShipped > 0 && !it.isReconciled).length :
-                                            tab.value === 'lost' ?
-                                                tableData.filter((it) => it.differenceShipped < 0 && !it.isReconciled).length :
-                                                tableData.length
-                                    }
-                                </Label>
-                            }
-                        />
-                    ))}
-                </Tabs>
+                {tableData?.length > 0 && (
+                    <Tabs
+                        value={filters.state.status}
+                        onChange={handleFilterStatus}
+                        sx={{
+                            bgcolor: 'whitesmoke',
+                            px: 2.5,
+                            boxShadow: (theme) =>
+                                `inset 0 -2px 0 0 ${varAlpha(theme.vars.palette.grey['500Channel'], 0.08)}`,
+                        }}
+                    >
+                        {STATUS_OPTIONS.map((tab) => (
+                            <Tab
+                                key={tab.value}
+                                iconPosition="end"
+                                value={tab.value}
+                                label={tab.label}
+                                sx={{
+                                    bgcolor: tab.value === 'lost' && tableData.filter((it) => it.differenceShipped < 0 && !it.isReconciled).length > 0 ? 'error.main' :
+                                        tab.value === 'not_matched' && tableData.filter((it) => it.differenceShipped > 0 && !it.isReconciled).length > 0 ? 'warning.main' : 'transparent',
+                                    color: tab.value === 'lost' && tableData.filter((it) => it.differenceShipped < 0 && !it.isReconciled).length > 0 ? 'white' : 'inherit',
+                                    px: 1.5,
+                                    py: 1,
+                                    borderRadius: '8px',
+                                }}
+                                icon={
+                                    <Label
+                                        variant={
+                                            ((tab.value === 'lost' || tab.value === 'not_matched' || tab.value === filters.state.status) && 'filled') ||
+                                            'soft'
+                                        }
+                                        color={
+                                            (tab.value === 'matched' && 'success') ||
+                                            (tab.value === 'not_matched' && 'warning') ||
+                                            (tab.value === 'lost' && 'error') ||
+                                            'default'
+                                        }
+                                    >
+                                        {tab.value === 'matched' ?
+                                            tableData.filter((it) => it.differenceShipped === 0).length :
+                                            tab.value === 'not_matched' ?
+                                                tableData.filter((it) => it.differenceShipped > 0 && !it.isReconciled).length :
+                                                tab.value === 'lost' ?
+                                                    tableData.filter((it) => it.differenceShipped < 0 && !it.isReconciled).length :
+                                                    tableData.length
+                                        }
+                                    </Label>
+                                }
+                            />
+                        ))}
+                    </Tabs>
+                )}
 
                 <ItemTableToolbar
                     filters={filters}
@@ -348,58 +350,67 @@ export function ItemListShippedLogsView({
                 <Box sx={{ position: 'relative' }}>
 
                     <Scrollbar>
-                        <TableContainer sx={{
-                            maxHeight: filters.state.status === 'all' ? 255 : 155,
-                            minHeight: filters.state.status === 'all' ? 255 : 155
-                        }}>
-                            <Table size={table.dense ? 'small' : 'medium'} sx={{ minWidth: 960 }} stickyHeader>
-                                <TableHeadCustom
-                                    order={table.order}
-                                    orderBy={table.orderBy}
-                                    headLabel={TABLE_HEAD}
-                                    rowCount={dataFiltered.length}
-                                    numSelected={table.selected.length}
-                                    onSort={table.onSort}
-                                />
-
-                                <TableBody>
-                                    {dataFiltered
-                                        .slice(
-                                            table.page * table.rowsPerPage,
-                                            table.page * table.rowsPerPage + table.rowsPerPage
-                                        )
-                                        .map((row) => (
-                                            <TableRow key={row.itemId}>
-                                                <TableCell>{row.sku}</TableCell>
-                                                <TableCell>{row.itemTotalQty}</TableCell>
-                                                <TableCell>
-                                                    {!row.isReconciled ? row.shippedSerialsQuantity : row.itemTotalQty}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Label
-                                                        sx={{ cursor: 'pointer' }}
-                                                        variant="soft"
-                                                        color={
-                                                            (row.differenceShipped === 0 ? 'success' :
-                                                                row.differenceShipped > 0 && !row.isReconciled ? 'warning' :
-                                                                    row.differenceShipped < 0 && !row.isReconciled ? 'error' : 'info')
-                                                        }
-                                                    >
-                                                        {!row.isReconciled ? row.differenceShipped : 0}
-                                                    </Label>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-
-                                    <TableEmptyRows
-                                        height={table.dense ? 56 : 56 + 20}
-                                        emptyRows={emptyRows(table.page, table.rowsPerPage, dataFiltered.length)}
+                        {tableData?.length > 0 ? (
+                            <TableContainer sx={{
+                                maxHeight: filters.state.status === 'all' ? 255 : 155,
+                                minHeight: filters.state.status === 'all' ? 255 : 155
+                            }}>
+                                <Table size={table.dense ? 'small' : 'medium'} sx={{ minWidth: 960 }} stickyHeader>
+                                    <TableHeadCustom
+                                        order={table.order}
+                                        orderBy={table.orderBy}
+                                        headLabel={TABLE_HEAD}
+                                        rowCount={dataFiltered.length}
+                                        numSelected={table.selected.length}
+                                        onSort={table.onSort}
                                     />
+                                    <TableBody>
+                                        {dataFiltered
+                                            .slice(
+                                                table.page * table.rowsPerPage,
+                                                table.page * table.rowsPerPage + table.rowsPerPage
+                                            )
+                                            .map((row) => (
+                                                <TableRow key={row.itemId}>
+                                                    <TableCell>{row.sku}</TableCell>
+                                                    <TableCell>{row.itemTotalQty}</TableCell>
+                                                    <TableCell>
+                                                        {!row.isReconciled ? row.shippedSerialsQuantity : row.itemTotalQty}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Label
+                                                            sx={{ cursor: 'pointer' }}
+                                                            variant="soft"
+                                                            color={
+                                                                (row.differenceShipped === 0 ? 'success' :
+                                                                    row.differenceShipped > 0 && !row.isReconciled ? 'warning' :
+                                                                        row.differenceShipped < 0 && !row.isReconciled ? 'error' : 'info')
+                                                            }
+                                                        >
+                                                            {!row.isReconciled ? row.differenceShipped : 0}
+                                                        </Label>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
 
-                                    <TableNoData notFound={notFound} />
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
+                                        <TableEmptyRows
+                                            height={table.dense ? 56 : 56 + 20}
+                                            emptyRows={emptyRows(table.page, table.rowsPerPage, dataFiltered.length)}
+                                        />
+
+                                        <TableNoData notFound={notFound} />
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        ) : (
+                            <TableContainer sx={{ width: '100%', bgcolor: 'background.paper', p: 1 }}>
+                                <Table>
+                                    <TableBody>
+                                        <TableNoData notFound={tableData.length === 0} />
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        )}
                     </Scrollbar>
                 </Box>
 

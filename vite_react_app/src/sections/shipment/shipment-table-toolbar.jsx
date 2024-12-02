@@ -187,7 +187,7 @@ export function ShipmentTableToolbar({ filters, onResetPage, dateError, setUpdat
             }}
           >
             <Iconify icon="mdi:update" />
-            Fetch Updates from Zoho
+            Fetch Shipment Updates from Zoho
           </MenuItem>
         </MenuList>
       </CustomPopover>
