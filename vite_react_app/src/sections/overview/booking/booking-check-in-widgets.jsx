@@ -101,7 +101,7 @@ export function BookingCheckInWidgets({ chart, ...other }) {
 
             <div>
               <Box sx={{ mb: 0.5, typography: 'h5' }}>{fNumber(item.total)}</Box>
-              <Box sx={{ typography: 'body2', color: chartColors[index][1] }}><b>{item.label}</b></Box>
+              <Box sx={{ typography: 'body2', color: chartColors[index][1] }}><b>SKUs {item.label}</b></Box>
             </div>
           </Box>
         ))}

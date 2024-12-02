@@ -72,16 +72,16 @@ const headersCSV = [
 
 // ----------------------------------------------------------------------
 
-export function ItemListShippedLogsView({ 
-    listSerials, 
-    listShipments, 
+export function ItemListShippedLogsView({
+    listSerials,
+    listShipments,
     itemsZohoSenitron,
     setTotalsItemsNoReconciled,
     setTotalsItemsLost,
     setTotalsItemsAll,
-    updating, 
-    setUpdating, 
-    setTitleLinearProgress 
+    updating,
+    setUpdating,
+    setTitleLinearProgress
 }) {
 
     const date = fDate(new Date(), 'YYYY-MM-DD');
@@ -141,7 +141,15 @@ export function ItemListShippedLogsView({
     useEffect(() => {
         if (listSerials && listSerials.length > 0 && listShipments && listShipments.length > 0) {
 
-            const rData = listShipments?.map((item) => {
+            const allowedIds = itemsZohoSenitron?.filter((item) => item.syncedWithSenitron).map((item) => item.itemId);
+
+            const allowedIdsSet = new Set(allowedIds);
+
+            const syncedShipments = listShipments?.filter(item => allowedIdsSet.has(item.itemId));
+
+            // const syncedShipments = listShipments;
+
+            const rData = syncedShipments?.map((item) => {
                 const senitronItem = listSerials?.find((sItem) => sItem?.itemId === item.itemId);
                 return {
                     ...item,
@@ -159,7 +167,7 @@ export function ItemListShippedLogsView({
                 const senitronItem = itemsZohoSenitron?.find((sItem) => sItem?.itemId === item.itemId);
                 return {
                     ...item,
-                    isReconciled: parseInt(senitronItem.stockOnHand, 10) - parseInt(senitronItem.quantity, 10) === 0,
+                    isReconciled: parseInt(senitronItem?.stockOnHand, 10) - parseInt(senitronItem?.quantity, 10) === 0 || false,
                 }
 
             });
@@ -168,15 +176,11 @@ export function ItemListShippedLogsView({
         }
     }, [listSerials, listShipments, itemsZohoSenitron, handleShippedSerialQuantity]);
 
-    setTotalsItemsLost(useMemo(() => 
-        tableData?.filter((item) => item.differenceShipped < 0 && !item.isReconciled).length, 
-    [tableData]));
-
-    setTotalsItemsNoReconciled(useMemo(() =>
-        tableData?.filter((item) => item.differenceShipped > 0 && !item.isReconciled).length,
-    [tableData]));
-
-    setTotalsItemsAll(useMemo(() => tableData?.length, [tableData]));
+    useEffect(() => {
+        setTotalsItemsLost(tableData?.filter((item) => item.differenceShipped < 0 && !item.isReconciled).length);
+        setTotalsItemsNoReconciled(tableData?.filter((item) => item.differenceShipped > 0 && !item.isReconciled).length);
+        setTotalsItemsAll(tableData?.length);
+    }, [tableData, setTotalsItemsLost, setTotalsItemsNoReconciled, setTotalsItemsAll]);
 
     const dataFiltered = applyFilter({
         inputData: tableData,
@@ -214,11 +218,16 @@ export function ItemListShippedLogsView({
     if (!tableData || tableData.length === 0) {
         return (
             <DashboardContent>
-                <Box display="flex" alignItems="center" mb={5}>
-                    <Alert severity="warning" sx={{ borderRadius: 0 }}>
-                        <Typography>No items found</Typography>
-                    </Alert>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2.5 }}>
+                    <Typography variant="h6">Shipped Logs</Typography>
                 </Box>
+                <TableContainer sx={{ width: '100%', bgcolor: 'background.paper', p: 1 }}>
+                    <Table>
+                        <TableBody>
+                            <TableNoData notFound={tableData.length === 0} />
+                        </TableBody>
+                    </Table>
+                </TableContainer>
             </DashboardContent>
         );
     }
@@ -255,6 +264,9 @@ export function ItemListShippedLogsView({
     return (
         <>
             <Card>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2.5 }}>
+                    <Typography variant="h6">Shipped Logs</Typography>
+                </Box>
                 <Tabs
                     value={filters.state.status}
                     onChange={handleFilterStatus}
@@ -368,9 +380,9 @@ export function ItemListShippedLogsView({
                                                         sx={{ cursor: 'pointer' }}
                                                         variant="soft"
                                                         color={
-                                                            (row.differenceShipped === 0 ? 'success' : 
-                                                                row.differenceShipped > 0 && !row.isReconciled ? 'warning' : 
-                                                                row.differenceShipped < 0 && !row.isReconciled ? 'error' : 'info')
+                                                            (row.differenceShipped === 0 ? 'success' :
+                                                                row.differenceShipped > 0 && !row.isReconciled ? 'warning' :
+                                                                    row.differenceShipped < 0 && !row.isReconciled ? 'error' : 'info')
                                                         }
                                                     >
                                                         {!row.isReconciled ? row.differenceShipped : 0}
