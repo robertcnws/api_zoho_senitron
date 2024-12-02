@@ -57,7 +57,7 @@ import { ItemTableFiltersResult } from '../item-table-filters-result';
 
 const STATUS_OPTIONS = [
     { value: 'all', label: 'All SKUs' },
-    { value: 'lost', label: 'Losts Shipped SKUs' },
+    { value: 'lost', label: 'Lost Shipped SKUs' },
     { value: 'not_matched', label: 'Shipped SKUs NOT reconciled' },
     { value: 'matched', label: 'Shipped SKUs matched' },
 
@@ -79,6 +79,8 @@ export function ItemListShippedLogsView({
     setTotalsItemsNoReconciled,
     setTotalsItemsLost,
     setTotalsItemsAll,
+    setListItemsNoReconciled,
+    setListItemsLost,
     updating,
     setUpdating,
     setTitleLinearProgress
@@ -177,10 +179,12 @@ export function ItemListShippedLogsView({
     }, [listSerials, listShipments, itemsZohoSenitron, handleShippedSerialQuantity]);
 
     useEffect(() => {
+        setListItemsLost(tableData?.filter((item) => item.differenceShipped < 0 && !item.isReconciled));
         setTotalsItemsLost(tableData?.filter((item) => item.differenceShipped < 0 && !item.isReconciled).length);
+        setListItemsNoReconciled(tableData?.filter((item) => item.differenceShipped > 0 && !item.isReconciled));
         setTotalsItemsNoReconciled(tableData?.filter((item) => item.differenceShipped > 0 && !item.isReconciled).length);
         setTotalsItemsAll(tableData?.length);
-    }, [tableData, setTotalsItemsLost, setTotalsItemsNoReconciled, setTotalsItemsAll]);
+    }, [tableData, setTotalsItemsLost, setTotalsItemsNoReconciled, setTotalsItemsAll, setListItemsLost, setListItemsNoReconciled]);
 
     const dataFiltered = applyFilter({
         inputData: tableData,
@@ -371,8 +375,8 @@ export function ItemListShippedLogsView({
                                                 table.page * table.rowsPerPage + table.rowsPerPage
                                             )
                                             .map((row) => (
-                                                <TableRow key={row.itemId}>
-                                                    <TableCell>{row.sku}</TableCell>
+                                                <TableRow key={row.itemId} sx={{ cursor: 'pointer'}} onClick={() => handleViewRow(row.itemId)}>
+                                                    <TableCell >{row.sku}</TableCell>
                                                     <TableCell>{row.itemTotalQty}</TableCell>
                                                     <TableCell>
                                                         {!row.isReconciled ? row.shippedSerialsQuantity : row.itemTotalQty}

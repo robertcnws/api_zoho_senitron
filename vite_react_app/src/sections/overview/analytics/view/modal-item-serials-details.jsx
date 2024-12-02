@@ -23,8 +23,7 @@ export function ModalItemSerialsDetails({
   table,
   ...other
 }) {
-
-  const theme = useTheme();
+  
   const popover = usePopover();
 
   const { isMobile } = useContext(LoadingContext);
@@ -34,12 +33,6 @@ export function ModalItemSerialsDetails({
     { id: 'news', label: 'Received (Serials)', width: 300 },
     { id: 'losts', label: 'Shipped (Serials)', width: 300 },
   ];
-
-  const max = useMemo(
-    () => Math.max(modalDataFiltered?.differences.news.length, modalDataFiltered?.differences.losts.length)
-    , [modalDataFiltered]);
-
-  const handleMaxValue = (value1, value2) => Math.max(value1, value2);
 
   const handleClose = (modalId) => {
     setOpenModal((prev) => ({ ...prev, [modalId]: false }));

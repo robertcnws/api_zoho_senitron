@@ -9,13 +9,24 @@ import { useResponsive } from 'src/hooks/use-responsive';
 import { fNumber } from 'src/utils/format-number';
 
 import { Chart, useChart } from 'src/components/chart';
+import { useState } from 'react';
 
 // ----------------------------------------------------------------------
 
-export function BookingCheckInWidgets({ chart, ...other }) {
+export function BookingCheckInWidgets({ 
+  chart, 
+  openModal, 
+  setOpenModal, 
+  handleOpenModal, 
+  listItemsNoReconciled, 
+  listItemsLost,
+  ...other 
+}) {
   const theme = useTheme();
 
   const smUp = useResponsive('up', 'sm');
+
+  const [activeIndex, setActiveIndex] = useState(null);
 
   const chartColors = chart.colors ?? [
     [theme.palette.warning.light, theme.palette.warning.main],
@@ -76,6 +87,9 @@ export function BookingCheckInWidgets({ chart, ...other }) {
               color: chartColors[index][1],
               // bgcolor: chartColors[index][0],
               // opacity: 0.5,
+            }}
+            onClick={() => {
+              setActiveIndex(index);
             }}
           >
             <Chart

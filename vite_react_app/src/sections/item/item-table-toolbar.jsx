@@ -81,7 +81,7 @@ export function ItemTableToolbar({ filters, onResetPage, options, dataFiltered, 
 
         <Stack direction="row" alignItems="center" spacing={2} flexGrow={1} sx={{ width: 1 }}>
           {!isListAll && (
-            <Label color='info' sx={{ height: 55, width: dataFiltered?.length > 0 ? 100 : '100%' }}>
+            <Label color='info' sx={{ height: 55, width: 100 }}>
               <ListItemText
                 primary='SKUs on'
                 secondary={fDate(new Date())}
@@ -94,12 +94,13 @@ export function ItemTableToolbar({ filters, onResetPage, options, dataFiltered, 
               />
             </Label>
           )}
-          {dataFiltered?.length > 0 && (
+          {/* {dataFiltered?.length > 0 && ( */}
             <TextField
               fullWidth
               value={filters.state.name}
               onChange={handleFilterName}
               placeholder={isListAll ? "Search by item (NAME, SKU, ID or STOCK ON HAND)..." : "Search by item SKU..."}
+              // disabled={dataFiltered?.length === 0}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -108,7 +109,7 @@ export function ItemTableToolbar({ filters, onResetPage, options, dataFiltered, 
                 ),
               }}
             />
-          )}
+          {/* )} */}
 
           <IconButton onClick={popover.onOpen}>
             <Iconify icon="eva:more-vertical-fill" />

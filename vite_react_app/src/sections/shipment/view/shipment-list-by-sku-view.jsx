@@ -134,17 +134,19 @@ export function ShipmentListBySkuView() {
 
   const allShipments = useMemo(() => shipments || null, [shipments]);
 
+  console.log('allShipments:', allShipments);
+
   const allPackages = useMemo(() => {
     if (allShipments) {
       const packages = [];
-      allShipments.forEach(shipment => {
+      allShipments.filter((shipment) => shipment?.date === filters.state.startDate).forEach(shipment => {
         const parsedPackage = parsePackages(shipment.packages, shipment.date);
         packages.push(parsedPackage);
       });
       return packages;
     }
     return null;
-  }, [allShipments]);
+  }, [allShipments, filters.state.startDate]);
 
   // console.log('allPackages:', allPackages);
 
@@ -177,27 +179,29 @@ export function ShipmentListBySkuView() {
 
   const mergeItems = useMemo(() => {
     if (allShipments && allPackages && allLinePackages && dataItems) {
-      const merged = dataItems?.flatMap(itemList => itemList.items.map(item => ({
-        itemId: item.item_id,
-        sku: item.sku,
-        name: item.name,
-        quantity: item.quantity,
-        shipmentId: itemList.shipmentId,
-        shipmentNumber: itemList.shipmentNumber,
-        packageId: itemList.packageId,
-        packageNumber: itemList.packageNumber,
-        date: itemList.date,
-      })));
+      const merged = dataItems.flatMap(itemList =>
+        itemList.items.map(item => ({
+          itemId: item.item_id,
+          sku: item.sku,
+          name: item.name,
+          quantity: item.quantity,
+          shipmentId: itemList.shipmentId,
+          shipmentNumber: itemList.shipmentNumber,
+          packageId: itemList.packageId,
+          packageNumber: itemList.packageNumber,
+          date: itemList.date,
+        }))
+      );
       return merged;
     }
     return [];
   }, [allShipments, allPackages, allLinePackages, dataItems]);
-
-
+  
   const groupedItems = mergeItems.reduce((acc, currentItem) => {
     const { itemId, name, sku, packageId, quantity, shipmentId, shipmentNumber, packageNumber, date } = currentItem;
-    if (!acc[itemId]) {
-      acc[itemId] = {
+    const key = `${itemId}-${date}`;
+    if (!acc[key]) {
+      acc[key] = {
         itemId,
         name,
         sku,
@@ -206,8 +210,8 @@ export function ShipmentListBySkuView() {
         linePackages: []
       };
     }
-    acc[itemId].itemTotalQty += quantity;
-    acc[itemId].linePackages.push({
+    acc[key].itemTotalQty += quantity;
+    acc[key].linePackages.push({
       packageId,
       packageNumber,
       quantity,

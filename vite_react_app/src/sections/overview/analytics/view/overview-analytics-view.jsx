@@ -326,10 +326,12 @@ export function OverviewAnalyticsView() {
   /**
    * Shipments
    */
-  
+
   const [totalsItemsNoReconciled, setTotalsItemsNoReconciled] = useState(0);
   const [totalsItemsLost, setTotalsItemsLost] = useState(0);
   const [totalsItemsAll, setTotalsItemsAll] = useState(0);
+  const [listItemsNoReconciled, setListItemsNoReconciled] = useState(null);
+  const [listItemsLost, setListItemsLost] = useState(null);
 
   const parseLineItems = (lineItems) => {
     if (typeof lineItems === 'string') {
@@ -409,27 +411,29 @@ export function OverviewAnalyticsView() {
 
   const mergeItems = useMemo(() => {
     if (allShipments && allPackages && allLinePackages && dataItems) {
-      const merged = dataItems?.flatMap(itemList => itemList.items.map(item => ({
-        itemId: item.item_id,
-        sku: item.sku,
-        name: item.name,
-        quantity: item.quantity,
-        shipmentId: itemList.shipmentId,
-        shipmentNumber: itemList.shipmentNumber,
-        packageId: itemList.packageId,
-        packageNumber: itemList.packageNumber,
-        date: itemList.date,
-      })));
+      const merged = dataItems.flatMap(itemList =>
+        itemList.items.map(item => ({
+          itemId: item.item_id,
+          sku: item.sku,
+          name: item.name,
+          quantity: item.quantity,
+          shipmentId: itemList.shipmentId,
+          shipmentNumber: itemList.shipmentNumber,
+          packageId: itemList.packageId,
+          packageNumber: itemList.packageNumber,
+          date: itemList.date,
+        }))
+      );
       return merged;
     }
     return [];
   }, [allShipments, allPackages, allLinePackages, dataItems]);
 
-
   const groupedItems = mergeItems.reduce((acc, currentItem) => {
     const { itemId, name, sku, packageId, quantity, shipmentId, shipmentNumber, packageNumber, date } = currentItem;
-    if (!acc[itemId]) {
-      acc[itemId] = {
+    const key = `${itemId}-${date}`;
+    if (!acc[key]) {
+      acc[key] = {
         itemId,
         name,
         sku,
@@ -438,8 +442,8 @@ export function OverviewAnalyticsView() {
         linePackages: []
       };
     }
-    acc[itemId].itemTotalQty += quantity;
-    acc[itemId].linePackages.push({
+    acc[key].itemTotalQty += quantity;
+    acc[key].linePackages.push({
       packageId,
       packageNumber,
       quantity,
@@ -450,7 +454,7 @@ export function OverviewAnalyticsView() {
   }, {});
 
   const finalGroupedArray = Object.values(groupedItems);
-  
+
 
   // console.log('finalGroupedArray', finalGroupedArray);
 
@@ -646,7 +650,7 @@ export function OverviewAnalyticsView() {
           <DashboardContent maxWidth="xl">
 
             <Grid container spacing={3}>
-              <Grid xs={9.5} sm={9.5} md={9.5}>
+              <Grid xs={!isMobile ? 9.5 : 6} sm={!isMobile ? 9.5 : 6} md={!isMobile ? 9.5 : 6}>
                 <Typography variant="h4" sx={{ mb: { xs: 3, md: 5 } }}>
                   Hi {userLogged?.data.first_name || userLogged?.data.firstName} {userLogged?.data.last_name || userLogged?.data.lastName}, Welcome back 👋
                   <br />
@@ -670,8 +674,17 @@ export function OverviewAnalyticsView() {
                               axios
                                 .post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_item_assets/`)
                                 .then(() => {
-                                  console.log('Zoho Inventory item fetched');
-                                  console.log('Senitron Inventory item fetched');
+                                  setTitleLinearProgress('Fetching updates shipments from Zoho...');
+                                  const date = fDate(new Date(), 'YYYY-MM-DD');
+                                  axios
+                                    .post(`${CONFIG.apiUrl}/api_zoho/load/inventory_shipments/`, {
+                                      start_date: date,
+                                    })
+                                    .then(() => {
+                                      console.log('Zoho Inventory item fetched');
+                                      console.log('Senitron Inventory item fetched');
+                                      console.log('Zoho Inventory shipments fetched');
+                                    });
                                 });
                             })
                             .catch((err) => {
@@ -694,7 +707,7 @@ export function OverviewAnalyticsView() {
                 </Typography >
               </Grid >
               {itemsIgnoreErrors.length > 0 && (
-                <Grid xs={2.5} sm={2.5} md={2.5}>
+                <Grid xs={!isMobile ? 2.5 : 6} sm={!isMobile ? 2.5 : 6} md={!isMobile ? 2.5 : 6}>
                   <Alert
                     severity="warning"
                     icon={<AnimatedIcon icon="mdi:alert" color="warning" />}
@@ -710,8 +723,8 @@ export function OverviewAnalyticsView() {
                         setIsIgnore(false)
                       }
                     }>
-                    <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                      {itemsIgnoreErrors.length} Items with errors ignored
+                    <Typography variant="body2">
+                      <b>{itemsIgnoreErrors.length}</b> SKUs with errors ignored
                     </Typography>
                   </Alert>
                 </Grid>
@@ -953,6 +966,8 @@ export function OverviewAnalyticsView() {
                       setTotalsItemsNoReconciled={setTotalsItemsNoReconciled}
                       setTotalsItemsLost={setTotalsItemsLost}
                       setTotalsItemsAll={setTotalsItemsAll}
+                      setListItemsNoReconciled={setListItemsNoReconciled}
+                      setListItemsLost={setListItemsLost}
                       itemsZohoSenitron={itemsZohoSenitron}
                       updating={updating}
                       setUpdating={setUpdating}
@@ -1011,6 +1026,11 @@ export function OverviewAnalyticsView() {
                       // colors: [theme.palette.warning.light, theme.palette.error.light],
                     }}
                     sx={{ boxShadow: { md: 'none' } }}
+                    openModal={openModal}
+                    setOpenModal={setOpenModal}
+                    handleOpenModal={handleOpenModal}
+                    listItemsNoReconciled={listItemsNoReconciled}
+                    listItemsLost={listItemsLost}
                   />
                 </Grid>
               </Grid>
@@ -1055,6 +1075,8 @@ export function OverviewAnalyticsView() {
             itemsAssetsTrackInfo={itemsAssetsTrackInfo}
             table={table}
           />
+
+
 
         </>
       )}
