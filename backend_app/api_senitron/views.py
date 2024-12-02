@@ -189,6 +189,7 @@ def load_senitron_inventory_item_assets(request):
     
     page = 1
     has_more = True
+    
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         while has_more:
             futures = {executor.submit(fetch_and_save_page, p): p for p in range(page, page + MAX_WORKERS)}
@@ -199,5 +200,7 @@ def load_senitron_inventory_item_assets(request):
                 if page_result:
                     has_more = True  
             page += MAX_WORKERS
+            
+    logger.info(f"Senitron Item Assets loaded successfully")
     
     return JsonResponse({'message': 'Senitron Items Assets loaded successfully'}, status=200)

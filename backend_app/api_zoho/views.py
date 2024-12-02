@@ -296,7 +296,7 @@ def zoho_api_connect(request):
 # CONFIG HEADERS
 #############################################
 
-def config_headers(request):
+def config_headers():
     app_config = AppConfig.objects.first()
     access_token = get_access_token(
         app_config.zoho_client_id,
@@ -323,7 +323,7 @@ def load_inventory_items(request):
     logger.debug(f"AppConfig: {app_config}")
 
     try:
-        headers = config_headers(request)
+        headers = config_headers()
     except Exception as e:
         logger.error(f"Error connecting to Zoho API: {str(e)}")
         return JsonResponse({'error': f"Error connecting to Zoho API (Load Items): {str(e)}"}, status=500)
@@ -511,7 +511,7 @@ def load_inventory_sales_orders(request):
     app_config = AppConfig.objects.first()
     logger.debug(app_config)
     try:
-        headers = config_headers(request)
+        headers = config_headers()
     except Exception as e:
         logger.error(f"Error connecting to Zoho API: {str(e)}")
         return JsonResponse({'error': f"Error connecting to Zoho API (Load Items): {str(e)}"}, status=500)
@@ -665,7 +665,7 @@ def load_inventory_shipments(request):
     app_config = AppConfig.objects.first()
     logger.debug(app_config)
     try:
-        headers = config_headers(request)
+        headers = config_headers()
     except Exception as e:
         logger.error(f"Error connecting to Zoho API: {str(e)}")
         return JsonResponse({'error': f"Error connecting to Zoho API (Load Shipments): {str(e)}"}, status=500)
@@ -674,12 +674,15 @@ def load_inventory_shipments(request):
     start_date = data.get('start_date', None)
     end_date = data.get('end_date', None)
     
+    logger.debug(f"Start date: {start_date}, End date: {end_date}")
+    
     try:
         if start_date:
             dt.strptime(start_date, '%Y-%m-%d')
         if end_date:
             dt.strptime(end_date, '%Y-%m-%d')
     except ValueError:
+        logger.error('Invalid date format')
         return JsonResponse({'error': 'Invalid date format'}, status=400)
     
     params = {
@@ -894,6 +897,8 @@ def load_inventory_shipments(request):
                     'template_name',
                     'template_type',
     ]
+    
+    logger.info(f"New shipments: {len(new_shipments)}, Shipments to update: {len(shipments_to_update)}")
 
     with transaction.atomic():
         if new_shipments:
@@ -904,6 +909,8 @@ def load_inventory_shipments(request):
             ZohoPackage.objects.bulk_create(new_packages, ignore_conflicts=True, batch_size=200)
         if packages_to_update:
             ZohoPackage.objects.bulk_update(packages_to_update, fields=package_fields_to_update, batch_size=200)
+            
+    logger.info(f"Shipments processed successfully: {len(new_shipments)} created, {len(shipments_to_update)} updated")
 
     return JsonResponse({'message': 'Shipments loaded successfully'}, status=200)
 

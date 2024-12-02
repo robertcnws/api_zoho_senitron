@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
+from celery.schedules import crontab
 import environ
 import os
 
@@ -297,3 +298,27 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50 MB en bytes
+
+# Celery
+
+CELERY_BROKER_URL = 'redis://redis-api-zoho-senitron:6379/0'
+CELERY_RESULT_BACKEND = 'redis://redis-api-zoho-senitron:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
+
+CELERY_BEAT_SCHEDULE = {
+    'call-load-shipments-every-15-min': {
+        'task': 'api_zoho.tasks.task_load_inventory_shipments',
+        'schedule': crontab(minute='*/15'), 
+    },
+    'call-load-items-every-15-min': {
+        'task': 'api_zoho.tasks.task_load_inventory_items',
+        'schedule': crontab(minute='*/15'), 
+    },
+    'call-load-senitron-items-assets-15-min': {
+        'task': 'api_senitron.tasks.task_load_senitron_inventory_item_assets',
+        'schedule': crontab(minute='*/15'), 
+    },
+}

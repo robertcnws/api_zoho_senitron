@@ -30,4 +30,10 @@ EXPOSE 8000
 
 # Ejecuta el script de inicialización y luego arranca Gunicorn y cron
 # CMD ["sh", "-c", "python manage.py makemigrations && python manage.py migrate && python manage.py collectstatic --no-input && python init_scripts.py && gunicorn --bind 0.0.0.0:8000 api_project_zoho_senitron.asgi:application"]
-CMD ["sh", "-c", "python manage.py makemigrations && python manage.py migrate && python manage.py collectstatic --no-input && python init_scripts.py && gunicorn api_project_zoho_senitron.asgi:application -w 3 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000"]
+CMD ["sh", "-c", "python manage.py makemigrations && \
+                  python manage.py migrate && \
+                  python manage.py collectstatic --no-input && \
+                  python init_scripts.py && \
+                  celery -A api_project_zoho_senitron worker --loglevel=info & \
+                  celery -A api_project_zoho_senitron beat --loglevel=info & \
+                  gunicorn api_project_zoho_senitron.asgi:application -w 3 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000"]
