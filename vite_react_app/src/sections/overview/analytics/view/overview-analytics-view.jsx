@@ -20,6 +20,7 @@ import { SHIPMENTS_STATUS_OPTIONS, useShipmentsQuery } from 'src/_mock/_shipment
 import { usePackagesQuery } from 'src/_mock/_package';
 import { useSkuTrackInfoQuery } from 'src/_mock/_sku_track_info';
 import { useItemAssetsTrackQuery } from 'src/_mock/_itemAssetsTrack';
+import { useJobsUpdatingTimesQuery } from 'src/_mock/_jobsUpdatingTime';
 import { DashboardContent } from 'src/layouts/dashboard';
 import {
   _analyticTasks,
@@ -49,6 +50,7 @@ import { ModalListItemsSerials } from './modal-list-items-serials';
 
 
 
+
 const headersCSV = [
   { label: 'SKU', key: 'sku' },
   { label: 'Qty', key: 'stockOnHand' },
@@ -74,6 +76,7 @@ export function OverviewAnalyticsView() {
   const { data: timelineItems } = useTimelineItemsQuery();
   const { data: itemsSkusTrack } = useSkuTrackInfoQuery();
   const { data: itemsAssetsTrack } = useItemAssetsTrackQuery();
+  const { data: jobsUpdatingTime } = useJobsUpdatingTimesQuery();
 
   const [categories, setCategories] = useState(['Items']);
 
@@ -115,6 +118,8 @@ export function OverviewAnalyticsView() {
   const itemsTimelineData = useMemo(() => timelineItems || null, [timelineItems]);
 
   const itemsSkuTrackInfo = useMemo(() => itemsSkusTrack || null, [itemsSkusTrack]);
+
+  const jobsUpdatingTimeData = useMemo(() => jobsUpdatingTime || null, [jobsUpdatingTime]);
 
   const itemsAssetsTrackInfo = useMemo(
     () => itemsAssetsTrack?.filter(
@@ -703,6 +708,11 @@ export function OverviewAnalyticsView() {
                     }}>
                       <Iconify icon="solar:refresh-bold" /> Update from Zoho & Senitron
                     </Label>
+                    {jobsUpdatingTimeData && (
+                      <Label sx={{ border: '1px solid #ddd', ml: 1, fontSize: '10px' }} color='info'>
+                        Last update: <b> {fDateTime(jobsUpdatingTimeData?.lastUpdated)}</b>
+                      </Label>
+                    )}
                   </Stack>
                 </Typography >
               </Grid >

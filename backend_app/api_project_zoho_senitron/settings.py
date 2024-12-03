@@ -309,16 +309,16 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
 
 CELERY_BEAT_SCHEDULE = {
-    'call-load-shipments-every-15-min': {
-        'task': 'api_zoho.tasks.task_load_inventory_shipments',
-        'schedule': crontab(minute='*/15'), 
-    },
     'call-load-items-every-15-min': {
         'task': 'api_zoho.tasks.task_load_inventory_items',
-        'schedule': crontab(minute='*/15'), 
+        'schedule': crontab(minute='*/15', hour='7-17'), 
     },
     'call-load-senitron-items-assets-15-min': {
         'task': 'api_senitron.tasks.task_load_senitron_inventory_item_assets',
-        'schedule': crontab(minute='*/15'), 
+        'schedule': crontab(minute='*/15', hour='7-17'), 
+    },
+    'call-load-shipments-every-15-min': {
+        'task': 'api_zoho.tasks.task_load_inventory_shipments',
+        'schedule': crontab(minute='*/15', hour='7-17'), 
     },
 }

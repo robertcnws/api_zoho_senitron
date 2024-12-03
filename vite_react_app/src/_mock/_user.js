@@ -32,8 +32,23 @@ export const useUserList = () => {
   const { loading, error, data, startPolling, stopPolling } = useQuery(GET_LOGIN_USERS);
 
   useEffect(() => {
-    startPolling(900000); 
+    const checkAndTogglePolling = () => {
+      const now = new Date();
+      const currentHour = now.getHours();
+      
+      if (currentHour >= 7 && currentHour < 17) {
+        startPolling(900000); // 15 minutos
+      } else {
+        stopPolling();
+      }
+    };
+
+    checkAndTogglePolling();
+
+    const intervalId = setInterval(checkAndTogglePolling, 60000); // Cada minuto
+
     return () => {
+      clearInterval(intervalId);
       stopPolling();
     };
   }, [startPolling, stopPolling]);

@@ -10,7 +10,15 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db.models import Max
-from .models import AppConfig, ZohoInventoryItem, ZohoInventoryShipmentSalesOrder, LoginUser, ZohoSkuTrackInfo, ZohoShipmentOrder, ZohoPackage, ZohoItemAssetsTrack
+from .models import AppConfig, \
+                    ZohoInventoryItem, \
+                    ZohoInventoryShipmentSalesOrder, \
+                    LoginUser, \
+                    ZohoSkuTrackInfo, \
+                    ZohoShipmentOrder, \
+                    ZohoPackage, \
+                    ZohoItemAssetsTrack, \
+                    JobsUpdatingTimes
 from api_senitron.models import SenitronItem, TimelineItem
 from .manage_instances import create_inventory_item_instance, \
                               create_inventory_sales_order_instance, \
@@ -909,6 +917,12 @@ def load_inventory_shipments(request):
             ZohoPackage.objects.bulk_create(new_packages, ignore_conflicts=True, batch_size=200)
         if packages_to_update:
             ZohoPackage.objects.bulk_update(packages_to_update, fields=package_fields_to_update, batch_size=200)
+            
+    previous_day = timezone.now()
+    
+    JobsUpdatingTimes.objects.filter(last_updated__lt=previous_day).delete()
+            
+    JobsUpdatingTimes.objects.create(last_updated=timezone.now())
             
     logger.info(f"Shipments processed successfully: {len(new_shipments)} created, {len(shipments_to_update)} updated")
 
