@@ -3,7 +3,7 @@ import { DataProvider } from 'src/auth/context/data/data-context';
 
 import { CONFIG } from 'src/config-global';
 
-import { OverviewAnalyticsView } from 'src/sections/overview/analytics/view';
+import { LiveMonitorAnalyticsView } from 'src/sections/live-monitor/view';
 
 // ----------------------------------------------------------------------
 
@@ -17,7 +17,7 @@ export default function Page() {
       </Helmet>
 
       <DataProvider>
-        <OverviewAnalyticsView />
+        <LiveMonitorAnalyticsView />
       </DataProvider>
     </>
   );

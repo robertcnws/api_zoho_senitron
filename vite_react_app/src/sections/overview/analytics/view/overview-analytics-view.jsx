@@ -1,27 +1,19 @@
 import React, { useState, useEffect, useCallback, useContext, useRef, useMemo } from 'react';
-import { useTheme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import Grid from '@mui/material/Unstable_Grid2';
 import axios from 'axios';
 import AnimatedIcon from 'src/components/animate/animated-icon';
-import { fDate, fDateTime } from 'src/utils/format-time';
+import { fDateTime } from 'src/utils/format-time';
 import { LoadingContext } from 'src/auth/context/loading-context';
-import { Iconify } from 'src/components/iconify';
 import { Label } from 'src/components/label';
-import { Box, Card, CardHeader, Stack, Table, TableBody, TableCell, TableContainer, TableRow, LinearProgress, Alert, Button } from '@mui/material';
+import { Box, Card, CardHeader, Stack, Table, TableBody, TableCell, TableContainer, TableRow, LinearProgress, Alert } from '@mui/material';
 import { paths } from 'src/routes/paths';
 import { useRouter } from 'src/routes/hooks';
 import { useSetState } from 'src/hooks/use-set-state';
 import MatchGauge from 'src/components/chart/gauge-chart';
 import { TableNoData, useTable, getComparator } from 'src/components/table';
 import { CONFIG } from 'src/config-global';
-import { useItemsQuery, useSenitronItemsQuery } from 'src/_mock/_items';
-import { SHIPMENTS_STATUS_OPTIONS, useShipmentsQuery } from 'src/_mock/_shipment';
-import { usePackagesQuery } from 'src/_mock/_package';
-import { useSkuTrackInfoQuery } from 'src/_mock/_sku_track_info';
-import { useItemAssetsTrackQuery } from 'src/_mock/_itemAssetsTrack';
-import { useJobsUpdatingTimesQuery } from 'src/_mock/_jobsUpdatingTime';
-import { useManualUpdatingJobsQuery } from 'src/_mock/_manualUpdatingJobs';
+import { useDataContext } from 'src/auth/context/data/data-context';
 import { DashboardContent } from 'src/layouts/dashboard';
 import {
   _analyticTasks,
@@ -33,23 +25,16 @@ import {
   _bankingContacts,
 } from 'src/_mock';
 
-import { useTimelineItemsQuery } from 'src/_mock/_timelineItems';
+import { WelcomeTypography } from 'src/sections/welcome-typography/welcome-typography';
+
 
 import { ItemListShortView } from 'src/sections/item/view';
-import { ItemListShippedLogsView } from 'src/sections/item/view/item-list-shipped-logs';
 
 import { AnalyticsOrderTimeline } from '../analytics-order-timeline';
 import { AnalyticsWidgetSummary } from '../analytics-widget-summary';
 import { ModalSublistItems } from './modal-sublist-items';
 import { AnalyticsCurrentVisits } from '../analytics-current-visits';
-import { BankingContacts } from '../banking-contacts';
-import { BookingCheckInWidgets } from '../../booking/booking-check-in-widgets';
-import { BookingBooked } from '../../booking/booking-booked';
-import { BookingTotalIncomes } from '../../booking/booking-total-incomes';
 import { ModalListItemsSerials } from './modal-list-items-serials';
-
-
-
 
 
 const headersCSV = [
@@ -62,7 +47,6 @@ const headersCSV = [
 
 export function OverviewAnalyticsView() {
 
-  const theme = useTheme();
 
   const { setError, isMobile } = useContext(LoadingContext);
 
@@ -71,14 +55,6 @@ export function OverviewAnalyticsView() {
   const [titleLinearProgress, setTitleLinearProgress] = useState('Loading data...');
 
   const router = useRouter();
-
-  const { data: items } = useItemsQuery();
-  const { data: senitronItems } = useSenitronItemsQuery();
-  const { data: timelineItems } = useTimelineItemsQuery();
-  const { data: itemsSkusTrack } = useSkuTrackInfoQuery();
-  const { data: itemsAssetsTrack } = useItemAssetsTrackQuery();
-  const { data: jobsUpdatingTime } = useJobsUpdatingTimesQuery();
-  const { data: manualUpdatingJobs } = useManualUpdatingJobsQuery();
 
   const [categories, setCategories] = useState(['Items']);
 
@@ -115,51 +91,18 @@ export function OverviewAnalyticsView() {
 
   // console.log('userLogged', userLogged);
 
-  const itemsZohoData = useMemo(() => items || null, [items]);
-
-  const itemsTimelineData = useMemo(() => timelineItems || null, [timelineItems]);
-
-  const itemsSkuTrackInfo = useMemo(() => itemsSkusTrack || null, [itemsSkusTrack]);
-
-  const jobsUpdatingTimeData = useMemo(() => jobsUpdatingTime || null, [jobsUpdatingTime]);
-
-  const manualUpdatingJobsData = useMemo(() => manualUpdatingJobs || null, [manualUpdatingJobs]);
-
-  const itemsAssetsTrackInfo = useMemo(
-    () => itemsAssetsTrack?.filter(
-      (it) =>
-        (it.historialDifferences.some((h, index) => (h.differences.news.length > 0 || h.differences.losts.length > 0) && index !== it.historialDifferences.length - 1))
-    )
-      .sort((a, b) => a.sku.localeCompare(b.sku)) || null,
-    [itemsAssetsTrack]
-  );
-
-  const totalsNewsTrack = useMemo(() => {
-    if (itemsAssetsTrackInfo) {
-      return itemsAssetsTrackInfo?.reduce(
-        (acc, item) =>
-          acc + item.historialDifferences.reduce(
-            (acch, h, index) =>
-              acch + (index !== item.historialDifferences.length - 1 ? h.differences.news.length : 0), 0
-          ), 0
-      );
-    }
-    return 0;
-  }, [itemsAssetsTrackInfo]);
-
-
-  const totalsLostsTrack = useMemo(() => {
-    if (itemsAssetsTrackInfo) {
-      return itemsAssetsTrackInfo?.reduce(
-        (acc, item) =>
-          acc + item.historialDifferences.reduce(
-            (acch, h, index) =>
-              acch + (index !== item.historialDifferences.length - 1 ? h.differences.losts.length : 0), 0
-          ), 0
-      );
-    }
-    return 0;
-  }, [itemsAssetsTrackInfo]);
+  const {
+    senitronItems,
+    timelineItems,
+    itemsZohoData,
+    itemsTimelineData,
+    itemsSkuTrackInfo,
+    jobsUpdatingTimeData,
+    manualUpdatingJobsData,
+    itemsAssetsTrackInfo,
+    itemsZohoSenitron,
+    itemsSenitronZoho,
+  } = useDataContext();
 
   const itemsSynced = useMemo(() => {
     if (itemsZohoData) {
@@ -181,57 +124,6 @@ export function OverviewAnalyticsView() {
     }
     return null;
   }, [itemsSynced]);
-
-  const itemsZohoSenitron = useMemo(() => {
-    if (itemsZohoData && senitronItems) {
-      const zohoSenitronItems = itemsZohoData.map((item) => {
-        const senitronItem =
-          senitronItems.find(
-            (sItem) => String(sItem?.itemNumber) === String(item?.itemId)
-          ) || {};
-
-        return {
-          ...item,
-          quantity: senitronItem.count || 0,
-          difference:
-            parseInt(senitronItem.count || '0', 10) -
-            parseInt(item.stockOnHand || '0', 10),
-          assets: senitronItem.assets || [],
-        };
-      });
-
-      return sortBySku(zohoSenitronItems);
-    }
-    return null;
-  }, [itemsZohoData, senitronItems]);
-
-
-  const itemsSenitronZoho = useMemo(() => {
-    if (itemsZohoData && senitronItems) {
-      const senitronZohoItems = senitronItems.map((item) => {
-        const zohoItem =
-          itemsZohoData.find(
-            (zItem) => String(zItem?.itemId) === String(item?.itemNumber)
-          ) || {};
-
-        return {
-          ...item,
-          itemId: zohoItem.itemId || '',
-          sku: zohoItem.sku || '',
-          name: zohoItem.name || '',
-          stockOnHand: zohoItem.stockOnHand || 0,
-          quantity: item.count || 0,
-          syncedWithSenitron: zohoItem.syncedWithSenitron,
-          ignoreErrors: zohoItem.ignoreErrors,
-          difference:
-            parseInt(zohoItem.stockOnHand || '0', 10) -
-            parseInt(item.count || '0', 10),
-        };
-      });
-      return sortBySku(senitronZohoItems);
-    }
-    return null;
-  }, [itemsZohoData, senitronItems]);
 
 
   const itemsIgnoreErrors = useMemo(() => {
@@ -342,129 +234,6 @@ export function OverviewAnalyticsView() {
   const [listItemsNoReconciled, setListItemsNoReconciled] = useState(null);
   const [listItemsLost, setListItemsLost] = useState(null);
 
-  const parseLineItems = (lineItems) => {
-    if (typeof lineItems === 'string') {
-      try {
-        return JSON.parse(lineItems).filter(item => item.sku);
-      } catch (err) {
-        console.error('Error al parsear lineItems:', err);
-        return [];
-      }
-    } else {
-      return (lineItems || []).filter(item => item.sku);
-    }
-  }
-
-  const parsePackages = (packages, date = null) => {
-    if (typeof packages === 'string') {
-      try {
-        const parsedPackages = JSON.parse(packages)
-          .filter(pkg => pkg.package_id)
-          .map(pkg => ({ ...pkg, date }));
-        return parsedPackages;
-      } catch (err) {
-        console.error('Error al parsear packages:', err);
-        return [];
-      }
-    } else {
-      return (packages || []).filter(pkg => pkg.package_id).map(pkg => ({ ...pkg, date }));
-    }
-  };
-
-  const startDate = fDate(new Date(), 'YYYY-MM-DD');
-  const endDate = fDate(new Date(), 'YYYY-MM-DD');
-
-  // console.log('startDate', startDate);
-  // console.log('endDate', endDate);
-
-  // const { data: shipments } = useShipmentsQuery(startDate, endDate);
-
-  const { data: shipments } = useShipmentsQuery(null, null);
-
-  const allShipments = useMemo(() => shipments || null, [shipments]);
-
-  // console.log('allShipments', allShipments);
-
-  const allPackages = useMemo(() => {
-    if (allShipments) {
-      const packages = [];
-      allShipments.forEach(shipment => {
-        const parsedPackage = parsePackages(shipment.packages, shipment.date);
-        packages.push(parsedPackage);
-      });
-      return packages;
-    }
-    return null;
-  }, [allShipments]);
-
-  const { data: linePackages } = usePackagesQuery(null, null, allPackages?.flatMap(pkgs => pkgs.map(pkg => pkg.package_id)));
-
-  const allLinePackages = useMemo(() => linePackages || null, [linePackages]);
-
-  const dataItems = useMemo(() => {
-    if (linePackages) {
-      const itemsPacks = linePackages?.map(pkg => ({
-        packageId: pkg.packageId,
-        packageNumber: pkg.packageNumber,
-        shipmentId: pkg.shipmentId,
-        shipmentNumber: pkg.shipmentNumber,
-        totalQuantity: pkg.totalQuantity,
-        date: pkg.date,
-        items: parseLineItems(pkg.lineItems) || [],
-      }));
-      return itemsPacks;
-    }
-    return [];
-  }, [linePackages]);
-
-
-  const mergeItems = useMemo(() => {
-    if (allShipments && allPackages && allLinePackages && dataItems) {
-      const merged = dataItems.flatMap(itemList =>
-        itemList.items.map(item => ({
-          itemId: item.item_id,
-          sku: item.sku,
-          name: item.name,
-          quantity: item.quantity,
-          shipmentId: itemList.shipmentId,
-          shipmentNumber: itemList.shipmentNumber,
-          packageId: itemList.packageId,
-          packageNumber: itemList.packageNumber,
-          date: itemList.date,
-        }))
-      );
-      return merged;
-    }
-    return [];
-  }, [allShipments, allPackages, allLinePackages, dataItems]);
-
-  const groupedItems = mergeItems.reduce((acc, currentItem) => {
-    const { itemId, name, sku, packageId, quantity, shipmentId, shipmentNumber, packageNumber, date } = currentItem;
-    const key = `${itemId}-${date}`;
-    if (!acc[key]) {
-      acc[key] = {
-        itemId,
-        name,
-        sku,
-        date,
-        itemTotalQty: 0,
-        linePackages: []
-      };
-    }
-    acc[key].itemTotalQty += quantity;
-    acc[key].linePackages.push({
-      packageId,
-      packageNumber,
-      quantity,
-      shipmentId,
-      shipmentNumber
-    });
-    return acc;
-  }, {});
-
-  const finalGroupedArray = Object.values(groupedItems);
-
-
   // console.log('finalGroupedArray', finalGroupedArray);
 
   // Data loaded validation
@@ -526,13 +295,9 @@ export function OverviewAnalyticsView() {
           sku_excess: skuExcessCount,
         };
         try {
-          const response = await axios.post(
-            `${CONFIG.apiUrl}/api_zoho/create_zoho_sku_track_info/`,
-            payload
-          );
           // console.log('response', response);
-        } catch (error) {
-          console.error('Error al crear la información de seguimiento de SKU:', error);
+        } catch (err) {
+          console.error('Error al crear la información de seguimiento de SKU:', err);
         }
       }
     }
@@ -675,72 +440,16 @@ export function OverviewAnalyticsView() {
           <DashboardContent maxWidth="xl">
             <Grid container spacing={3}>
               <Grid xs={!isMobile ? 9.5 : 6} sm={!isMobile ? 9.5 : 6} md={!isMobile ? 9.5 : 6}>
-                <Typography variant="h4" sx={{ mb: { xs: 3, md: 5 } }}>
-                  Hi {userLogged?.data.first_name || userLogged?.data.firstName} {userLogged?.data.last_name || userLogged?.data.lastName}, Welcome back 👋
-                  <br />
-                  <Stack direction="row" alignItems="center" sx={{ cursor: 'pointer' }}>
-                    {manualUpdatingJobsData?.isRunning ? (
-                      <Button sx={{ cursor: 'pointer', border: '1px solid #ddd', fontSize: '11px' }} color='warning' disabled>
-                        <Iconify icon="solar:refresh-bold" /> Update in progress...
-                      </Button>
-                    ) : (
-                      <Button sx={{ cursor: 'pointer', border: '1px solid #ddd', fontSize: '11px' }} color='warning' onClick={() => {
-                        // setLoading(true);
-                        // setComponent('Zoho & Senitron Last Info');
-                        setUpdating(true);
-                        const payload = {
-                          items: itemsZohoSenitron.filter(it => it.assets.length > 0),
-                        };
-                        setTitleLinearProgress('Updating Items Assets Info...');
-                        handleSetManualUpdatingJobs(true);
-                        axios
-                          .post(`${CONFIG.apiUrl}/api_zoho/create_zoho_items_assets_track/`, payload)
-                          .then(() => {
-                            setTitleLinearProgress('Loading Inventory Items Updated Info from Zoho...');
-                            axios
-                              .post(`${CONFIG.apiUrl}/api_zoho/load/inventory_items/`)
-                              .then(() => {
-                                setTitleLinearProgress('Loading Items Updated Info from Senitron...');
-                                axios
-                                  .post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_item_assets/`)
-                                  .then(() => {
-                                    setTitleLinearProgress('Fetching updates shipments from Zoho...');
-                                    const date = fDate(new Date(), 'YYYY-MM-DD');
-                                    axios
-                                      .post(`${CONFIG.apiUrl}/api_zoho/load/inventory_shipments/`, {
-                                        start_date: date,
-                                      })
-                                      .then(() => {
-                                        console.log('Zoho Inventory item fetched');
-                                        console.log('Senitron Inventory item fetched');
-                                        console.log('Zoho Inventory shipments fetched');
-                                        handleSetManualUpdatingJobs(false);
-                                      });
-                                  });
-                              })
-                              .catch((err) => {
-                                console.error('Error fetching senitron inventory item asset:', err);
-                                setError('There was an error fetching senitron inventory item asset.');
-                              })
-                              .finally(() => {
-                                setUpdating(false);
-                              });
-                          })
-                          .catch((err) => {
-                            console.error('Error fetching inventory item:', err);
-                            setError('There was an error fetching the inventory item.');
-                          })
-                      }}>
-                        <Iconify icon="solar:refresh-bold" /> Update from Zoho & Senitron
-                      </Button>
-                    )}
-                    {jobsUpdatingTimeData && (
-                      <Label sx={{ border: '1px solid #ddd', ml: 1, fontSize: '10px' }} color='info'>
-                        Last update: <b> {fDateTime(jobsUpdatingTimeData?.lastUpdated)}</b>
-                      </Label>
-                    )}
-                  </Stack>
-                </Typography >
+                <WelcomeTypography
+                  userLogged={userLogged}
+                  manualUpdatingJobsData={manualUpdatingJobsData}
+                  jobsUpdatingTimeData={jobsUpdatingTimeData}
+                  itemsZohoSenitron={itemsZohoSenitron}
+                  setUpdating={setUpdating}
+                  setError={setError}
+                  handleSetManualUpdatingJobs={handleSetManualUpdatingJobs}
+                  setTitleLinearProgress={setTitleLinearProgress}
+                />
               </Grid >
               {itemsIgnoreErrors.length > 0 && (
                 <Grid xs={!isMobile ? 2.5 : 6} sm={!isMobile ? 2.5 : 6} md={!isMobile ? 2.5 : 6}>
@@ -982,95 +691,6 @@ export function OverviewAnalyticsView() {
                 </Grid>
               )}
 
-              <Grid container xs={12}>
-
-                <Grid xs={12} md={7} lg={8}>
-                  <Box
-                    sx={{
-                      mb: 1,
-                      p: { md: 1 },
-                      display: 'flex',
-                      gap: { xs: 3, md: 1 },
-                      borderRadius: { md: 2 },
-                      flexDirection: 'column',
-                      bgcolor: { md: 'background.neutral' },
-                    }}
-                  >
-                    <ItemListShippedLogsView
-                      listSerials={itemsAssetsTrackInfo}
-                      listShipments={finalGroupedArray}
-                      setTotalsItemsNoReconciled={setTotalsItemsNoReconciled}
-                      setTotalsItemsLost={setTotalsItemsLost}
-                      setTotalsItemsAll={setTotalsItemsAll}
-                      setListItemsNoReconciled={setListItemsNoReconciled}
-                      setListItemsLost={setListItemsLost}
-                      itemsZohoSenitron={itemsZohoSenitron}
-                      updating={updating}
-                      setUpdating={setUpdating}
-                      setTitleLinearProgress={setTitleLinearProgress}
-                    />
-
-                  </Box>
-                </Grid>
-                <Grid xs={12} md={5} lg={4}>
-                  <Box
-                    sx={{
-                      p: { md: 1 },
-                      display: 'grid',
-                      gap: { xs: 3, md: 0 },
-                      borderRadius: { md: 2 },
-                      bgcolor: { md: 'background.paper' },
-                      gridTemplateColumns: { xs: 'repeat(1, 1fr)', md: 'repeat(2, 1fr)' },
-                    }}
-                  >
-                    <BookingTotalIncomes
-                      title="Items read on"
-                      // total={finalGroupedArray.filter((item) => item.date === startDate).reduce((acc, item) => acc + item.itemTotalQty, 0)}
-                      total={totalsNewsTrack + totalsLostsTrack}
-                      percent={2.6}
-                      // chart={{
-                      //   categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'],
-                      //   series: [{ data: [10, 41, 80, 100, 60, 120, 69, 91, 160] }],
-                      // }}
-                      chart={{
-                        categories: [],
-                        series: [{ data: [] }],
-                      }}
-                    />
-
-                    <BookingBooked
-                      title="Items Totals"
-                      data={
-                        [
-                          { status: 'Canceled', value: totalsLostsTrack + totalsNewsTrack, quantity: totalsLostsTrack },
-                          { status: 'Sold', value: totalsNewsTrack + totalsNewsTrack, quantity: totalsNewsTrack },
-                        ]
-                      }
-                      sx={{ boxShadow: { md: 'none' } }}
-                      openModal={openModal}
-                      setOpenModal={setOpenModal}
-                      handleOpenModal={handleOpenModal}
-                    />
-                  </Box>
-
-                  <BookingCheckInWidgets
-                    chart={{
-                      series: [
-                        { label: 'To reconcile', percent: (parseFloat((totalsItemsNoReconciled / totalsItemsAll)) * 100 || 0).toFixed(2), total: totalsItemsNoReconciled },
-                        { label: 'Losts', percent: (parseFloat((totalsItemsLost / totalsItemsAll)) * 100 || 0).toFixed(2), total: totalsItemsLost },
-                      ],
-                      // colors: [theme.palette.warning.light, theme.palette.error.light],
-                    }}
-                    sx={{ boxShadow: { md: 'none' } }}
-                    openModal={openModal}
-                    setOpenModal={setOpenModal}
-                    handleOpenModal={handleOpenModal}
-                    listItemsNoReconciled={listItemsNoReconciled}
-                    listItemsLost={listItemsLost}
-                  />
-                </Grid>
-              </Grid>
-
               <Grid xs={12} md={12} lg={12}>
                 <ItemListShortView updating={updating} setUpdating={setUpdating} setTitleLinearProgress={setTitleLinearProgress} />
               </Grid>
@@ -1145,18 +765,6 @@ function applyFilter({ inputData, comparator, filters }) {
   return inputData;
 }
 
-function sortBySku(items) {
-  return items.sort((a, b) => {
-    const skuA = a.sku || '';
-    const skuB = b.sku || '';
-
-    const isSkuAEmpty = !skuA.trim();
-    const isSkuBEmpty = !skuB.trim();
-
-    return isSkuAEmpty && !isSkuBEmpty ? 1 : !isSkuAEmpty && isSkuBEmpty ? -1 : isSkuAEmpty && isSkuBEmpty ? 0 : skuA.localeCompare(skuB);
-
-  });
-}
 
 function processingNumbers(arrayNumbers) {
   const ranges = [

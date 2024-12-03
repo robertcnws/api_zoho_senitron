@@ -37,6 +37,7 @@ const ICONS = {
   parameter: icon('ic-parameter'),
   item: icon('ic-item'),
   shipment: icon('ic-shipment'),
+  radar: icon('ic-radar'),
 };
 
 const userLogged = JSON.parse(localStorage.getItem('userLogged'));
@@ -53,6 +54,7 @@ export const navData = [
       // { title: 'App', path: paths.dashboard.root, icon: ICONS.dashboard },
       // { title: 'Ecommerce', path: paths.dashboard.general.ecommerce, icon: ICONS.ecommerce },
       { title: 'Analytics', path: paths.dashboard.general.analytics, icon: ICONS.analytics },
+      { title: 'Live Monitor', path: paths.dashboard.general.liveMonitor, icon: ICONS.radar },
       // { title: 'Banking', path: paths.dashboard.general.banking, icon: ICONS.banking },
       // { title: 'Booking', path: paths.dashboard.general.booking, icon: ICONS.booking },
       // { title: 'File', path: paths.dashboard.general.file, icon: ICONS.file },

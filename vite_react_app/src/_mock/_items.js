@@ -100,7 +100,9 @@ export const useItemsQuery = () => {
 };
 
 export const useSenitronItemsQuery = () => {
-  const { loading, error, data, startPolling, stopPolling } = useQuery(GET_SENITRON_INVENTORY_ITEM);
+  const { loading, error, data, startPolling, stopPolling } = useQuery(GET_SENITRON_INVENTORY_ITEM, {
+    fetchPolicy: 'network-only',
+  });
 
   useEffect(() => {
     const checkAndTogglePolling = () => {
