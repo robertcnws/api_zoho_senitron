@@ -28,23 +28,8 @@ export const useItemAssetsTrackQuery = (listIds) => {
   });
 
   useEffect(() => {
-    const checkAndTogglePolling = () => {
-      const now = new Date();
-      const currentHour = now.getHours();
-      
-      if (currentHour >= 7 && currentHour < 17) {
-        startPolling(5000); 
-      } else {
-        stopPolling();
-      }
-    };
-
-    checkAndTogglePolling();
-
-    const intervalId = setInterval(checkAndTogglePolling, 5000); 
-
+    startPolling(5000); 
     return () => {
-      clearInterval(intervalId);
       stopPolling();
     };
   }, [startPolling, stopPolling]);

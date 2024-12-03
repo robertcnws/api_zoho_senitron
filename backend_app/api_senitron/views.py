@@ -146,6 +146,8 @@ def load_senitron_inventory_item_assets(request):
         if 'item_number' in data:
             filter_kwargs['item_number'] = data['item_number']
         deleted_count, _ = SenitronItemAsset.objects.filter(**filter_kwargs).delete()
+        if deleted_count == 0:
+            deleted_count, _ = SenitronItemAsset.objects.all().delete()
         logger.info(f"Deleted {deleted_count} SenitronItemAsset records with read=True")
     
     existing_statuses = SenitronStatus.objects.all()

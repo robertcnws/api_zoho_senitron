@@ -89,23 +89,8 @@ export const useShipmentsQuery = (startDate, endDate) => {
   });
 
   useEffect(() => {
-    const checkAndTogglePolling = () => {
-      const now = new Date();
-      const currentHour = now.getHours();
-      
-      if (currentHour >= 7 && currentHour < 17) {
-        startPolling(5000); // 15 minutos
-      } else {
-        stopPolling();
-      }
-    };
-
-    checkAndTogglePolling();
-
-    const intervalId = setInterval(checkAndTogglePolling, 5000); // Cada minuto
-
+    startPolling(5000); 
     return () => {
-      clearInterval(intervalId);
       stopPolling();
     };
   }, [startPolling, stopPolling]);
