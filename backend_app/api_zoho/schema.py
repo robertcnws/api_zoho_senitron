@@ -4,7 +4,14 @@ from django.db.models.functions import Cast
 from graphene_django.types import DjangoObjectType
 from django.db.models import Window, F
 from django.db.models.functions import Lead, RowNumber
-from .models import LoginUser, ZohoInventoryItem, ZohoInventoryShipmentSalesOrder, ZohoSkuTrackInfo, ZohoPackage, ZohoShipmentOrder, ZohoItemAssetsTrack
+from .models import LoginUser, \
+                    ZohoInventoryItem, \
+                    ZohoInventoryShipmentSalesOrder, \
+                    ZohoSkuTrackInfo, \
+                    ZohoPackage, \
+                    ZohoShipmentOrder, \
+                    ZohoItemAssetsTrack, \
+                    ManualUpdatingJobs
 from .scalars import JSONScalar
 from datetime import datetime
 from django.utils import timezone
@@ -12,6 +19,11 @@ from django.utils import timezone
 class LoginUserType(DjangoObjectType):
     class Meta:
         model = LoginUser
+        fields = "__all__"
+        
+class ManualUpdatingJobsType(DjangoObjectType):
+    class Meta:
+        model = ManualUpdatingJobs
         fields = "__all__"
 
 class ZohoInventoryItemType(DjangoObjectType):
@@ -203,6 +215,7 @@ class Query(graphene.ObjectType):
         item_id=graphene.String(required=False), 
         list_ids=graphene.List(graphene.String, required=False) 
     )
+    all_manual_updating_jobs = graphene.Field(ManualUpdatingJobsType, id=graphene.Int())
     
 
     def resolve_all_login_users(self, info, **kwargs):
@@ -318,5 +331,10 @@ class Query(graphene.ObjectType):
             result.append(most_recent_track)
 
         return result
+    
+    def resolve_all_manual_updating_jobs(self, info, id=None, **kwargs):
+        if id:
+            return ManualUpdatingJobs.objects.filter(id=id).first()
+        return ManualUpdatingJobs.objects.first()
 
 schema = graphene.Schema(query=Query)

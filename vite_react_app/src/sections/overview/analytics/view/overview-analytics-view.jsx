@@ -8,7 +8,7 @@ import { fDate, fDateTime } from 'src/utils/format-time';
 import { LoadingContext } from 'src/auth/context/loading-context';
 import { Iconify } from 'src/components/iconify';
 import { Label } from 'src/components/label';
-import { Box, Card, CardHeader, Stack, Table, TableBody, TableCell, TableContainer, TableRow, LinearProgress, Alert } from '@mui/material';
+import { Box, Card, CardHeader, Stack, Table, TableBody, TableCell, TableContainer, TableRow, LinearProgress, Alert, Button } from '@mui/material';
 import { paths } from 'src/routes/paths';
 import { useRouter } from 'src/routes/hooks';
 import { useSetState } from 'src/hooks/use-set-state';
@@ -21,6 +21,7 @@ import { usePackagesQuery } from 'src/_mock/_package';
 import { useSkuTrackInfoQuery } from 'src/_mock/_sku_track_info';
 import { useItemAssetsTrackQuery } from 'src/_mock/_itemAssetsTrack';
 import { useJobsUpdatingTimesQuery } from 'src/_mock/_jobsUpdatingTime';
+import { useManualUpdatingJobsQuery } from 'src/_mock/_manualUpdatingJobs';
 import { DashboardContent } from 'src/layouts/dashboard';
 import {
   _analyticTasks,
@@ -77,6 +78,7 @@ export function OverviewAnalyticsView() {
   const { data: itemsSkusTrack } = useSkuTrackInfoQuery();
   const { data: itemsAssetsTrack } = useItemAssetsTrackQuery();
   const { data: jobsUpdatingTime } = useJobsUpdatingTimesQuery();
+  const { data: manualUpdatingJobs } = useManualUpdatingJobsQuery();
 
   const [categories, setCategories] = useState(['Items']);
 
@@ -120,6 +122,8 @@ export function OverviewAnalyticsView() {
   const itemsSkuTrackInfo = useMemo(() => itemsSkusTrack || null, [itemsSkusTrack]);
 
   const jobsUpdatingTimeData = useMemo(() => jobsUpdatingTime || null, [jobsUpdatingTime]);
+
+  const manualUpdatingJobsData = useMemo(() => manualUpdatingJobs || null, [manualUpdatingJobs]);
 
   const itemsAssetsTrackInfo = useMemo(
     () => itemsAssetsTrack?.filter(
@@ -617,6 +621,22 @@ export function OverviewAnalyticsView() {
   }
 
 
+  const handleSetManualUpdatingJobs = (isRunning) => {
+    const payload = {
+      is_running: isRunning,
+    };
+    axios
+      .post(`${CONFIG.apiUrl}/api_zoho/set_manual_updating_jobs/`, payload)
+      .then(() => {
+        console.log(`Manual updating jobs set to ${isRunning}`);
+      })
+      .catch((err) => {
+        console.error('Error setting manual updating jobs:', err);
+        setError('There was an error setting manual updating jobs.');
+      });
+  }
+
+
   return (
     <>
       {!itemsZohoSenitron || !itemsSenitronZoho || !itemsTimelineData ||
@@ -653,61 +673,67 @@ export function OverviewAnalyticsView() {
       ) : (
         <>
           <DashboardContent maxWidth="xl">
-
             <Grid container spacing={3}>
               <Grid xs={!isMobile ? 9.5 : 6} sm={!isMobile ? 9.5 : 6} md={!isMobile ? 9.5 : 6}>
                 <Typography variant="h4" sx={{ mb: { xs: 3, md: 5 } }}>
                   Hi {userLogged?.data.first_name || userLogged?.data.firstName} {userLogged?.data.last_name || userLogged?.data.lastName}, Welcome back 👋
                   <br />
                   <Stack direction="row" alignItems="center" sx={{ cursor: 'pointer' }}>
-                    <Label sx={{ cursor: 'pointer', border: '1px solid #ddd' }} color='warning' onClick={() => {
-                      // setLoading(true);
-                      // setComponent('Zoho & Senitron Last Info');
-                      setUpdating(true);
-                      const payload = {
-                        items: itemsZohoSenitron.filter(it => it.assets.length > 0),
-                      };
-                      setTitleLinearProgress('Updating Items Assets Info...');
-                      axios
-                        .post(`${CONFIG.apiUrl}/api_zoho/create_zoho_items_assets_track/`, payload)
-                        .then(() => {
-                          setTitleLinearProgress('Loading Inventory Items Updated Info from Zoho...');
-                          axios
-                            .post(`${CONFIG.apiUrl}/api_zoho/load/inventory_items/`)
-                            .then(() => {
-                              setTitleLinearProgress('Loading Items Updated Info from Senitron...');
-                              axios
-                                .post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_item_assets/`)
-                                .then(() => {
-                                  setTitleLinearProgress('Fetching updates shipments from Zoho...');
-                                  const date = fDate(new Date(), 'YYYY-MM-DD');
-                                  axios
-                                    .post(`${CONFIG.apiUrl}/api_zoho/load/inventory_shipments/`, {
-                                      start_date: date,
-                                    })
-                                    .then(() => {
-                                      console.log('Zoho Inventory item fetched');
-                                      console.log('Senitron Inventory item fetched');
-                                      console.log('Zoho Inventory shipments fetched');
-                                    });
-                                });
-                            })
-                            .catch((err) => {
-                              console.error('Error fetching senitron inventory item asset:', err);
-                              setError('There was an error fetching senitron inventory item asset.');
-                            })
-                            .finally(() => {
-                              // setLoading(false);
-                              setUpdating(false);
-                            });
-                        })
-                        .catch((err) => {
-                          console.error('Error fetching inventory item:', err);
-                          setError('There was an error fetching the inventory item.');
-                        })
-                    }}>
-                      <Iconify icon="solar:refresh-bold" /> Update from Zoho & Senitron
-                    </Label>
+                    {manualUpdatingJobsData?.isRunning ? (
+                      <Button sx={{ cursor: 'pointer', border: '1px solid #ddd', fontSize: '11px' }} color='warning' disabled>
+                        <Iconify icon="solar:refresh-bold" /> Update in progress...
+                      </Button>
+                    ) : (
+                      <Button sx={{ cursor: 'pointer', border: '1px solid #ddd', fontSize: '11px' }} color='warning' onClick={() => {
+                        // setLoading(true);
+                        // setComponent('Zoho & Senitron Last Info');
+                        setUpdating(true);
+                        const payload = {
+                          items: itemsZohoSenitron.filter(it => it.assets.length > 0),
+                        };
+                        setTitleLinearProgress('Updating Items Assets Info...');
+                        handleSetManualUpdatingJobs(true);
+                        axios
+                          .post(`${CONFIG.apiUrl}/api_zoho/create_zoho_items_assets_track/`, payload)
+                          .then(() => {
+                            setTitleLinearProgress('Loading Inventory Items Updated Info from Zoho...');
+                            axios
+                              .post(`${CONFIG.apiUrl}/api_zoho/load/inventory_items/`)
+                              .then(() => {
+                                setTitleLinearProgress('Loading Items Updated Info from Senitron...');
+                                axios
+                                  .post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_item_assets/`)
+                                  .then(() => {
+                                    setTitleLinearProgress('Fetching updates shipments from Zoho...');
+                                    const date = fDate(new Date(), 'YYYY-MM-DD');
+                                    axios
+                                      .post(`${CONFIG.apiUrl}/api_zoho/load/inventory_shipments/`, {
+                                        start_date: date,
+                                      })
+                                      .then(() => {
+                                        console.log('Zoho Inventory item fetched');
+                                        console.log('Senitron Inventory item fetched');
+                                        console.log('Zoho Inventory shipments fetched');
+                                        handleSetManualUpdatingJobs(false);
+                                      });
+                                  });
+                              })
+                              .catch((err) => {
+                                console.error('Error fetching senitron inventory item asset:', err);
+                                setError('There was an error fetching senitron inventory item asset.');
+                              })
+                              .finally(() => {
+                                setUpdating(false);
+                              });
+                          })
+                          .catch((err) => {
+                            console.error('Error fetching inventory item:', err);
+                            setError('There was an error fetching the inventory item.');
+                          })
+                      }}>
+                        <Iconify icon="solar:refresh-bold" /> Update from Zoho & Senitron
+                      </Button>
+                    )}
                     {jobsUpdatingTimeData && (
                       <Label sx={{ border: '1px solid #ddd', ml: 1, fontSize: '10px' }} color='info'>
                         Last update: <b> {fDateTime(jobsUpdatingTimeData?.lastUpdated)}</b>

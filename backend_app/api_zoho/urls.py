@@ -30,6 +30,7 @@ urlpatterns = [
     path('create_zoho_sku_track_info/', views.create_zoho_sku_track_info, name='create_zoho_sku_track_info'),
     path('create_zoho_items_assets_track/', views.create_zoho_items_assets_track, name='create_zoho_items_assets_track'),
     path('ignore_selected_errors_zoho_items/', views.ignore_selected_errors_zoho_items, name='ignore_selected_errors_zoho_items'),
+    path('set_manual_updating_jobs/', views.set_manual_updating_jobs, name='set_manual_updating_jobs'),
     path('graphql/', csrf_exempt(GraphQLView.as_view(graphiql=True, schema=schema))),
 
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

@@ -18,7 +18,8 @@ from .models import AppConfig, \
                     ZohoShipmentOrder, \
                     ZohoPackage, \
                     ZohoItemAssetsTrack, \
-                    JobsUpdatingTimes
+                    JobsUpdatingTimes, \
+                    ManualUpdatingJobs
 from api_senitron.models import SenitronItem, TimelineItem
 from .manage_instances import create_inventory_item_instance, \
                               create_inventory_sales_order_instance, \
@@ -1088,6 +1089,28 @@ def ignore_selected_errors_zoho_items(request):
     updated_count = instances.update(ignore_errors=new_value)
     
     return JsonResponse({'message': f'{updated_count} items updated successfully'}, status=200)
+
+
+#############################################
+# MANUAL UPDATING JOBS STATUS
+#############################################
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def set_manual_updating_jobs(request):
+    
+    data = json.loads(request.body)
+    
+    is_running = data.get('is_running', False)
+    
+    updating_job = ManualUpdatingJobs.objects.first()
+    if not updating_job:
+        updating_job = ManualUpdatingJobs.objects.create()
+    updating_job.is_running = is_running
+    updating_job.save()
+    
+    return JsonResponse({'message': f'Jobs updated successfully'}, status=200)
     
 
 #############################################
