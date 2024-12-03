@@ -70,7 +70,7 @@ export const usePackagesQuery = (shipmentId, packageId, listPackagesId) => {
       const currentHour = now.getHours();
       
       if (currentHour >= 7 && currentHour < 17) {
-        startPolling(900000); // 15 minutos
+        startPolling(5000); 
       } else {
         stopPolling();
       }
@@ -78,7 +78,7 @@ export const usePackagesQuery = (shipmentId, packageId, listPackagesId) => {
 
     checkAndTogglePolling();
 
-    const intervalId = setInterval(checkAndTogglePolling, 60000); // Cada minuto
+    const intervalId = setInterval(checkAndTogglePolling, 5000); 
 
     return () => {
       clearInterval(intervalId);

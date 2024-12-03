@@ -33,7 +33,7 @@ export const useItemAssetsTrackQuery = (listIds) => {
       const currentHour = now.getHours();
       
       if (currentHour >= 7 && currentHour < 17) {
-        startPolling(900000); 
+        startPolling(5000); 
       } else {
         stopPolling();
       }
@@ -41,7 +41,7 @@ export const useItemAssetsTrackQuery = (listIds) => {
 
     checkAndTogglePolling();
 
-    const intervalId = setInterval(checkAndTogglePolling, 60000); 
+    const intervalId = setInterval(checkAndTogglePolling, 5000); 
 
     return () => {
       clearInterval(intervalId);

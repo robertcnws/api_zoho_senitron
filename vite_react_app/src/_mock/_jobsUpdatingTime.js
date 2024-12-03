@@ -19,7 +19,7 @@ export const useJobsUpdatingTimesQuery = () => {
       const currentHour = now.getHours();
       
       if (currentHour >= 7 && currentHour < 17) {
-        startPolling(900000); // 15 minutos
+        startPolling(5000);
       } else {
         stopPolling();
       }
@@ -27,7 +27,7 @@ export const useJobsUpdatingTimesQuery = () => {
 
     checkAndTogglePolling();
 
-    const intervalId = setInterval(checkAndTogglePolling, 60000); // Cada minuto
+    const intervalId = setInterval(checkAndTogglePolling, 5000); 
 
     return () => {
       clearInterval(intervalId);
