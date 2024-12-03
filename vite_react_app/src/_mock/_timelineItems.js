@@ -50,7 +50,7 @@ export const useTimelineItemsQuery = () => {
   const { loading, error, data, startPolling, stopPolling } = useQuery(GET_TIMELINES_ITEMS);
 
   useEffect(() => {
-    startPolling(5000); 
+    startPolling(900000); 
     return () => {
       stopPolling();
     };

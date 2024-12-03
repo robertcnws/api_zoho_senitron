@@ -83,4 +83,3 @@ class TimelineItem(models.Model):
     
     def __str__(self):
         return f"Item {self.item_number} - {self.qty} - {self.date}"
-    

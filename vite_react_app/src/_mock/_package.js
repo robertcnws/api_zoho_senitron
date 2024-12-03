@@ -65,7 +65,7 @@ export const usePackagesQuery = (shipmentId, packageId, listPackagesId) => {
   });
 
   useEffect(() => {
-    startPolling(5000); 
+    startPolling(900000); 
     return () => {
       stopPolling();
     };

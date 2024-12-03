@@ -28,7 +28,7 @@ export const useItemAssetsTrackQuery = (listIds) => {
   });
 
   useEffect(() => {
-    startPolling(5000); 
+    startPolling(900000); 
     return () => {
       stopPolling();
     };

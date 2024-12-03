@@ -89,7 +89,7 @@ export const useShipmentsQuery = (startDate, endDate) => {
   });
 
   useEffect(() => {
-    startPolling(5000); 
+    startPolling(900000); 
     return () => {
       stopPolling();
     };

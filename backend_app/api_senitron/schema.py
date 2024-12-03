@@ -6,6 +6,7 @@ from graphene_django.types import DjangoObjectType
 from django.utils import timezone
 from rest_framework import serializers
 from .models import SenitronItem, SenitronItemAsset, SenitronStatus, TimelineItem
+from api_zoho.models import JobsUpdatingTimes
 
 class SenitronStatusType(DjangoObjectType):
     class Meta:
@@ -63,6 +64,11 @@ class SenitronItemAssetGroupType(graphene.ObjectType):
     senitron_item = graphene.Field(lambda: SenitronItemType)  
     assets = graphene.List(AssetType)
     
+    
+class JobsUpdatingTimesType(DjangoObjectType):
+    class Meta:
+        model = JobsUpdatingTimes
+        fields = "__all__"
     
 
 # SERIALIZERS 
@@ -136,6 +142,8 @@ class Query(graphene.ObjectType):
     
     all_timeline_items = graphene.List(TimelineItemType)    
     
+    all_jobs_updating_times = graphene.Field(JobsUpdatingTimesType, id=graphene.Int())
+    
 
     def resolve_all_senitron_inventory_items(self, info, **kwargs):
         return SenitronItem.objects.annotate(
@@ -202,5 +210,9 @@ class Query(graphene.ObjectType):
                     F('date_actual_status_senitron')
                 )
             ).order_by('-order_date')
+            
+            
+    def resolve_all_jobs_updating_times(self, info, **kwargs):
+        return JobsUpdatingTimes.objects.last()
 
 schema = graphene.Schema(query=Query)

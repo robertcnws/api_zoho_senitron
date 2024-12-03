@@ -335,4 +335,12 @@ class ZohoItemAssetsTrack(models.Model):
     
     def __str__(self):
         return f"ItemAssetsTrack {self.item_id} - Created on {self.created_time}"
+    
+    
+class JobsUpdatingTimes(models.Model):
+    id = models.AutoField(primary_key=True)
+    last_updated = models.DateTimeField(default=timezone.now)
+    
+    def __str__(self):
+        return f"Job Last Updated on {self.last_updated}"
 

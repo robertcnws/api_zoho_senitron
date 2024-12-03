@@ -32,7 +32,7 @@ export const useUserList = () => {
   const { loading, error, data, startPolling, stopPolling } = useQuery(GET_LOGIN_USERS);
 
   useEffect(() => {
-    startPolling(5000); 
+    startPolling(900000); 
     return () => {
       stopPolling();
     };

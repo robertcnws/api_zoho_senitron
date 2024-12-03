@@ -3,46 +3,9 @@ import { gql, useQuery } from '@apollo/client';
 
 const GET_ZOHO_INVENTORY_ITEMS = gql`
   {
-    allZohoInventoryItems {
+    allJobsUpdatingTime {
         id
-        groupId
-        groupName
-        itemId
-        name
-        status
-        source
-        itemType
-        isLinkedWithZohocrm
-        description
-        rate
-        isTaxable
-        taxId
-        taxName
-        taxPercentage
-        purchaseDescription
-        purchaseRate
-        isComboProduct
-        syncedWithSenitron
-        productType
-        attributeId1
-        attributeName1
-        reorderLevel
-        stockOnHand
-        availableStock
-        actualAvailableStock
-        sku
-        upc
-        ean
-        isbn
-        partNumber
-        attributeOptionId1
-        attributeOptionName1
-        createdTime
-        lastModifiedTime
-        hsnOrSac
-        satItemKeyCode
-        unitkeyCode
-        ignoreErrors
+        lastUpdated
     }
   }
 `;
@@ -103,7 +66,7 @@ export const useSenitronItemsQuery = () => {
   const { loading, error, data, startPolling, stopPolling } = useQuery(GET_SENITRON_INVENTORY_ITEM);
 
   useEffect(() => {
-    startPolling(900000); 
+    startPolling(5000); 
     return () => {
       stopPolling();
     };

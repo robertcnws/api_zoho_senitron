@@ -18,7 +18,7 @@ export const useSkuTrackInfoQuery = () => {
   const { loading, error, data, startPolling, stopPolling } = useQuery(GET_ZOHO_SKU_TRACK_INFO);
 
   useEffect(() => {
-    startPolling(5000); 
+    startPolling(900000); 
     return () => {
       stopPolling();
     };
