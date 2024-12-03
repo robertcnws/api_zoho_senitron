@@ -68,7 +68,7 @@ const headersCSV = [
 
 // ----------------------------------------------------------------------
 
-export function ItemListShortView( {updating, setUpdating, setTitleLinearProgress} ) {
+export function ItemListShortView({ updating, setUpdating, setTitleLinearProgress }) {
 
     const { isMobile } = useContext(LoadingContext);
 
@@ -245,11 +245,13 @@ export function ItemListShortView( {updating, setUpdating, setTitleLinearProgres
     if (!tableData || tableData.length === 0) {
         return (
             <DashboardContent>
-                <Box display="flex" alignItems="center" mb={5}>
-                    <Alert severity="warning" sx={{ borderRadius: 0 }}>
-                        <Typography>No items found</Typography>
-                    </Alert>
-                </Box>
+                <TableContainer>
+                    <Table>
+                        <TableBody>
+                            <TableNoData notFound={tableData.length === 0} />
+                        </TableBody>
+                    </Table>
+                </TableContainer>
             </DashboardContent>
         );
     }
@@ -286,6 +288,9 @@ export function ItemListShortView( {updating, setUpdating, setTitleLinearProgres
     return (
         <>
             <Card>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2.5 }}>
+                    <Typography variant="h6">Tracked Inventory SKUs</Typography>
+                </Box>
                 <Tabs
                     value={filters.state.status}
                     onChange={handleFilterStatus}

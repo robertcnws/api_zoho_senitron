@@ -65,7 +65,8 @@ export function ItemDetailsView({ item, senitronItem, setItem, setSenitronItem }
         backLink={localStorage.getItem('routeByOrder') ? paths.dashboard.order.root :
           (localStorage.getItem('routeByAnalytics') ? paths.dashboard.general.analytics : 
           (localStorage.getItem('routeByShipment') ? paths.dashboard.shipment.root : 
-          (localStorage.getItem('routeByShipmentBySku') ? paths.dashboard.shipment.listBySku : paths.dashboard.item.root)))}
+          (localStorage.getItem('routeByLiveMonitor') ? paths.dashboard.general.liveMonitor : 
+          (localStorage.getItem('routeByShipmentBySku') ? paths.dashboard.shipment.listBySku : paths.dashboard.item.root))))}
         status={status}
       />
 

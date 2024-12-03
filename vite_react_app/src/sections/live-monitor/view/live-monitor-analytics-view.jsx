@@ -47,7 +47,6 @@ export function LiveMonitorAnalyticsView() {
 
   const [titleLinearProgress, setTitleLinearProgress] = useState('Loading data...');
 
-  const router = useRouter();
 
   const [categories, setCategories] = useState(['Items']);
 
@@ -62,9 +61,6 @@ export function LiveMonitorAnalyticsView() {
     setOpenModal((prev) => ({ ...prev, [modalId]: true }));
   };
 
-  const handleCloseModal = (modalId) => {
-    setOpenModal((prev) => ({ ...prev, [modalId]: false }));
-  };
 
   const [modalListItems, setModalListItems] = useState(null);
 
@@ -250,9 +246,7 @@ export function LiveMonitorAnalyticsView() {
     if (
       itemsZohoSenitron &&
       itemsSenitronZoho &&
-      itemsTimelineData &&
       itemsZohoData &&
-      seriesPieChart &&
       totalZohoQty !== null &&
       totalSenitronQty !== null &&
       totalErrors !== null &&
@@ -265,9 +259,7 @@ export function LiveMonitorAnalyticsView() {
   }, [
     itemsZohoSenitron,
     itemsSenitronZoho,
-    itemsTimelineData,
     itemsZohoData,
-    seriesPieChart,
     totalZohoQty,
     totalSenitronQty,
     totalErrors,
@@ -294,12 +286,6 @@ export function LiveMonitorAnalyticsView() {
         const skuExcessCount = currentItems.filter(
           (it) => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron && !it.ignoreErrors
         ).length;
-        const payload = {
-          sku_tracked: skuTrackedCount,
-          sku_matched: skuMatchedCount,
-          sku_missing: skuMissingCount,
-          sku_excess: skuExcessCount,
-        };
         try {
           // console.log('response', response);
         } catch (err) {
@@ -324,11 +310,6 @@ export function LiveMonitorAnalyticsView() {
   }, [dataLoaded]);
 
 
-  const modalDataFiltered = applyFilter({
-    inputData: modalListItems,
-    comparator: getComparator(table.order, table.orderBy),
-    filters: filters.state,
-  });
 
 
   const handleFilterName = useCallback(
@@ -357,8 +338,7 @@ export function LiveMonitorAnalyticsView() {
 
   return (
     <>
-      {!itemsZohoSenitron || !itemsSenitronZoho || !itemsTimelineData ||
-        !itemsZohoData || !seriesPieChart ||
+      {!itemsZohoSenitron || !itemsSenitronZoho || !itemsZohoData || 
         totalZohoQty === null || totalSenitronQty === null || totalErrors === null || updating ? (
         <>
           <Box
@@ -402,6 +382,7 @@ export function LiveMonitorAnalyticsView() {
                   setError={setError}
                   handleSetManualUpdatingJobs={handleSetManualUpdatingJobs}
                   setTitleLinearProgress={setTitleLinearProgress}
+                  isMobile={isMobile}
                 />
               </Grid >
             </Grid >

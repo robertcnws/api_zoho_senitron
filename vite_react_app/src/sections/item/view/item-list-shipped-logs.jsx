@@ -110,6 +110,7 @@ export function ItemListShippedLogsView({
 
     useEffect(() => {
         localStorage.removeItem('routeByAnalytics');
+        localStorage.removeItem('routeByLiveMonitor');
         localStorage.removeItem('routeByOrder');
         localStorage.removeItem('routeByShipment');
         localStorage.removeItem('routeByShipmentBySku');
@@ -212,7 +213,8 @@ export function ItemListShippedLogsView({
         (id) => {
             localStorage.removeItem('routeByOrder');
             localStorage.removeItem('routeByShipment');
-            localStorage.setItem('routeByAnalytics', id);
+            localStorage.removeItem('routeByAnalytics');
+            localStorage.setItem('routeByLiveMonitor', id);
             localStorage.setItem('itemStatus', filters.state.status);
             router.push(paths.dashboard.item.details(id));
         },

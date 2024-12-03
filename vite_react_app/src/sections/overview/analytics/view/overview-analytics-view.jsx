@@ -228,12 +228,6 @@ export function OverviewAnalyticsView() {
    * Shipments
    */
 
-  const [totalsItemsNoReconciled, setTotalsItemsNoReconciled] = useState(0);
-  const [totalsItemsLost, setTotalsItemsLost] = useState(0);
-  const [totalsItemsAll, setTotalsItemsAll] = useState(0);
-  const [listItemsNoReconciled, setListItemsNoReconciled] = useState(null);
-  const [listItemsLost, setListItemsLost] = useState(null);
-
   // console.log('finalGroupedArray', finalGroupedArray);
 
   // Data loaded validation
@@ -278,22 +272,6 @@ export function OverviewAnalyticsView() {
     async function createZohoSenitronItems() {
       const currentItems = itemsZohoSenitronRef.current;
       if (currentItems) {
-        const skuTrackedCount = currentItems.filter((it) => it.syncedWithSenitron).length;
-        const skuMatchedCount = currentItems.filter(
-          (it) => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron
-        ).length;
-        const skuMissingCount = currentItems.filter(
-          (it) => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron && !it.ignoreErrors
-        ).length;
-        const skuExcessCount = currentItems.filter(
-          (it) => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron && !it.ignoreErrors
-        ).length;
-        const payload = {
-          sku_tracked: skuTrackedCount,
-          sku_matched: skuMatchedCount,
-          sku_missing: skuMissingCount,
-          sku_excess: skuExcessCount,
-        };
         try {
           // console.log('response', response);
         } catch (err) {
@@ -331,7 +309,6 @@ export function OverviewAnalyticsView() {
     },
     [filters]
   );
-
 
   const handleViewRow = useCallback(
     (id) => {
@@ -405,8 +382,8 @@ export function OverviewAnalyticsView() {
   return (
     <>
       {!itemsZohoSenitron || !itemsSenitronZoho || !itemsTimelineData ||
-        !itemsZohoData || !seriesPieChart ||
-        totalZohoQty === null || totalSenitronQty === null || totalErrors === null || updating ? (
+        !itemsZohoData || !seriesPieChart || totalZohoQty === null ||
+        totalSenitronQty === null || totalErrors === null || updating ? (
         <>
           <Box
             sx={{
@@ -449,6 +426,7 @@ export function OverviewAnalyticsView() {
                   setError={setError}
                   handleSetManualUpdatingJobs={handleSetManualUpdatingJobs}
                   setTitleLinearProgress={setTitleLinearProgress}
+                  isMobile={isMobile}
                 />
               </Grid >
               {itemsIgnoreErrors.length > 0 && (
@@ -477,7 +455,6 @@ export function OverviewAnalyticsView() {
             </Grid >
 
             <Grid container spacing={3}>
-
               <Grid xs={12} sm={6} md={3}>
                 <AnalyticsWidgetSummary
                   sx={{ cursor: 'pointer' }}
