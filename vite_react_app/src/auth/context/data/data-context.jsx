@@ -194,7 +194,7 @@ export const DataProvider = ({ children }) => {
         return acc;
     }, {});
 
-    const finalGroupedArray = Object.values(groupedItems);
+    const finalGroupedArray = useMemo(() => Object.values(groupedItems), [groupedItems]);
 
 
     const value = useMemo(

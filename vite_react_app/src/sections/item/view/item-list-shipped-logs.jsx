@@ -33,8 +33,8 @@ import { Scrollbar } from 'src/components/scrollbar';
 import { ConfirmDialog } from 'src/components/custom-dialog';
 
 import { LoadingContext } from 'src/auth/context/loading-context';
+import { useDataContext } from 'src/auth/context/data/data-context';
 import { fDate } from 'src/utils/format-time';
-
 import {
     useTable,
     emptyRows,
@@ -50,6 +50,7 @@ import {
 import { ItemTableRow } from '../item-table-row';
 import { ItemTableToolbar } from '../item-table-toolbar';
 import { ItemTableFiltersResult } from '../item-table-filters-result';
+
 
 
 
@@ -73,9 +74,6 @@ const headersCSV = [
 // ----------------------------------------------------------------------
 
 export function ItemListShippedLogsView({
-    listSerials,
-    listShipments,
-    itemsZohoSenitron,
     setTotalsItemsNoReconciled,
     setTotalsItemsLost,
     setTotalsItemsAll,
@@ -85,6 +83,13 @@ export function ItemListShippedLogsView({
     setUpdating,
     setTitleLinearProgress
 }) {
+
+    const {
+        itemsAssetsTrackInfo,
+        itemsZohoSenitron,
+        finalGroupedArray,
+      } = useDataContext();
+      
 
     const date = fDate(new Date(), 'YYYY-MM-DD');
 
@@ -100,8 +105,6 @@ export function ItemListShippedLogsView({
     const table = useTable({ defaultDense: true });
 
     const router = useRouter();
-
-    const confirm = useBoolean();
 
     const [tableData, setTableData] = useState([]);
 
@@ -130,13 +133,16 @@ export function ItemListShippedLogsView({
 
 
     const handleShippedSerialQuantity = useCallback(
-        (itemShipped) => itemShipped?.historialDifferences.reduce(
+        (itemShipped) => itemShipped?.historialDifferences.filter(it => fDate(it.date, 'YYYY-MM-DD') === date).reduce(
             (acc, h, index) => acc + (index !== itemShipped.historialDifferences.length - 1 ? h.differences.losts.length : 0), 0
-        ), []
+        ), [date]
     );
+    
+
+    const listSerials = useMemo(() => itemsAssetsTrackInfo, [itemsAssetsTrackInfo]);
 
 
-    listShipments = useMemo(() => listShipments?.filter((item) => item.date === date), [listShipments, date]);
+    const listShipments = useMemo(() => finalGroupedArray?.filter((item) => item.date === date), [finalGroupedArray, date]);
 
     // console.log('listShipments', listShipments);
 

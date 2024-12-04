@@ -79,41 +79,41 @@ export function LiveMonitorAnalyticsView() {
   const {
     senitronItems,
     itemsZohoData,
-    itemsTimelineData,
     jobsUpdatingTimeData,
     manualUpdatingJobsData,
     itemsAssetsTrackInfo,
     itemsZohoSenitron,
     itemsSenitronZoho,
-    finalGroupedArray,
   } = useDataContext();
+
+  const date = fDate(new Date(), 'YYYY-MM-DD');
 
   const totalsNewsTrack = useMemo(() => {
     if (itemsAssetsTrackInfo) {
-      return itemsAssetsTrackInfo?.reduce(
+      return itemsAssetsTrackInfo?.filter(item => fDate(item.createdTime, 'YYYY-MM-DD') === date).reduce(
         (acc, item) =>
-          acc + item.historialDifferences.reduce(
+          acc + item.historialDifferences.filter(it => fDate(it.date, 'YYYY-MM-DD') === date).reduce(
             (acch, h, index) =>
               acch + (index !== item.historialDifferences.length - 1 ? h.differences.news.length : 0), 0
           ), 0
       );
     }
     return 0;
-  }, [itemsAssetsTrackInfo]);
+  }, [itemsAssetsTrackInfo, date]);
 
 
   const totalsLostsTrack = useMemo(() => {
     if (itemsAssetsTrackInfo) {
-      return itemsAssetsTrackInfo?.reduce(
+      return itemsAssetsTrackInfo?.filter(item => fDate(item.createdTime, 'YYYY-MM-DD') === date).reduce(
         (acc, item) =>
-          acc + item.historialDifferences.reduce(
+          acc + item.historialDifferences.filter(it => fDate(it.date, 'YYYY-MM-DD') === date).reduce(
             (acch, h, index) =>
               acch + (index !== item.historialDifferences.length - 1 ? h.differences.losts.length : 0), 0
           ), 0
       );
     }
     return 0;
-  }, [itemsAssetsTrackInfo]);
+  }, [itemsAssetsTrackInfo, date]);
 
   const itemsSynced = useMemo(() => {
     if (itemsZohoData) {
@@ -135,27 +135,6 @@ export function LiveMonitorAnalyticsView() {
     }
     return null;
   }, [itemsSynced]);
-
-  const { seriesPieChart } = useMemo(() => {
-    if (itemsZohoSenitron && itemsSenitronZoho) {
-      const itemsSync = itemsZohoSenitron.filter((item) => item.syncedWithSenitron);
-      const sseries = itemsSync.map((item) => {
-        const senitronItem = itemsSenitronZoho?.find(
-          (sItem) => sItem.itemNumber === item.itemId
-        );
-        const zohoQty = item?.stockOnHand || 0;
-        const senitronQty = senitronItem?.count || 0;
-        const max = Math.max(zohoQty, senitronQty);
-        const min = Math.min(zohoQty, senitronQty);
-        const match = Math.floor((min / max) * 100) || 0;
-        return match;
-      });
-      const sseriesAvg = processingNumbers(sseries);
-      const pieChart = processingNumbersPieChart(sseries);
-      return { series: sseriesAvg, seriesPieChart: pieChart };
-    }
-    return { series: null, seriesPieChart: null };
-  }, [itemsZohoSenitron, itemsSenitronZoho]);
 
 
   const { totalErrors } = useMemo(() => {
@@ -276,16 +255,6 @@ export function LiveMonitorAnalyticsView() {
     async function createZohoSenitronItems() {
       const currentItems = itemsZohoSenitronRef.current;
       if (currentItems) {
-        const skuTrackedCount = currentItems.filter((it) => it.syncedWithSenitron).length;
-        const skuMatchedCount = currentItems.filter(
-          (it) => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) === 0 && it.syncedWithSenitron
-        ).length;
-        const skuMissingCount = currentItems.filter(
-          (it) => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) > 0 && it.syncedWithSenitron && !it.ignoreErrors
-        ).length;
-        const skuExcessCount = currentItems.filter(
-          (it) => parseInt(it.stockOnHand, 10) - parseInt(it.quantity, 10) < 0 && it.syncedWithSenitron && !it.ignoreErrors
-        ).length;
         try {
           // console.log('response', response);
         } catch (err) {
@@ -406,14 +375,11 @@ export function LiveMonitorAnalyticsView() {
                     }}
                   >
                     <ItemListShippedLogsView
-                      listSerials={itemsAssetsTrackInfo}
-                      listShipments={finalGroupedArray}
                       setTotalsItemsNoReconciled={setTotalsItemsNoReconciled}
                       setTotalsItemsLost={setTotalsItemsLost}
                       setTotalsItemsAll={setTotalsItemsAll}
                       setListItemsNoReconciled={setListItemsNoReconciled}
                       setListItemsLost={setListItemsLost}
-                      itemsZohoSenitron={itemsZohoSenitron}
                       updating={updating}
                       setUpdating={setUpdating}
                       setTitleLinearProgress={setTitleLinearProgress}
@@ -502,30 +468,6 @@ export function LiveMonitorAnalyticsView() {
   );
 }
 
-function applyFilter({ inputData, comparator, filters }) {
-
-  const { name } = filters;
-
-  const stabilizedThis = inputData?.map((el, index) => [el, index]);
-
-  stabilizedThis?.sort((a, b) => {
-    const order = comparator(a[0], b[0]);
-    if (order !== 0) return order;
-    return a[1] - b[1];
-  });
-
-  inputData = stabilizedThis?.map((el) => el[0]);
-
-  if (name) {
-    inputData = inputData?.filter(
-      (item) => item.name.trim().toLowerCase().indexOf(name.trim().toLowerCase()) !== -1 ||
-        item.sku.trim().toLowerCase().indexOf(name.trim().toLowerCase()) !== -1 ||
-        item.itemId.trim().toLowerCase().indexOf(name.trim().toLowerCase()) !== -1
-    );
-  }
-
-  return inputData;
-}
 
 
 function processingNumbers(arrayNumbers) {

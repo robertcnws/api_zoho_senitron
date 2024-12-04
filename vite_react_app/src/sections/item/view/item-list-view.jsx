@@ -57,8 +57,8 @@ import { ItemTableFiltersResult } from '../item-table-filters-result';
 const STATUS_OPTIONS = [{ value: 'all', label: 'All SKUs' }, ...ITEM_STATUS_OPTIONS].concat([
   { value: 'synced', label: 'SKU Tracked' },
   { value: 'matched_100', label: 'SKU Matched 100%' },
-  { value: 'excess_items', label: 'SKU with excess items' },
-  { value: 'missing_items', label: 'SKU with missing items' },
+  { value: 'excess_items', label: 'SKU with missing items' },
+  { value: 'missing_items', label: 'SKU with excess items' },
 ]);
 
 const headersCSV = [
@@ -297,20 +297,6 @@ export function ItemListView() {
     );
   }
 
-  if (!tableData || tableData.length === 0) {
-    return (
-      <DashboardContent>
-        <Card>
-          <Box sx={{ width: '100%' }}>
-            <Alert severity="warning" sx={{ borderRadius: 0 }}>
-              <Typography>Loading SKUs data...</Typography>
-            </Alert>
-          </Box>
-        </Card>
-      </DashboardContent>
-    );
-  }
-
   if (updating) {
     return (
       <DashboardContent>
@@ -518,50 +504,60 @@ export function ItemListView() {
               }
             />
             <Scrollbar>
-              <TableContainer sx={{ maxHeight: 440 }}>
-                <Table size={table.dense ? 'small' : 'medium'} sx={{ minWidth: 960 }} stickyHeader>
-                  <TableHeadCustom
-                    order={table.order}
-                    orderBy={table.orderBy}
-                    headLabel={TABLE_HEAD}
-                    rowCount={dataFiltered.length}
-                    numSelected={table.selected.length}
-                    onSort={table.onSort}
-                    onSelectAllRows={(checked) =>
-                      table.onSelectAllRows(
-                        checked,
-                        dataFiltered.map((row) => row.itemId)
-                      )
-                    }
-                  />
-
-                  <TableBody>
-                    {dataFiltered
-                      .slice(
-                        table.page * table.rowsPerPage,
-                        table.page * table.rowsPerPage + table.rowsPerPage
-                      )
-                      .map((row) => (
-                        <ItemTableRow
-                          key={row.itemId}
-                          row={row}
-                          selected={table.selected.includes(row.itemId)}
-                          onSelectRow={() => table.onSelectRow(row.itemId)}
-                          onDeleteRow={() => handleDeleteRow(row.itemId)}
-                          onEditRow={() => handleEditRow(row.itemId)}
-                          onViewRow={() => handleViewRow(row.itemId)}
-                        />
-                      ))}
-
-                    <TableEmptyRows
-                      height={table.dense ? 56 : 56 + 20}
-                      emptyRows={emptyRows(table.page, table.rowsPerPage, dataFiltered.length)}
+              {tableData && tableData.length > 0 ? (
+                <TableContainer sx={{ maxHeight: 440 }}>
+                  <Table size={table.dense ? 'small' : 'medium'} sx={{ minWidth: 960 }} stickyHeader>
+                    <TableHeadCustom
+                      order={table.order}
+                      orderBy={table.orderBy}
+                      headLabel={TABLE_HEAD}
+                      rowCount={dataFiltered.length}
+                      numSelected={table.selected.length}
+                      onSort={table.onSort}
+                      onSelectAllRows={(checked) =>
+                        table.onSelectAllRows(
+                          checked,
+                          dataFiltered.map((row) => row.itemId)
+                        )
+                      }
                     />
 
-                    <TableNoData notFound={notFound} />
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                    <TableBody>
+                      {dataFiltered
+                        .slice(
+                          table.page * table.rowsPerPage,
+                          table.page * table.rowsPerPage + table.rowsPerPage
+                        )
+                        .map((row) => (
+                          <ItemTableRow
+                            key={row.itemId}
+                            row={row}
+                            selected={table.selected.includes(row.itemId)}
+                            onSelectRow={() => table.onSelectRow(row.itemId)}
+                            onDeleteRow={() => handleDeleteRow(row.itemId)}
+                            onEditRow={() => handleEditRow(row.itemId)}
+                            onViewRow={() => handleViewRow(row.itemId)}
+                          />
+                        ))}
+
+                      <TableEmptyRows
+                        height={table.dense ? 56 : 56 + 20}
+                        emptyRows={emptyRows(table.page, table.rowsPerPage, dataFiltered.length)}
+                      />
+
+                      <TableNoData notFound={notFound} />
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              ) : (
+                <TableContainer>
+                  <Table>
+                    <TableBody>
+                      <TableNoData notFound={tableData.length === 0} />
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
             </Scrollbar>
           </Box>
 

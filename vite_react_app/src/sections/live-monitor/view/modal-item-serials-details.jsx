@@ -2,6 +2,7 @@ import React, { useContext, useMemo } from 'react';
 import Table from '@mui/material/Table';
 import { Box, Stack, TableContainer, TableRow, TableCell, TableBody, Grid, Typography, ListItemText } from "@mui/material";
 import { usePopover, CustomPopover } from 'src/components/custom-popover';
+import { fDate, fDateTime } from 'src/utils/format-time';
 import IconButton from '@mui/material/IconButton';
 import MenuList from '@mui/material/MenuList';
 import MenuItem from '@mui/material/MenuItem';
@@ -12,7 +13,7 @@ import { generatePrintablePDF } from 'src/utils/printable-pdf';
 import { LoadingContext } from 'src/auth/context/loading-context';
 import ExportCSV from "src/utils/export-csv";
 import { TableHeadCustom, TableNoData } from 'src/components/table';
-import { fDateTime } from 'src/utils/format-time';
+
 
 export function ModalItemSerialsDetails({
   openModal,
@@ -21,6 +22,7 @@ export function ModalItemSerialsDetails({
   modalTitle,
   headersCSV,
   table,
+  date,
   ...other
 }) {
   
@@ -82,7 +84,7 @@ export function ModalItemSerialsDetails({
                       onSort={table?.onSort}
                     />
                     <TableBody>
-                      {modalDataFiltered?.historialDifferences.map((row, index) => (
+                      {modalDataFiltered?.historialDifferences.filter((it) => fDate(it.date, 'YYYY-MM-DD') === date).map((row, index) => (
                         <>
                           {index !== handleLength(modalDataFiltered?.historialDifferences) - 1 && (
                             <>

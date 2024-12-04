@@ -12,7 +12,7 @@ import { generatePrintablePDF } from 'src/utils/printable-pdf';
 import { LoadingContext } from 'src/auth/context/loading-context';
 import ExportCSV from "src/utils/export-csv";
 import { TableHeadCustom, TableNoData } from 'src/components/table';
-import { fDateTime } from 'src/utils/format-time';
+import { fDateTime, fDate } from 'src/utils/format-time';
 import { BankingContacts } from '../banking-contacts';
 
 export function ModalListItemsSerials({
@@ -25,6 +25,31 @@ export function ModalListItemsSerials({
     table,
     ...other
 }) {
+
+    const date = fDate(new Date(), 'YYYY-MM-DD');
+
+    const listFiltered = useMemo(() => 
+        itemsAssetsTrackInfo
+          ?.filter(item => fDate(item.createdTime, 'YYYY-MM-DD') === date) // Filtra los items por createdTime
+          .map(item => ({
+            ...item,
+            historialDifferences: Array.isArray(item.historialDifferences) 
+              ? item.historialDifferences.filter(
+                  h => 
+                    fDate(h.date, 'YYYY-MM-DD') === date &&
+                    h.differences &&
+                    (Array.isArray(h.differences.news) && h.differences.news.length > 0 || 
+                     Array.isArray(h.differences.losts) && h.differences.losts.length > 0)
+                )
+              : []
+          }))
+          .filter(item => 
+            Array.isArray(item.historialDifferences) && 
+            item.historialDifferences.length > 0 &&
+            item.historialDifferences.some((_, index) => index !== item.historialDifferences.length - 1)
+          ) || []
+      , [itemsAssetsTrackInfo, date]);
+
 
     const theme = useTheme();
     const popover = usePopover();
@@ -46,15 +71,15 @@ export function ModalListItemsSerials({
                 maxWidth='md'
                 content={
                     <>
-                        {itemsAssetsTrackInfo ? (
+                        {listFiltered ? (
                             <Box sx={{ gap: 3, display: 'flex', flexDirection: 'column' }}>
                                 <BankingContacts
                                     title="Items Shipped / Received"
                                     subheader={`
-                  ${itemsAssetsTrackInfo?.length} 
-                  ${itemsAssetsTrackInfo[0]?.createdTime ? ` Items with last changes at ${fDateTime(itemsAssetsTrackInfo[0]?.createdTime)}` : `SKUs without changes`
+                  ${listFiltered?.length} 
+                  ${listFiltered[0]?.createdTime ? ` Items with last changes at ${fDateTime(listFiltered[0]?.createdTime)}` : `SKUs without changes`
                                         }`}
-                                    list={itemsAssetsTrackInfo}
+                                    list={listFiltered}
                                     openModal={openModal}
                                     setOpenModal={setOpenModal}
                                     handleOpenModal={handleOpenModal}
