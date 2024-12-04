@@ -56,8 +56,8 @@ import { ItemTableFiltersResult } from '../item-table-filters-result';
 const STATUS_OPTIONS = [...ITEM_STATUS_SHORT_OPTIONS].concat([
     { value: 'synced', label: 'SKU Tracked' },
     { value: 'matched_100', label: 'SKU Matched 100%' },
-    { value: 'excess_items', label: 'SKU with excess items' },
-    { value: 'missing_items', label: 'SKU with missing items' },
+    { value: 'excess_items', label: 'SKU with missing items' },
+    { value: 'missing_items', label: 'SKU with excess items' },
 ]);
 
 const headersCSV = [
