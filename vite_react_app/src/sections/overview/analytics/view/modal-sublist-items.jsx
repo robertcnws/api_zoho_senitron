@@ -96,6 +96,7 @@ export function ModalSublistItems({
         }}
         title={`${modalTitle} (${modalDataFiltered?.length} items)`}
         maxWidth='lg'
+        maxHeight='lg'
         content={
           <>
             <Box sx={{ width: '100%', bgcolor: 'background.paper', p: 1 }}>
@@ -137,7 +138,7 @@ export function ModalSublistItems({
 
               {modalDataFiltered?.length > 0 ? (
 
-                <TableContainer sx={{ maxHeight: 440 }}>
+                <TableContainer sx={{ maxHeight: 440, minHeight: 440 }}>
                   <Table size={table?.dense ? 'small' : 'medium'} sx={{ minWidth: 960 }} stickyHeader>
                     <TableHeadCustom
                       order={table?.order}
