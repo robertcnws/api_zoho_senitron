@@ -9,6 +9,7 @@ import { useItemAssetsTrackQuery } from 'src/_mock/_itemAssetsTrack';
 import { useJobsUpdatingTimesQuery } from 'src/_mock/_jobsUpdatingTime';
 import { useManualUpdatingJobsQuery } from 'src/_mock/_manualUpdatingJobs';
 import { useTimelineItemsQuery } from 'src/_mock/_timelineItems';
+import { useSenitronAssetsLogsQuery } from 'src/_mock/_itemAssetsLogs';
 
 const DataContext = createContext();
 
@@ -24,6 +25,7 @@ export const DataProvider = ({ children }) => {
     const { data: jobsUpdatingTime, loading: loadingJobsUpdatingTime, error: errorJobsUpdatingTime } = useJobsUpdatingTimesQuery();
     const { data: manualUpdatingJobs, loading: loadingManualUpdatingJobs, error: errorManualUpdatingJobs } = useManualUpdatingJobsQuery();
     const { data: shipments, loading: loadingShipments, error: errorShipments } = useShipmentsQuery(null, null);
+    const { data: senitronAssetsLogs, loading: loadingSenitronAssetsLogs, error: errorSenitronAssetsLogs } = useSenitronAssetsLogsQuery(null);
 
     const loading = loadingItems ||
         loadingSenitronItems ||
@@ -32,7 +34,8 @@ export const DataProvider = ({ children }) => {
         loadingItemsAssetsTrack ||
         loadingJobsUpdatingTime ||
         loadingManualUpdatingJobs ||
-        loadingShipments;
+        loadingShipments ||
+        loadingSenitronAssetsLogs;
     const error = errorItems ||
         errorSenitronItems ||
         errorTimelineItems ||
@@ -40,7 +43,8 @@ export const DataProvider = ({ children }) => {
         errorItemsAssetsTrack ||
         errorJobsUpdatingTime ||
         errorManualUpdatingJobs ||
-        errorShipments;
+        errorShipments ||
+        errorSenitronAssetsLogs;
 
     const itemsZohoData = useMemo(() => items || null, [items]);
 
@@ -51,6 +55,8 @@ export const DataProvider = ({ children }) => {
     const jobsUpdatingTimeData = useMemo(() => jobsUpdatingTime || null, [jobsUpdatingTime]);
 
     const manualUpdatingJobsData = useMemo(() => manualUpdatingJobs || null, [manualUpdatingJobs]);
+
+    const itemsSenitronLogsInfo = useMemo(() => senitronAssetsLogs || null, [senitronAssetsLogs]);
 
     const itemsAssetsTrackInfo = useMemo(
         () => itemsAssetsTrack?.filter(
@@ -197,6 +203,61 @@ export const DataProvider = ({ children }) => {
     const finalGroupedArray = useMemo(() => Object.values(groupedItems), [groupedItems]);
 
 
+    // Logs
+    const logs = itemsSenitronLogsInfo?.flatMap(group => group.logs.map(log => ({
+        ...log,
+        itemNumber: group.itemNumber,
+        date: group.date,
+    })));
+
+    const syncedItemIds = new Set(
+        itemsZohoSenitron
+            ?.filter(item => item.syncedWithSenitron === true)
+            .map(item => item.itemId)
+    );
+    
+    const filteredLogs = logs?.filter(log => syncedItemIds.has(log.itemNumber));
+
+    const objectsGroupedLogs = useMemo(() => {
+        const groupedLogs = {};
+
+        filteredLogs?.forEach(log => {
+            const itemNumber = log.itemNumber;
+            const date = log.date;
+            const groupKey = `${itemNumber}-${date}`;
+
+            if (!groupedLogs[groupKey]) {
+                groupedLogs[groupKey] = {
+                    itemNumber,
+                    date,
+                    logs: [],
+                };
+            }
+
+            groupedLogs[groupKey].logs.push(log);
+        });
+
+        return Object.values(groupedLogs);
+    }, [filteredLogs]);
+
+
+    const itemsAssetsLogsInfo = useMemo(() => objectsGroupedLogs?.map(group => {
+        const liveLogs = group.logs.filter(log => log.currentStatusName && log.currentStatusName.toLowerCase().includes('live'));
+        const killedLogs = group.logs.filter(log => log.currentStatusName && log.currentStatusName.toLowerCase().includes('kill'));
+        const removedLogs = group.logs.filter(log => log.currentStatusName && log.currentStatusName.toLowerCase().includes('removed'));
+
+        return {
+            itemNumber: group.itemNumber,
+            date: group.date,
+            totalLive: liveLogs.length,
+            totalKilled: killedLogs.length,
+            totalRemoved: removedLogs.length,
+            logs: group.logs,
+        };
+    }), [objectsGroupedLogs]);
+
+
+
     const value = useMemo(
         () => ({
             items,
@@ -214,6 +275,7 @@ export const DataProvider = ({ children }) => {
             jobsUpdatingTimeData,
             manualUpdatingJobsData,
             itemsAssetsTrackInfo,
+            itemsAssetsLogsInfo,
             itemsZohoSenitron,
             itemsSenitronZoho,
             finalGroupedArray,
@@ -234,6 +296,7 @@ export const DataProvider = ({ children }) => {
             jobsUpdatingTimeData,
             manualUpdatingJobsData,
             itemsAssetsTrackInfo,
+            itemsAssetsLogsInfo,
             itemsZohoSenitron,
             itemsSenitronZoho,
             finalGroupedArray,
@@ -262,29 +325,29 @@ function sortBySku(items) {
 
 const parseLineItems = (lineItems) => {
     if (typeof lineItems === 'string') {
-      try {
-        return JSON.parse(lineItems).filter(item => item.sku);
-      } catch (err) {
-        console.error('Error al parsear lineItems:', err);
-        return [];
-      }
+        try {
+            return JSON.parse(lineItems).filter(item => item.sku);
+        } catch (err) {
+            console.error('Error al parsear lineItems:', err);
+            return [];
+        }
     } else {
-      return (lineItems || []).filter(item => item.sku);
+        return (lineItems || []).filter(item => item.sku);
     }
-  }
+}
 
-  const parsePackages = (packages, date = null) => {
+const parsePackages = (packages, date = null) => {
     if (typeof packages === 'string') {
-      try {
-        const parsedPackages = JSON.parse(packages)
-          .filter(pkg => pkg.package_id)
-          .map(pkg => ({ ...pkg, date }));
-        return parsedPackages;
-      } catch (err) {
-        console.error('Error al parsear packages:', err);
-        return [];
-      }
+        try {
+            const parsedPackages = JSON.parse(packages)
+                .filter(pkg => pkg.package_id)
+                .map(pkg => ({ ...pkg, date }));
+            return parsedPackages;
+        } catch (err) {
+            console.error('Error al parsear packages:', err);
+            return [];
+        }
     } else {
-      return (packages || []).filter(pkg => pkg.package_id).map(pkg => ({ ...pkg, date }));
+        return (packages || []).filter(pkg => pkg.package_id).map(pkg => ({ ...pkg, date }));
     }
-  };
+};

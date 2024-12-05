@@ -82,6 +82,7 @@ export function LiveMonitorAnalyticsView() {
     jobsUpdatingTimeData,
     manualUpdatingJobsData,
     itemsAssetsTrackInfo,
+    itemsAssetsLogsInfo,
     itemsZohoSenitron,
     itemsSenitronZoho,
   } = useDataContext();
@@ -89,31 +90,35 @@ export function LiveMonitorAnalyticsView() {
   const date = fDate(new Date(), 'YYYY-MM-DD');
 
   const totalsNewsTrack = useMemo(() => {
-    if (itemsAssetsTrackInfo) {
-      return itemsAssetsTrackInfo?.filter(item => fDate(item.createdTime, 'YYYY-MM-DD') === date).reduce(
-        (acc, item) =>
-          acc + item.historialDifferences.filter(it => fDate(it.date, 'YYYY-MM-DD') === date).reduce(
-            (acch, h, index) =>
-              acch + (index !== item.historialDifferences.length - 1 ? h.differences.news.length : 0), 0
-          ), 0
+    if (itemsAssetsLogsInfo && itemsAssetsLogsInfo.length > 0) {
+      return itemsAssetsLogsInfo?.filter(item => fDate(item.date, 'YYYY-MM-DD') === date).reduce(
+        (acc, item) => acc + item.totalLive , 0
       );
     }
     return 0;
-  }, [itemsAssetsTrackInfo, date]);
+  }, [itemsAssetsLogsInfo, date]);
 
 
-  const totalsLostsTrack = useMemo(() => {
-    if (itemsAssetsTrackInfo) {
-      return itemsAssetsTrackInfo?.filter(item => fDate(item.createdTime, 'YYYY-MM-DD') === date).reduce(
-        (acc, item) =>
-          acc + item.historialDifferences.filter(it => fDate(it.date, 'YYYY-MM-DD') === date).reduce(
-            (acch, h, index) =>
-              acch + (index !== item.historialDifferences.length - 1 ? h.differences.losts.length : 0), 0
-          ), 0
+  const totalsRemovedTrack = useMemo(() => {
+    if (itemsAssetsLogsInfo && itemsAssetsLogsInfo.length > 0) {
+      return itemsAssetsLogsInfo?.filter(item => fDate(item.date, 'YYYY-MM-DD') === date).reduce(
+        (acc, item) => acc + item.totalRemoved, 0
       );
     }
     return 0;
-  }, [itemsAssetsTrackInfo, date]);
+  }, [itemsAssetsLogsInfo, date]);
+
+
+  const totalsKilledTrack = useMemo(() => {
+    if (itemsAssetsLogsInfo && itemsAssetsLogsInfo.length > 0) {
+      return itemsAssetsLogsInfo?.filter(item => fDate(item.date, 'YYYY-MM-DD') === date).reduce(
+        (acc, item) => acc + item.totalKilled, 0
+      );
+    }
+    return 0;
+  }, [itemsAssetsLogsInfo, date]);
+
+  const totalsLostsTrack = useMemo(() => totalsRemovedTrack + totalsKilledTrack, [totalsRemovedTrack, totalsKilledTrack]);
 
   const itemsSynced = useMemo(() => {
     if (itemsZohoData) {

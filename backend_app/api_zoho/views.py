@@ -475,7 +475,7 @@ def load_inventory_items(request):
 
     with transaction.atomic():
         if new_items:
-            ZohoInventoryItem.objects.bulk_create(new_items, batch_size=200)
+            ZohoInventoryItem.objects.bulk_create(new_items, batch_size=200, ignore_conflicts=True)
         if items_to_update:
             fields_to_update = [
                 'status', 'stock_on_hand', 'last_modified_time'
@@ -486,7 +486,7 @@ def load_inventory_items(request):
                 batch_size=200
             )
         if timeline_items:
-            TimelineItem.objects.bulk_create(timeline_items, batch_size=200)
+            TimelineItem.objects.bulk_create(timeline_items, batch_size=200, ignore_conflicts=True)
 
     logger.info(f"Items processed successfully: {len(new_items)} created, {len(items_to_update)} updated")
     return JsonResponse({'message': 'Items loaded successfully'}, status=200)
@@ -1100,6 +1100,8 @@ def ignore_selected_errors_zoho_items(request):
 @permission_classes([AllowAny])
 def set_manual_updating_jobs(request):
     
+    now = timezone.now()
+    
     data = json.loads(request.body)
     
     is_running = data.get('is_running', False)
@@ -1108,9 +1110,27 @@ def set_manual_updating_jobs(request):
     if not updating_job:
         updating_job = ManualUpdatingJobs.objects.create()
     updating_job.is_running = is_running
+    updating_job.last_updated = now
     updating_job.save()
     
     return JsonResponse({'message': f'Jobs updated successfully'}, status=200)
+
+
+def force_rollback_manual_update():
+    now = timezone.now()
+    updating_job = ManualUpdatingJobs.objects.first()
+    if not updating_job:
+        updating_job = ManualUpdatingJobs.objects.create()
+    if updating_job.is_running:
+        last_updated = updating_job.last_updated
+        if last_updated:
+            if timezone.is_naive(last_updated):
+                last_updated = timezone.make_aware(last_updated, timezone.get_current_timezone())
+            if now - last_updated > timedelta(minutes=1):
+                updating_job.is_running = False
+                updating_job.last_updated = now
+                updating_job.save()
+    return
     
 
 #############################################

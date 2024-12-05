@@ -64,6 +64,7 @@ FRONTEND_URL = env('FRONTEND_URL_DEV') if ENVIRONMENT == 'DEV' else env('FRONTEN
 API_KEY_SENITRON = env('API_KEY_SENITRON')
 API_SENITRON_QUANTITIES_URL = env('API_SENITRON_QUANTITIES_URL')
 API_SENITRON_ASSETS_URL = env('API_SENITRON_ASSETS_URL')
+API_SENITRON_ASSETS_LOGS_URL = env('API_SENITRON_ASSETS_LOGS_URL')
 
 CSRF_TRUSTED_ORIGINS = [
     'https://localhost',
@@ -302,6 +303,7 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50 MB en bytes
 # Celery
 
 CELERY_BROKER_URL = 'redis://redis-api-zoho-senitron:6379/0'
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_RESULT_BACKEND = 'redis://redis-api-zoho-senitron:6379/0'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
@@ -309,16 +311,16 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
 
 CELERY_BEAT_SCHEDULE = {
-    'call-load-items-every-15-min': {
-        'task': 'api_zoho.tasks.task_load_inventory_items',
-        'schedule': crontab(minute='*/15', hour='7-17'), 
+    'run-task-sequence-every-2-min': {
+        'task': 'tasks_sequence.task_sequence_2_min',
+        'schedule': crontab(minute='*/2', hour='7-17'),
     },
-    'call-load-senitron-items-assets-15-min': {
-        'task': 'api_senitron.tasks.task_load_senitron_inventory_item_assets',
-        'schedule': crontab(minute='*/15', hour='7-17'), 
+    'run-task-sequence-every-15-min': {
+        'task': 'tasks_sequence.task_sequence_15_min',
+        'schedule': crontab(minute='*/15', hour='7-17'),
     },
-    'call-load-shipments-every-15-min': {
-        'task': 'api_zoho.tasks.task_load_inventory_shipments',
-        'schedule': crontab(minute='*/15', hour='7-17'), 
+    'call-task-remove-old-senitron-items-assets-logs-every-day-8am': {
+        'task': 'api_senitron.tasks.task_remove_old_senitron_items_assets_logs',
+        'schedule': crontab(hour=8, minute=0),
     },
 }

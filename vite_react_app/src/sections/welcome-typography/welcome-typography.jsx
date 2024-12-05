@@ -44,6 +44,10 @@ export const WelcomeTypography = ({
                             return axios.post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_item_assets/`);
                         })
                         .then(() => {
+                            setTitleLinearProgress('Loading Assets Logs Updated Info from Senitron...');
+                            return axios.post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_item_assets/logs/`);
+                        })
+                        .then(() => {
                             setTitleLinearProgress('Fetching updates shipments from Zoho...');
                             return axios.post(`${CONFIG.apiUrl}/api_zoho/load/inventory_shipments/`, {
                                 start_date: fDate(new Date(), 'YYYY-MM-DD'),

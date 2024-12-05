@@ -88,8 +88,8 @@ export function ItemListShippedLogsView({
         itemsAssetsTrackInfo,
         itemsZohoSenitron,
         finalGroupedArray,
-      } = useDataContext();
-      
+    } = useDataContext();
+
 
     const date = fDate(new Date(), 'YYYY-MM-DD');
 
@@ -137,7 +137,7 @@ export function ItemListShippedLogsView({
             (acc, h, index) => acc + (index !== itemShipped.historialDifferences.length - 1 ? h.differences.losts.length : 0), 0
         ), [date]
     );
-    
+
 
     const listSerials = useMemo(() => itemsAssetsTrackInfo, [itemsAssetsTrackInfo]);
 
@@ -148,15 +148,14 @@ export function ItemListShippedLogsView({
 
 
     useEffect(() => {
-        if (listSerials && listSerials.length > 0 && listShipments && listShipments.length > 0) {
+        // const update = () => {
+        if (itemsZohoSenitron && itemsZohoSenitron.length > 0 && listSerials && listSerials.length > 0 && listShipments && listShipments.length > 0) {
 
             const allowedIds = itemsZohoSenitron?.filter((item) => item.syncedWithSenitron).map((item) => item.itemId);
 
             const allowedIdsSet = new Set(allowedIds);
 
             const syncedShipments = listShipments?.filter(item => allowedIdsSet.has(item.itemId));
-
-            // const syncedShipments = listShipments;
 
             const rData = syncedShipments?.map((item) => {
                 const senitronItem = listSerials?.find((sItem) => sItem?.itemId === item.itemId);
@@ -182,6 +181,10 @@ export function ItemListShippedLogsView({
             });
 
             setTableData(rDataZohoSenitron);
+            // };
+            // update();
+            // const interval = setInterval(update, 2000);
+            // return () => clearInterval(interval);
         }
     }, [listSerials, listShipments, itemsZohoSenitron, handleShippedSerialQuantity]);
 
@@ -383,7 +386,7 @@ export function ItemListShippedLogsView({
                                                 table.page * table.rowsPerPage + table.rowsPerPage
                                             )
                                             .map((row) => (
-                                                <TableRow key={row.itemId} sx={{ cursor: 'pointer'}} onClick={() => handleViewRow(row.itemId)}>
+                                                <TableRow key={row.itemId} sx={{ cursor: 'pointer' }} onClick={() => handleViewRow(row.itemId)}>
                                                     <TableCell >{row.sku}</TableCell>
                                                     <TableCell>{row.itemTotalQty}</TableCell>
                                                     <TableCell>

@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 from api_zoho.models import ZohoInventoryItem
 
 
@@ -83,3 +84,48 @@ class TimelineItem(models.Model):
     
     def __str__(self):
         return f"Item {self.item_number} - {self.qty} - {self.date}"
+    
+    
+# {
+#             "id": 352149,
+#             "serial_number": "9283",
+#             "item_number": "3154577000000464293",
+#             "alt_serial": "",
+#             "last_seen": "12/04/2024 02:17 PM",
+#             "last_zone": "Inside Dock Door 4",
+#             "created_at": "12/04/2024 10:29 AM",
+#             "epc": "B5E3A788AED292D280002443",
+#             "last_status": {
+#                 "id": 6054,
+#                 "name": "Live"
+#             },
+#             "current_status": {
+#                 "id": 6054,
+#                 "name": "Live"
+#             },
+#             "user": "Summarization",
+#             "reason": "antenna_id is 301"
+#         },
+
+
+class SenitronItemAssetLogs(models.Model):
+    senitron_id = models.IntegerField(unique=True, null=True, default=None)
+    serial_number = models.CharField(max_length=50, blank=True, null=True)
+    item_number = models.CharField(max_length=100, blank=True, null=True)
+    alt_serial = models.CharField(max_length=50, blank=True, null=True)
+    last_seen = models.DateTimeField(blank=True, null=True)
+    last_zone = models.CharField(max_length=255, blank=True, null=True)
+    created_at = models.DateTimeField(blank=True, null=True)
+    epc = models.CharField(max_length=255, null=True, blank=True)
+    last_status_id = models.IntegerField(null=True)
+    last_status_name = models.CharField(max_length=100, null=True)
+    current_status_id = models.IntegerField(null=True)
+    current_status_name = models.CharField(max_length=100, null=True)
+    user = models.CharField(max_length=255, blank=True, null=True)
+    reason = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(blank=True, null=True)
+    created_time = models.DateTimeField(default=timezone.now)
+    
+    def __str__(self):
+        return f"Item {self.item_number} - Serial: {self.serial_number} - EPC: {self.epc} - Status: {self.current_status_name} - Serial: {self.serial_number} - Last Seen: {self.last_seen}"

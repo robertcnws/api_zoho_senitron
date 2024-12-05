@@ -1,6 +1,6 @@
 FROM python:3.12
 
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
 
 WORKDIR /app
@@ -34,6 +34,6 @@ CMD ["sh", "-c", "python manage.py makemigrations && \
                   python manage.py migrate && \
                   python manage.py collectstatic --no-input && \
                   python init_scripts.py && \
-                #   celery -A api_project_zoho_senitron worker --loglevel=info & \
+                #   celery -A api_project_zoho_senitron worker --loglevel=info -E & \
                 #   celery -A api_project_zoho_senitron beat --loglevel=info & \
                   gunicorn api_project_zoho_senitron.asgi:application -w 3 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000"]

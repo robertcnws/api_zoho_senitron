@@ -5,10 +5,17 @@ from django.db import transaction
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from .models import SenitronItem, SenitronItemAsset, TimelineItem, SenitronStatus
+from .models import SenitronItem, \
+                    SenitronItemAsset, \
+                    TimelineItem, \
+                    SenitronStatus, \
+                    SenitronItemAssetLogs
 from api_zoho.models import ZohoInventoryItem
-from .manage_instances import create_inventory_item_instance, create_inventory_item_asset_instance
+from .manage_instances import create_inventory_item_instance, \
+                              create_inventory_item_asset_instance, \
+                              create_inventory_item_asset_logs_instance
 from datetime import datetime
+from django.utils import timezone
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
@@ -206,3 +213,90 @@ def load_senitron_inventory_item_assets(request):
     logger.info(f"Senitron Item Assets loaded successfully")
     
     return JsonResponse({'message': 'Senitron Items Assets loaded successfully'}, status=200)
+
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def load_senitron_inventory_item_assets_logs(request):
+    
+    data = json.loads(request.body) if request.body else {}
+    
+    now = timezone.now()
+    
+    last_time_inserted = SenitronItemAssetLogs.objects.all().order_by('-created_time').first()
+    
+    start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    diff = now - last_time_inserted.created_time if last_time_inserted else now - start_of_day
+    
+    diff_hours = diff.total_seconds() // 3600 
+    
+    diff_hours = diff_hours if diff_hours > 0 else 1
+    
+    params = {
+        'api_key': settings.API_KEY_SENITRON,
+        'per_page': 250,
+        'filter_hours': diff_hours 
+    }
+    if 'item_number' in data:
+        params['item_number'] = data['item_number']
+    
+    item_senitron_ids = set()
+    
+    for item in data.get('assets', []):
+        if 'id' in item:
+            item_senitron_ids.add(item['id'])
+    
+    url = settings.API_SENITRON_ASSETS_LOGS_URL
+    session = create_session()
+
+    def fetch_and_save_page(page):
+        page_params = params.copy()
+        page_params['page'] = page
+        try:
+            response = session.get(url, params=page_params, timeout=REQUEST_TIMEOUT)
+            response.raise_for_status()
+            items = response.json().get('assets', [])
+            
+            assets = []
+            for item_data in items:
+                asset = create_inventory_item_asset_logs_instance(logger, item_data)
+                if asset:
+                    assets.append(asset)
+            
+            if assets:
+                with transaction.atomic():
+                    SenitronItemAssetLogs.objects.bulk_create(assets, batch_size=BATCH_SIZE, ignore_conflicts=True)
+            
+            return len(items) > 0
+        except requests.RequestException as e:
+            logger.error(f"Error fetching page {page}: {e}")
+            return False
+    
+    page = 1
+    has_more = True
+    
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        while has_more:
+            futures = {executor.submit(fetch_and_save_page, p): p for p in range(page, page + MAX_WORKERS)}
+            has_more = False  
+
+            for future in as_completed(futures):
+                page_result = future.result()
+                if page_result:
+                    has_more = True  
+            page += MAX_WORKERS
+            
+    logger.info(f"Senitron Item Assets Logs loaded successfully")
+    
+    return JsonResponse({'message': 'Senitron Items Assets Logs loaded successfully'}, status=200)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def remove_old_senitron_items_assets_logs(request):
+    now = timezone.now()
+    three_days_ago = now - timezone.timedelta(days=3)
+    SenitronItemAssetLogs.objects.filter(created_time__lt=three_days_ago).delete()
+    return JsonResponse({'message': 'Old Senitron Items Assets Logs removed successfully'}, status=200)

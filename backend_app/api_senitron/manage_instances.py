@@ -1,4 +1,4 @@
-from .models import SenitronItem, SenitronItemAsset, SenitronStatus
+from .models import SenitronItem, SenitronItemAsset, SenitronStatus, SenitronItemAssetLogs
 from django.db.utils import IntegrityError
 from django.utils import timezone
 from datetime import datetime
@@ -21,14 +21,20 @@ def create_inventory_item_instance(logger, data):
         return None
     
 
-def parse_datetime(value):
+def parse_datetime(value, format, logger):
     """Parses a datetime string and returns an aware datetime object or None."""
+    format2 = "%m/%d/%y %I:%M %p" if format == "%m/%d/%Y %I:%M %p" else "%m/%d/%Y %I:%M %p"
     if value and value.strip():
         try:
-            dt = datetime.strptime(value, "%m/%d/%y %I:%M %p")
+            dt = datetime.strptime(value, format)
             return timezone.make_aware(dt, timezone.get_current_timezone())
-        except ValueError:
-            return None
+        except ValueError as e:
+            try:
+                dt = datetime.strptime(value, format2)
+                return timezone.make_aware(dt, timezone.get_current_timezone())
+            except ValueError as e:
+                logger.error(f"Error parsing datetime: {value}, error: {e}, in formats {format} and {format2}")
+                return None
     return None
 
 def create_inventory_item_asset_instance(logger, data, status_cache, item_cache):
@@ -44,14 +50,14 @@ def create_inventory_item_asset_instance(logger, data, status_cache, item_cache)
     Returns:
         SenitronItemAsset: Instancia creada o None en caso de error.
     """
-    
-    aware_first_seen = parse_datetime(data.get('first_seen'))
-    aware_last_seen = parse_datetime(data.get('last_seen'))
-    aware_handheld_last_seen = parse_datetime(data.get('handheld_last_seen'))
-    aware_static_zone_last_update = parse_datetime(data.get('static_zone_last_update'))
-    aware_receiving_date = parse_datetime(data.get('receiving_date'))
-    aware_created_at = parse_datetime(data.get('created_at'))
-    aware_updated_at = parse_datetime(data.get('updated_at'))
+    format = "%m/%d/%y %I:%M %p"
+    aware_first_seen = parse_datetime(data.get('first_seen'), format, logger)
+    aware_last_seen = parse_datetime(data.get('last_seen'), format, logger)
+    aware_handheld_last_seen = parse_datetime(data.get('handheld_last_seen'), format, logger)
+    aware_static_zone_last_update = parse_datetime(data.get('static_zone_last_update'), format, logger)
+    aware_receiving_date = parse_datetime(data.get('receiving_date'), format, logger)
+    aware_created_at = parse_datetime(data.get('created_at'), format, logger)
+    aware_updated_at = parse_datetime(data.get('updated_at'), format, logger)
     
     item_number = data.get('item_number')
     serial_number = data.get('serial_number')
@@ -137,4 +143,50 @@ def create_inventory_item_asset_instance(logger, data, status_cache, item_cache)
         return None
     except Exception as e:
         logger.error(f"Unexpected error for item_number={item_number}: {e}")
+        return None
+    
+    
+    
+def create_inventory_item_asset_logs_instance(logger, data):
+    
+    format = "%m/%d/%Y %I:%M %p"
+    aware_last_seen = parse_datetime(data.get('last_seen'), format, logger)
+    aware_created_at = parse_datetime(data.get('created_at'), format, logger)
+    
+    id = data.get('id')
+    item_number = data.get('item_number')
+    serial_number = data.get('serial_number')
+    alt_serial = data.get('alt_serial')
+    last_zone = data.get('last_zone')
+    epc = data.get('epc')
+    last_status_id = data.get('last_status').get('id')
+    last_status_name = data.get('last_status').get('name')
+    current_status_id = data.get('current_status').get('id')
+    current_status_name = data.get('current_status').get('name')
+    user = data.get('user')
+    reason = data.get('reason')
+    
+    try:
+        asset = SenitronItemAssetLogs(
+            senitron_id=id,
+            item_number=item_number,
+            serial_number=serial_number,
+            alt_serial=alt_serial,
+            last_seen=aware_last_seen,
+            last_zone=last_zone,
+            created_at=aware_created_at,
+            epc=epc,
+            last_status_id=last_status_id,
+            last_status_name=last_status_name,
+            current_status_id=current_status_id,
+            current_status_name=current_status_name,
+            user=user,
+            reason=reason
+        )
+        return asset
+    except IntegrityError:
+        logger.error(f"Integrity error for id={id}. Skipping.")
+        return None
+    except Exception as e:
+        logger.error(f"Unexpected error for id={id}: {e}")
         return None

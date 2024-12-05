@@ -1,11 +1,12 @@
 import graphene
 from django.db.models import BigIntegerField, Subquery, OuterRef, Count, F, Q
-from django.db.models.functions import Cast, JSONObject, Coalesce
+from django.db.models.functions import Cast, JSONObject, Coalesce, TruncDate
 from django.contrib.postgres.aggregates import ArrayAgg
 from graphene_django.types import DjangoObjectType
 from django.utils import timezone
+from datetime import datetime
 from rest_framework import serializers
-from .models import SenitronItem, SenitronItemAsset, SenitronStatus, TimelineItem
+from .models import SenitronItem, SenitronItemAsset, SenitronStatus, TimelineItem, SenitronItemAssetLogs
 from api_zoho.models import JobsUpdatingTimes
 
 class SenitronStatusType(DjangoObjectType):
@@ -69,6 +70,16 @@ class JobsUpdatingTimesType(DjangoObjectType):
     class Meta:
         model = JobsUpdatingTimes
         fields = "__all__"
+        
+        
+class SenitronItemAssetLogsType(DjangoObjectType):
+    class Meta:
+        model = SenitronItemAssetLogs
+
+class GroupedLogsType(graphene.ObjectType):
+    item_number = graphene.String()
+    date = graphene.Date()
+    logs = graphene.List(SenitronItemAssetLogsType)
     
 
 # SERIALIZERS 
@@ -129,7 +140,6 @@ class SenitronItemAssetGroupSerializer(serializers.Serializer):
     assets = AssetSerializer(many=True)
     
     
-    
 # QUERY
         
 
@@ -143,6 +153,8 @@ class Query(graphene.ObjectType):
     all_timeline_items = graphene.List(TimelineItemType)    
     
     all_jobs_updating_times = graphene.Field(JobsUpdatingTimesType, id=graphene.Int())
+    
+    all_senitron_grouped_logs = graphene.List(GroupedLogsType, start_date=graphene.Date(required=False))
     
 
     def resolve_all_senitron_inventory_items(self, info, **kwargs):
@@ -214,5 +226,25 @@ class Query(graphene.ObjectType):
             
     def resolve_all_jobs_updating_times(self, info, **kwargs):
         return JobsUpdatingTimes.objects.last()
+    
+    def resolve_all_senitron_grouped_logs(self, info, start_date=None, **kwargs):
+        logs = SenitronItemAssetLogs.objects.annotate(date=TruncDate('created_time'))
+
+        if start_date:
+            logs = logs.filter(date=start_date)
+
+        grouped_data = logs.values('item_number', 'date').annotate(total=Count('id')).order_by('item_number', 'date')
+
+        result = []
+        for group in grouped_data:
+            item_number = group['item_number']
+            date_group = group['date']
+            logs_in_group = logs.filter(item_number=item_number, date=date_group)
+            result.append(GroupedLogsType(
+                item_number=item_number,
+                date=date_group,
+                logs=logs_in_group
+            ))
+        return result
 
 schema = graphene.Schema(query=Query)

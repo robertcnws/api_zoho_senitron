@@ -1,6 +1,8 @@
 from celery import shared_task
 from django.http import HttpRequest
-from .views import load_senitron_inventory_item_assets
+from .views import load_senitron_inventory_item_assets, \
+                   load_senitron_inventory_item_assets_logs, \
+                   remove_old_senitron_items_assets_logs
 import json
 
 @shared_task
@@ -10,3 +12,21 @@ def task_load_senitron_inventory_item_assets():
     request.content_type = 'application/json'
     request._body = json.dumps({}).encode('utf-8')
     load_senitron_inventory_item_assets(request)
+    
+    
+@shared_task
+def task_load_senitron_inventory_item_assets_logs():
+    request = HttpRequest()
+    request.method = 'POST'
+    request.content_type = 'application/json'
+    request._body = json.dumps({}).encode('utf-8')
+    load_senitron_inventory_item_assets_logs(request)
+    
+    
+@shared_task
+def task_remove_old_senitron_items_assets_logs():
+    request = HttpRequest()
+    request.method = 'POST'
+    request.content_type = 'application/json'
+    request._body = json.dumps({}).encode('utf-8')
+    remove_old_senitron_items_assets_logs(request)

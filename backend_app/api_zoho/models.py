@@ -348,6 +348,7 @@ class JobsUpdatingTimes(models.Model):
 class ManualUpdatingJobs(models.Model):
     id = models.AutoField(primary_key=True)
     is_running = models.BooleanField(default=False)
+    last_updated = models.DateTimeField(default=timezone.now)
     
     def __str__(self):
         return f"Manual Job {self.is_running}"
