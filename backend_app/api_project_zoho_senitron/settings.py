@@ -144,6 +144,7 @@ INSTALLED_APPS = [
     'graphene_django',
     'api_zoho',
     'api_senitron',
+    'api_project_zoho_senitron_async_sequence',
 ]
 
 GRAPHENE = {
@@ -308,15 +309,16 @@ CELERY_RESULT_BACKEND = 'redis://redis-api-zoho-senitron:6379/0'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'UTC'
+CELERY_TIMEZONE = 'America/New_York'
+CELERY_ENABLE_UTC = False
 
 CELERY_BEAT_SCHEDULE = {
     'run-task-sequence-every-2-min': {
-        'task': 'tasks_sequence.task_sequence_2_min',
+        'task': 'api_project_zoho_senitron_async_sequence.tasks.task_sequence_2_min',
         'schedule': crontab(minute='*/2', hour='7-17'),
     },
     'run-task-sequence-every-15-min': {
-        'task': 'tasks_sequence.task_sequence_15_min',
+        'task': 'api_project_zoho_senitron_async_sequence.tasks.task_sequence_15_min',
         'schedule': crontab(minute='*/15', hour='7-17'),
     },
     'call-task-remove-old-senitron-items-assets-logs-every-day-8am': {

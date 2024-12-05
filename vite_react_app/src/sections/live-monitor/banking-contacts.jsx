@@ -128,34 +128,39 @@ function Item({ item, sx, setModalDataFiltered, handleOpenModal, date, ...other 
         primary={item.sku}
         secondary={
           <>
-            {item.historialDifferences.some(
-              (h, index) => h.differences.news.length > 0 && index !== item.historialDifferences.length - 1 
-            ) && (
-                <Box
-                  component="span"
-                  sx={{ display: 'inline-flex', alignItems: 'center', typography: 'body2', color: 'success.main', gap: 1 }}
-                >
-                  <Iconify icon="eva:arrow-ios-upward-fill" width={16} height={16} />
-                  <span>
-                    {item.historialDifferences.reduce(
-                      (acc, h, index) => acc + (index !== item.historialDifferences.length - 1 ? h.differences.news.length : 0), 0)
-                    } Received
-                  </span>
-                </Box>
-              )}
-            {item.historialDifferences.some(
-              (h, index) => h.differences.losts.length > 0 && 
-              index !== item.historialDifferences.length - 1
-            ) && (
+            {item.logs.length > 0 && (
+              <Box
+                component="span"
+                sx={{ display: 'inline-flex', alignItems: 'center', typography: 'body2', color: 'success.main', gap: 1 }}
+              >
+                <Iconify icon="eva:arrow-ios-upward-fill" width={16} height={16} />
+                <span>
+                  {item.logs.reduce(
+                    (acc, h) => acc + (h.currentStatusName.toLowerCase().includes('live') ? 1 : 0), 0)
+                  } Received
+                </span>
+              </Box>
+            )}
+            {item.logs.length > 0 && (
               <Box
                 component="span"
                 sx={{ display: 'inline-flex', alignItems: 'center', typography: 'body2', color: 'error.main', gap: 1 }}
               >
                 <Iconify icon="eva:arrow-ios-downward-fill" width={16} height={16} />
                 <span>
-                  {item.historialDifferences.reduce(
-                    (acc, h, index) => acc + (index !== item.historialDifferences.length - 1 ? h.differences.losts.length : 0), 0)
-                  } Shipped
+                  {item.logs.reduce(
+                    (acc, h) => acc + (
+                      (h.currentStatusName.toLowerCase().includes('removed') || h.currentStatusName.toLowerCase().includes('kill')) ? 1 : 0
+                    ), 0)
+                  } Shipped (Removed: {item.logs.reduce(
+                    (acc, h) => acc + (
+                      h.currentStatusName.toLowerCase().includes('removed') ? 1 : 0
+                    ), 0)
+                  }, Kill: {item.logs.reduce(
+                    (acc, h) => acc + (
+                      h.currentStatusName.toLowerCase().includes('kill') ? 1 : 0
+                    ), 0)
+                  })
                 </span>
               </Box>
             )}

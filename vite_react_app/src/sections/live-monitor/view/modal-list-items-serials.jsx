@@ -21,34 +21,37 @@ export function ModalListItemsSerials({
     handleOpenModal,
     filters,
     handleFilterName,
-    itemsAssetsTrackInfo,
+    itemsAssetsLogsInfo,
     table,
     ...other
 }) {
 
     const date = fDate(new Date(), 'YYYY-MM-DD');
 
-    const listFiltered = useMemo(() => 
-        itemsAssetsTrackInfo
-          ?.filter(item => fDate(item.createdTime, 'YYYY-MM-DD') === date) // Filtra los items por createdTime
-          .map(item => ({
-            ...item,
-            historialDifferences: Array.isArray(item.historialDifferences) 
-              ? item.historialDifferences.filter(
-                  h => 
-                    fDate(h.date, 'YYYY-MM-DD') === date &&
-                    h.differences &&
-                    (Array.isArray(h.differences.news) && h.differences.news.length > 0 || 
-                     Array.isArray(h.differences.losts) && h.differences.losts.length > 0)
-                )
-              : []
-          }))
-          .filter(item => 
-            Array.isArray(item.historialDifferences) && 
-            item.historialDifferences.length > 0 &&
-            item.historialDifferences.some((_, index) => index !== item.historialDifferences.length - 1)
-          ) || []
-      , [itemsAssetsTrackInfo, date]);
+    const listFiltered = useMemo(() => itemsAssetsLogsInfo.filter(item => fDate(item.date, 'YYYY-MM-DD') === date), [itemsAssetsLogsInfo, date]);
+
+
+    // const listFiltered = useMemo(() => 
+    //     itemsAssetsTrackInfo
+    //       ?.filter(item => fDate(item.createdTime, 'YYYY-MM-DD') === date) // Filtra los items por createdTime
+    //       .map(item => ({
+    //         ...item,
+    //         historialDifferences: Array.isArray(item.historialDifferences) 
+    //           ? item.historialDifferences.filter(
+    //               h => 
+    //                 fDate(h.date, 'YYYY-MM-DD') === date &&
+    //                 h.differences &&
+    //                 (Array.isArray(h.differences.news) && h.differences.news.length > 0 || 
+    //                  Array.isArray(h.differences.losts) && h.differences.losts.length > 0)
+    //             )
+    //           : []
+    //       }))
+    //       .filter(item => 
+    //         Array.isArray(item.historialDifferences) && 
+    //         item.historialDifferences.length > 0 &&
+    //         item.historialDifferences.some((_, index) => index !== item.historialDifferences.length - 1)
+    //       ) || []
+    //   , [itemsAssetsTrackInfo, date]);
 
 
     const theme = useTheme();
@@ -92,7 +95,7 @@ export function ModalListItemsSerials({
                             <TableContainer sx={{ width: '100%', bgcolor: 'background.paper', p: 1 }}>
                                 <Table>
                                     <TableBody>
-                                        <TableNoData notFound={itemsAssetsTrackInfo?.length === 0} />
+                                        <TableNoData notFound={itemsAssetsLogsInfo?.length === 0} />
                                     </TableBody>
                                 </Table>
                             </TableContainer>

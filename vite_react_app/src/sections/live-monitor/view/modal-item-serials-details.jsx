@@ -25,7 +25,7 @@ export function ModalItemSerialsDetails({
   date,
   ...other
 }) {
-  
+
   const popover = usePopover();
 
   const { isMobile } = useContext(LoadingContext);
@@ -41,6 +41,24 @@ export function ModalItemSerialsDetails({
   };
 
   const handleLength = (value) => value?.length;
+
+  const [listNews, setListNews] = React.useState([]);
+  const [listLosts, setListLosts] = React.useState([]);
+
+  React.useEffect(() => {
+    if (modalDataFiltered) {
+      const lNews = modalDataFiltered?.logs
+        ?.filter(row => typeof row.currentStatusName === 'string' && row.currentStatusName.toLowerCase().includes('live'))
+        .map(row => row.serialNumber);
+
+      const lLosts = modalDataFiltered?.logs
+        ?.filter(row => typeof row.currentStatusName === 'string' && !row.currentStatusName.toLowerCase().includes('live'))
+        .map(row => row.serialNumber);
+
+      setListNews(lNews);
+      setListLosts(lLosts);
+    }
+  }, [modalDataFiltered]);
 
   return (
     <>
@@ -84,19 +102,13 @@ export function ModalItemSerialsDetails({
                       onSort={table?.onSort}
                     />
                     <TableBody>
-                      {modalDataFiltered?.historialDifferences.filter((it) => fDate(it.date, 'YYYY-MM-DD') === date).map((row, index) => (
+                      {modalDataFiltered?.logs.map((row, index) => (
                         <>
-                          {index !== handleLength(modalDataFiltered?.historialDifferences) - 1 && (
-                            <>
-                              {(row.differences.news.length > 0 || row.differences.losts.length > 0) && (
-                                <TableRow key={`${index}-${fDateTime(row.date)}`}>
-                                  <TableCell>{fDateTime(row.date)}</TableCell>
-                                  <TableCell>{row.differences.news.join(', ')}</TableCell>
-                                  <TableCell>{row.differences.losts.join(', ')}</TableCell>
-                                </TableRow>
-                              )}
-                            </>
-                          )}
+                          <TableRow key={`${index}-${fDateTime(row.lastSeen)}`}>
+                            <TableCell>{fDateTime(row.lastSeen)}</TableCell>
+                            <TableCell>{listNews.join(', ')}</TableCell>
+                            <TableCell>{listLosts.join(', ')}</TableCell>
+                          </TableRow>
                         </>
                       ))}
                       {/* {Array.from({ length: max }).map((_, index) => (

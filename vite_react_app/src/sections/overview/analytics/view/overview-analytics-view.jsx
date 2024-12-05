@@ -99,7 +99,7 @@ export function OverviewAnalyticsView() {
     itemsSkuTrackInfo,
     jobsUpdatingTimeData,
     manualUpdatingJobsData,
-    itemsAssetsTrackInfo,
+    itemsAssetsLogsInfo,
     itemsZohoSenitron,
     itemsSenitronZoho,
   } = useDataContext();
@@ -705,7 +705,7 @@ export function OverviewAnalyticsView() {
             handleOpenModal={handleOpenModal}
             filters={filters}
             handleFilterName={handleFilterName}
-            itemsAssetsTrackInfo={itemsAssetsTrackInfo}
+            itemsAssetsLogsInfo={itemsAssetsLogsInfo}
             table={table}
           />
 

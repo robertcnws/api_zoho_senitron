@@ -21,7 +21,6 @@ export const DataProvider = ({ children }) => {
     const { data: senitronItems, loading: loadingSenitronItems, error: errorSenitronItems } = useSenitronItemsQuery();
     const { data: timelineItems, loading: loadingTimelineItems, error: errorTimelineItems } = useTimelineItemsQuery();
     const { data: itemsSkusTrack, loading: loadingItemsSkusTrack, error: errorItemsSkusTrack } = useSkuTrackInfoQuery();
-    const { data: itemsAssetsTrack, loading: loadingItemsAssetsTrack, error: errorItemsAssetsTrack } = useItemAssetsTrackQuery();
     const { data: jobsUpdatingTime, loading: loadingJobsUpdatingTime, error: errorJobsUpdatingTime } = useJobsUpdatingTimesQuery();
     const { data: manualUpdatingJobs, loading: loadingManualUpdatingJobs, error: errorManualUpdatingJobs } = useManualUpdatingJobsQuery();
     const { data: shipments, loading: loadingShipments, error: errorShipments } = useShipmentsQuery(null, null);
@@ -31,7 +30,6 @@ export const DataProvider = ({ children }) => {
         loadingSenitronItems ||
         loadingTimelineItems ||
         loadingItemsSkusTrack ||
-        loadingItemsAssetsTrack ||
         loadingJobsUpdatingTime ||
         loadingManualUpdatingJobs ||
         loadingShipments ||
@@ -40,7 +38,6 @@ export const DataProvider = ({ children }) => {
         errorSenitronItems ||
         errorTimelineItems ||
         errorItemsSkusTrack ||
-        errorItemsAssetsTrack ||
         errorJobsUpdatingTime ||
         errorManualUpdatingJobs ||
         errorShipments ||
@@ -57,15 +54,6 @@ export const DataProvider = ({ children }) => {
     const manualUpdatingJobsData = useMemo(() => manualUpdatingJobs || null, [manualUpdatingJobs]);
 
     const itemsSenitronLogsInfo = useMemo(() => senitronAssetsLogs || null, [senitronAssetsLogs]);
-
-    const itemsAssetsTrackInfo = useMemo(
-        () => itemsAssetsTrack?.filter(
-            (it) =>
-                (it.historialDifferences.some((h, index) => (h.differences.news.length > 0 || h.differences.losts.length > 0) && index !== it.historialDifferences.length - 1))
-        )
-            .sort((a, b) => a.sku.localeCompare(b.sku)) || null,
-        [itemsAssetsTrack]
-    );
 
     const itemsZohoSenitron = useMemo(() => {
         if (itemsZohoData && senitronItems) {
@@ -215,8 +203,18 @@ export const DataProvider = ({ children }) => {
             ?.filter(item => item.syncedWithSenitron === true)
             .map(item => item.itemId)
     );
+
+    const itemsMap = new Map(itemsZohoSenitron?.map(item => [item.itemId, item]));
     
-    const filteredLogs = logs?.filter(log => syncedItemIds.has(log.itemNumber));
+    const filteredLogs = logs
+    ?.filter(log => syncedItemIds.has(log.itemNumber))
+    ?.map(log => {
+        const matchedItem = itemsMap.get(log.itemNumber);
+        return {
+            ...log,
+            sku: matchedItem?.sku
+        };
+    });
 
     const objectsGroupedLogs = useMemo(() => {
         const groupedLogs = {};
@@ -224,11 +222,13 @@ export const DataProvider = ({ children }) => {
         filteredLogs?.forEach(log => {
             const itemNumber = log.itemNumber;
             const date = log.date;
+            const sku = log.sku;
             const groupKey = `${itemNumber}-${date}`;
 
             if (!groupedLogs[groupKey]) {
                 groupedLogs[groupKey] = {
                     itemNumber,
+                    sku,
                     date,
                     logs: [],
                 };
@@ -248,6 +248,7 @@ export const DataProvider = ({ children }) => {
 
         return {
             itemNumber: group.itemNumber,
+            sku: group.sku,
             date: group.date,
             totalLive: liveLogs.length,
             totalKilled: killedLogs.length,
@@ -264,7 +265,6 @@ export const DataProvider = ({ children }) => {
             senitronItems,
             timelineItems,
             itemsSkusTrack,
-            itemsAssetsTrack,
             jobsUpdatingTime,
             manualUpdatingJobs,
             loading,
@@ -274,7 +274,6 @@ export const DataProvider = ({ children }) => {
             itemsSkuTrackInfo,
             jobsUpdatingTimeData,
             manualUpdatingJobsData,
-            itemsAssetsTrackInfo,
             itemsAssetsLogsInfo,
             itemsZohoSenitron,
             itemsSenitronZoho,
@@ -285,7 +284,6 @@ export const DataProvider = ({ children }) => {
             senitronItems,
             timelineItems,
             itemsSkusTrack,
-            itemsAssetsTrack,
             jobsUpdatingTime,
             manualUpdatingJobs,
             loading,
@@ -295,7 +293,6 @@ export const DataProvider = ({ children }) => {
             itemsSkuTrackInfo,
             jobsUpdatingTimeData,
             manualUpdatingJobsData,
-            itemsAssetsTrackInfo,
             itemsAssetsLogsInfo,
             itemsZohoSenitron,
             itemsSenitronZoho,

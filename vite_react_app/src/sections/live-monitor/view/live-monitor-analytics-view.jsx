@@ -81,7 +81,6 @@ export function LiveMonitorAnalyticsView() {
     itemsZohoData,
     jobsUpdatingTimeData,
     manualUpdatingJobsData,
-    itemsAssetsTrackInfo,
     itemsAssetsLogsInfo,
     itemsZohoSenitron,
     itemsSenitronZoho,
@@ -461,7 +460,7 @@ export function LiveMonitorAnalyticsView() {
             handleOpenModal={handleOpenModal}
             filters={filters}
             handleFilterName={handleFilterName}
-            itemsAssetsTrackInfo={itemsAssetsTrackInfo}
+            itemsAssetsLogsInfo={itemsAssetsLogsInfo}
             table={table}
           />
 

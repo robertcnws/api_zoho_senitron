@@ -85,7 +85,7 @@ export function ItemListShippedLogsView({
 }) {
 
     const {
-        itemsAssetsTrackInfo,
+        itemsAssetsLogsInfo,
         itemsZohoSenitron,
         finalGroupedArray,
     } = useDataContext();
@@ -133,13 +133,13 @@ export function ItemListShippedLogsView({
 
 
     const handleShippedSerialQuantity = useCallback(
-        (itemShipped) => itemShipped?.historialDifferences.filter(it => fDate(it.date, 'YYYY-MM-DD') === date).reduce(
-            (acc, h, index) => acc + (index !== itemShipped.historialDifferences.length - 1 ? h.differences.losts.length : 0), 0
-        ), [date]
+        (itemShipped) => itemShipped?.logs.reduce(
+            (acc, h) => acc + ((h.currentStatusName.toLowerCase().includes('removed') || h.currentStatusName.toLowerCase().includes('kill')) ? 1 : 0), 0
+        ), []
     );
 
 
-    const listSerials = useMemo(() => itemsAssetsTrackInfo, [itemsAssetsTrackInfo]);
+    const listSerials = useMemo(() => itemsAssetsLogsInfo, [itemsAssetsLogsInfo]);
 
 
     const listShipments = useMemo(() => finalGroupedArray?.filter((item) => item.date === date), [finalGroupedArray, date]);
@@ -164,8 +164,8 @@ export function ItemListShippedLogsView({
                     shippedSerialsQuantity: handleShippedSerialQuantity(senitronItem) || 0,
                     differenceShipped: handleShippedSerialQuantity(senitronItem) ?
                         (item.itemTotalQty - handleShippedSerialQuantity(senitronItem)) : item.itemTotalQty,
-                    receivedSerialsQuantity: senitronItem?.historialDifferences.reduce(
-                        (acc, h, index) => acc + (index !== senitronItem.historialDifferences.length - 1 ? h.differences.news.length : 0), 0
+                    receivedSerialsQuantity: senitronItem?.logs.reduce(
+                        (acc, h) => acc + (h.currentStatusName.toLowerCase().includes('live') ? 1 : 0), 0
                     ) || 0,
                     isReconciled: false,
                 };

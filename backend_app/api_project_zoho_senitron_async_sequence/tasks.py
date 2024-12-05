@@ -16,9 +16,9 @@ def task_sequence_2_min():
 @shared_task
 def task_sequence_15_min():
     workflow = chain(
-        task_load_inventory_items.s(),
-        task_load_senitron_inventory_item_assets.s(),
-        task_load_senitron_inventory_item_assets_logs.s(),
-        task_load_inventory_shipments.s()
+        task_load_inventory_items.si(),
+        task_load_senitron_inventory_item_assets.si(),
+        task_load_senitron_inventory_item_assets_logs.si(),
+        task_load_inventory_shipments.si()
     )
     workflow.apply_async()
