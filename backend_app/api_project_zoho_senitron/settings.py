@@ -316,13 +316,24 @@ CELERY_ENABLE_UTC = False
 # CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 CELERY_BEAT_SCHEDULE = {
-    'run-task-sequence-every-2-min': {
+    # Lunes a Sábado
+    'run-task-sequence-every-2-min-mon-sat': {
         'task': 'api_project_zoho_senitron_async_sequence.tasks.task_sequence_2_min',
-        'schedule': crontab(minute='*/2', hour='7-17'),
+        'schedule': crontab(minute='*/2', hour='7-17', day_of_week='mon-sat'),
     },
-    'run-task-sequence-every-15-min': {
+    'run-task-sequence-every-15-min-mon-sat': {
         'task': 'api_project_zoho_senitron_async_sequence.tasks.task_sequence_15_min',
-        'schedule': crontab(minute='*/15', hour='7-17'),
+        'schedule': crontab(minute='*/15', hour='7-17', day_of_week='mon-sat'),
+    },
+
+    # Domingo
+    'run-task-sequence-every-2-hours-sun': {
+        'task': 'api_project_zoho_senitron_async_sequence.tasks.task_sequence_2_min',
+        'schedule': crontab(minute=0, hour='*/2', day_of_week='sun'),
+    },
+    'run-task-sequence-every-2-hours-sun-15-min': {
+        'task': 'api_project_zoho_senitron_async_sequence.tasks.task_sequence_15_min',
+        'schedule': crontab(minute=0, hour='*/2', day_of_week='sun'),
     },
     'call-task-remove-old-senitron-items-assets-logs-every-day-8am': {
         'task': 'api_senitron.tasks.task_remove_old_senitron_items_assets_logs',

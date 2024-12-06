@@ -33,6 +33,8 @@ export function ModalListItemsSerials({
 
     const lastLog = listFiltered?.length > 0 ? listFiltered[0].logs[listFiltered[0].logs.length - 1] : 0;
 
+    const [stateWidthModal, setStateWidthModal] = React.useState('md');
+
 
     // const listFiltered = useMemo(() => 
     //     itemsAssetsTrackInfo
@@ -72,9 +74,10 @@ export function ModalListItemsSerials({
                 open={openModal.listItemsSerials}
                 onClose={() => {
                     handleClose('listItemsSerials');
+                    setStateWidthModal('md');
                 }}
                 // title={`${modalTitle} (SKU: ${modalDataFiltered?.sku})`}
-                maxWidth='md'
+                maxWidth={stateWidthModal}
                 content={
                     <>
                         {listFiltered ? (
@@ -93,6 +96,7 @@ export function ModalListItemsSerials({
                                     filters={filters}
                                     handleFilterName={handleFilterName}
                                     globalDateFilters={globalDateFilters}
+                                    setStateWidthModal={setStateWidthModal}
                                 />
                             </Box>
                         ) : (

@@ -48,9 +48,9 @@ import {
     TablePaginationCustom,
 } from 'src/components/table';
 
-import { ItemTableRow } from '../item-table-row';
-import { ItemTableToolbar } from '../item-table-toolbar';
-import { ItemTableFiltersResult } from '../item-table-filters-result';
+import { ItemTableRow } from '../../item/item-table-row';
+import { ItemTableToolbar } from '../../item/item-table-toolbar';
+import { ItemTableFiltersResult } from '../../item/item-table-filters-result';
 import { ItemTableShippedLogsToolbar } from '../item-table-shipped-logs-toolbar';
 
 
@@ -283,35 +283,6 @@ export function ItemListShippedLogsView({
     //     );
     // }
 
-    if (updating) {
-        return (
-            <DashboardContent>
-                <Box
-                    sx={{
-                        width: '350px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        height: '80vh',
-                        margin: 'auto'
-                    }}
-                >
-                    <LinearProgress
-                        key="error"
-                        sx={{
-                            mb: 2,
-                            width: '100%',
-                            '& .MuiLinearProgress-bar': {
-                                backgroundColor: 'black',
-                            },
-                            backgroundColor: '#e0e0e0',
-                        }}
-                    />
-                </Box>
-            </DashboardContent>
-        );
-    }
-
     const renderSecondary = (row) => (
         <TableRow>
             <TableCell sx={{ p: 0, border: 'none' }} colSpan={8}>
@@ -384,10 +355,39 @@ export function ItemListShippedLogsView({
         </TableRow>
     );
 
+    if (updating) {
+        return (
+            <DashboardContent>
+                <Box
+                    sx={{
+                        width: '350px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        height: '80vh',
+                        margin: 'auto'
+                    }}
+                >
+                    <LinearProgress
+                        key="error"
+                        sx={{
+                            mb: 2,
+                            width: '100%',
+                            '& .MuiLinearProgress-bar': {
+                                backgroundColor: 'black',
+                            },
+                            backgroundColor: '#e0e0e0',
+                        }}
+                    />
+                </Box>
+            </DashboardContent>
+        );
+    }
+
     return (
         <>
-            <Card>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2.5 }}>
+            <Card sx={{ minHeight: isMobile ? '100%' : '70vh' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1 }}>
                     <Typography variant="h6">Shipped Logs</Typography>
                 </Box>
                 {tableData?.length > 0 && (
@@ -476,8 +476,8 @@ export function ItemListShippedLogsView({
                     <Scrollbar>
                         {tableData?.length > 0 ? (
                             <TableContainer sx={{
-                                maxHeight: filters.state.status === 'all' ? 255 : 155,
-                                minHeight: filters.state.status === 'all' ? 255 : 155
+                                maxHeight: filters.state.status === 'all' ? 405 : 305,
+                                minHeight: filters.state.status === 'all' ? 405 : 305
                             }}>
                                 <Table size={table.dense ? 'small' : 'medium'} sx={{ minWidth: 960 }} stickyHeader>
                                     <TableHeadCustom

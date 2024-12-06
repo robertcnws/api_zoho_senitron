@@ -28,7 +28,7 @@ import {
 import { WelcomeTypography } from 'src/sections/welcome-typography/welcome-typography';
 
 
-import { ItemListShippedLogsView } from 'src/sections/item/view/item-list-shipped-logs';
+import { ItemListShippedLogsView } from 'src/sections/live-monitor/view/item-list-shipped-logs';
 
 import { BookingCheckInWidgets } from 'src/sections/live-monitor/booking/booking-check-in-widgets';
 import { BookingBooked } from 'src/sections/live-monitor/booking/booking-booked';
@@ -102,7 +102,7 @@ export function LiveMonitorAnalyticsView() {
   const totalsNewsTrack = useMemo(() => {
     if (itemsAssetsLogsInfo && itemsAssetsLogsInfo.length > 0) {
       return itemsAssetsLogsInfo?.filter(item => fDate(item.date, 'YYYY-MM-DD') === date).reduce(
-        (acc, item) => acc + item.totalLive , 0
+        (acc, item) => acc + item.totalLive, 0
       );
     }
     return 0;
@@ -243,7 +243,7 @@ export function LiveMonitorAnalyticsView() {
       itemsZohoData &&
       totalZohoQty !== null &&
       totalSenitronQty !== null &&
-      totalErrors !== null && 
+      totalErrors !== null &&
       globalDateFilters.state.endDate !== null &&
       !updating
     ) {
@@ -324,7 +324,7 @@ export function LiveMonitorAnalyticsView() {
 
   return (
     <>
-      {!itemsZohoSenitron || !itemsSenitronZoho || !itemsZohoData || 
+      {!itemsZohoSenitron || !itemsSenitronZoho || !itemsZohoData ||
         totalZohoQty === null || totalSenitronQty === null || totalErrors === null || updating ? (
         <>
           <Box
@@ -359,7 +359,7 @@ export function LiveMonitorAnalyticsView() {
           <DashboardContent maxWidth="xl">
             <Grid container spacing={3}>
               <Grid xs={!isMobile ? 9.5 : 6} sm={!isMobile ? 9.5 : 6} md={!isMobile ? 9.5 : 6}>
-              <WelcomeTypography
+                <WelcomeTypography
                   userLogged={userLogged}
                   manualUpdatingJobsData={manualUpdatingJobsData}
                   jobsUpdatingTimeData={jobsUpdatingTimeData}
@@ -375,7 +375,35 @@ export function LiveMonitorAnalyticsView() {
 
             <Grid container spacing={3}>
 
-              
+
+              {/* <Grid container xs={12}>
+                <Grid xs={12} md={12} lg={12}>
+                  <Box
+                    sx={{
+                      mb: 1,
+                      p: { md: 1 },
+                      display: 'flex',
+                      gap: { xs: 3, md: 1 },
+                      borderRadius: { md: 2 },
+                      flexDirection: 'column',
+                      bgcolor: { md: 'background.neutral' },
+                    }}
+                  >
+                    <ItemListShippedLogsView
+                      setTotalsItemsNoReconciled={setTotalsItemsNoReconciled}
+                      setTotalsItemsLost={setTotalsItemsLost}
+                      setTotalsItemsAll={setTotalsItemsAll}
+                      setListItemsNoReconciled={setListItemsNoReconciled}
+                      setListItemsLost={setListItemsLost}
+                      updating={updating}
+                      setUpdating={setUpdating}
+                      setTitleLinearProgress={setTitleLinearProgress}
+                      globalDateFilters={globalDateFilters}
+                    />
+
+                  </Box>
+                </Grid>
+              </Grid> */}
 
               <Grid container xs={12}>
 
@@ -389,6 +417,7 @@ export function LiveMonitorAnalyticsView() {
                       borderRadius: { md: 2 },
                       flexDirection: 'column',
                       bgcolor: { md: 'background.neutral' },
+                      minHeight: { md: '100%' },
                     }}
                   >
                     <ItemListShippedLogsView
