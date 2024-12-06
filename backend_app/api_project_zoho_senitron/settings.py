@@ -145,6 +145,7 @@ INSTALLED_APPS = [
     'api_zoho',
     'api_senitron',
     'api_project_zoho_senitron_async_sequence',
+    'django_celery_beat',
 ]
 
 GRAPHENE = {
@@ -311,6 +312,8 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'America/New_York'
 CELERY_ENABLE_UTC = False
+
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 CELERY_BEAT_SCHEDULE = {
     'run-task-sequence-every-2-min': {

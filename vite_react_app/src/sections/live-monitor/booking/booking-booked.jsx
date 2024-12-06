@@ -20,7 +20,7 @@ export function BookingBooked({ title, subheader, data, openModal, setOpenModal,
             <Box sx={{ mb: 1, display: 'flex', alignItems: 'center' }} onClick={() => {
               handleOpenModal('listItemsSerials');
             }}>
-              <Box sx={{ typography: 'overline', flexGrow: 1 }}>{progress.status === 'Canceled' ? 'Shipped Items' : 'Received Items'}</Box>
+              <Box sx={{ typography: 'overline', flexGrow: 1 }}>{progress.status === 'Canceled' ? 'Shipped Items' : 'Live Items'}</Box>
               <Box sx={{ typography: 'subtitle1' }}>{fShortenNumber(progress.quantity)}</Box>
             </Box>
 

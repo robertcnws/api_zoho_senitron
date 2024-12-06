@@ -30,6 +30,8 @@ export function ModalListItemsSerials({
 
     const listFiltered = useMemo(() => itemsAssetsLogsInfo.filter(item => fDate(item.date, 'YYYY-MM-DD') === date), [itemsAssetsLogsInfo, date]);
 
+    const lastLog = listFiltered?.length > 0 ? listFiltered[0].logs[listFiltered[0].logs.length - 1] : 0;
+
 
     // const listFiltered = useMemo(() => 
     //     itemsAssetsTrackInfo
@@ -80,7 +82,7 @@ export function ModalListItemsSerials({
                                     title="Items Shipped / Received"
                                     subheader={`
                   ${listFiltered?.length} 
-                  ${listFiltered[0]?.createdTime ? ` Items with last changes at ${fDateTime(listFiltered[0]?.createdTime)}` : `SKUs without changes`
+                  ${lastLog.createdTime ? ` SKUs with last changes at ${fDateTime(lastLog.createdTime)}` : `SKUs without changes`
                                         }`}
                                     list={listFiltered}
                                     openModal={openModal}

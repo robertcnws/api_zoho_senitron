@@ -241,21 +241,27 @@ export const DataProvider = ({ children }) => {
     }, [filteredLogs]);
 
 
-    const itemsAssetsLogsInfo = useMemo(() => objectsGroupedLogs?.map(group => {
-        const liveLogs = group.logs.filter(log => log.currentStatusName && log.currentStatusName.toLowerCase().includes('live'));
-        const killedLogs = group.logs.filter(log => log.currentStatusName && log.currentStatusName.toLowerCase().includes('kill'));
-        const removedLogs = group.logs.filter(log => log.currentStatusName && log.currentStatusName.toLowerCase().includes('removed'));
-
-        return {
-            itemNumber: group.itemNumber,
-            sku: group.sku,
-            date: group.date,
-            totalLive: liveLogs.length,
-            totalKilled: killedLogs.length,
-            totalRemoved: removedLogs.length,
-            logs: group.logs,
-        };
-    }), [objectsGroupedLogs]);
+    const itemsAssetsLogsInfo = useMemo(() => 
+        objectsGroupedLogs?.map(group => {
+            const liveLogs = group.logs.filter(log => log.currentStatusName && log.currentStatusName.toLowerCase().includes('live'));
+            const killedLogs = group.logs.filter(log => log.currentStatusName && log.currentStatusName.toLowerCase().includes('kill'));
+            const removedLogs = group.logs.filter(log => log.currentStatusName && log.currentStatusName.toLowerCase().includes('removed'));
+            
+            const uniqueLiveCount = new Set(liveLogs.map(log => log.serialNumber)).size;
+            const uniqueKilledCount = new Set(killedLogs.map(log => log.serialNumber)).size;
+            const uniqueRemovedCount = new Set(removedLogs.map(log => log.serialNumber)).size;
+    
+            return {
+                itemNumber: group.itemNumber,
+                sku: group.sku,
+                date: group.date,
+                totalLive: uniqueLiveCount,
+                totalKilled: uniqueKilledCount,
+                totalRemoved: uniqueRemovedCount,
+                logs: group.logs,
+            };
+        })
+    , [objectsGroupedLogs]);
 
 
 

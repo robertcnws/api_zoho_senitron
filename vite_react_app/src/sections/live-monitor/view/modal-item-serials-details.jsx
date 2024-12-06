@@ -13,6 +13,7 @@ import { generatePrintablePDF } from 'src/utils/printable-pdf';
 import { LoadingContext } from 'src/auth/context/loading-context';
 import ExportCSV from "src/utils/export-csv";
 import { TableHeadCustom, TableNoData } from 'src/components/table';
+import { uuidv4 } from 'src/utils/uuidv4';
 
 
 export function ModalItemSerialsDetails({
@@ -32,8 +33,9 @@ export function ModalItemSerialsDetails({
 
   const TABLE_HEAD = [
     { id: 'createdTime', label: 'Date', width: 300 },
-    { id: 'news', label: 'Received (Serials)', width: 300 },
-    { id: 'losts', label: 'Shipped (Serials)', width: 300 },
+    { id: 'news', label: 'Live (Serials)', width: 300 },
+    { id: 'removed', label: 'Removed (Serials)', width: 300 },
+    { id: 'killed', label: 'Killed (Serials)', width: 300 },
   ];
 
   const handleClose = (modalId) => {
@@ -42,23 +44,91 @@ export function ModalItemSerialsDetails({
 
   const handleLength = (value) => value?.length;
 
-  const [listNews, setListNews] = React.useState([]);
-  const [listLosts, setListLosts] = React.useState([]);
+  const [mapList, setMapList] = React.useState([]);
 
   React.useEffect(() => {
     if (modalDataFiltered) {
-      const lNews = modalDataFiltered?.logs
-        ?.filter(row => typeof row.currentStatusName === 'string' && row.currentStatusName.toLowerCase().includes('live'))
-        .map(row => row.serialNumber);
 
-      const lLosts = modalDataFiltered?.logs
-        ?.filter(row => typeof row.currentStatusName === 'string' && !row.currentStatusName.toLowerCase().includes('live'))
-        .map(row => row.serialNumber);
+      const logs = modalDataFiltered?.logs.filter(item => fDate(item.createdTime, 'YYYY-MM-DD') === date) ?? [];
 
-      setListNews(lNews);
-      setListLosts(lLosts);
+      const groupedByDateTime = logs.reduce((acc, log) => {
+        const dateTimeKey = fDateTime(log.createdTime); // Supongamos que fDateTime formatea la fecha y hora
+
+        if (!acc[dateTimeKey]) {
+          acc[dateTimeKey] = [];
+        }
+        acc[dateTimeKey].push(log);
+
+        return acc;
+      }, {});
+
+      const lNews = Object.entries(groupedByDateTime).map(([dateTime, lgs]) => {
+        const liveLogs = lgs.filter(l => l.currentStatusName?.toLowerCase().includes('live'));
+        const serialNumbers = liveLogs.map(l => l.serialNumber);
+        const uniqueSerialNumbers = [...new Set(serialNumbers)]; 
+        uniqueSerialNumbers.sort();
+        return {
+          createdTime: dateTime,
+          serialNumbers: uniqueSerialNumbers,
+        };
+      }).filter(item => item.serialNumbers.length > 0);
+
+      const lRemoved = Object.entries(groupedByDateTime).map(([dateTime, groupLogs]) => {
+        const removedLogs = groupLogs.filter(l => l.currentStatusName?.toLowerCase().includes('remove'));
+        const serialNumbers = removedLogs.map(l => l.serialNumber);
+        const uniqueSerialNumbers = [...new Set(serialNumbers)]; 
+        return {
+          createdTime: dateTime,
+          serialNumbers: uniqueSerialNumbers,
+        };
+      }).filter(item => item.serialNumbers.length > 0);
+
+      const lKilled = Object.entries(groupedByDateTime).map(([dateTime, groupLogs]) => {
+        const killedLogs = groupLogs.filter(l => l.currentStatusName?.toLowerCase().includes('kill'));
+        const serialNumbers = killedLogs.map(l => l.serialNumber);
+        const uniqueSerialNumbers = [...new Set(serialNumbers)]; 
+        return {
+          createdTime: dateTime,
+          serialNumbers: uniqueSerialNumbers,
+        };
+      }).filter(item => item.serialNumbers.length > 0);
+
+      const ensureEntry = (createdTime, combined) => {
+        if (!combinedMap[createdTime]) {
+          combined[createdTime] = {
+            createdTime,
+            listSerialsNews: [],
+            listSerialsRemoved: [],
+            listSerialsKilled: []
+          };
+        }
+      }
+
+      const combinedMap = {};
+      
+      lNews.forEach(({ createdTime, serialNumbers }) => {
+        ensureEntry(createdTime, combinedMap);
+        combinedMap[createdTime].listSerialsNews = serialNumbers;
+      });
+      
+      lRemoved.forEach(({ createdTime, serialNumbers }) => {
+        ensureEntry(createdTime, combinedMap);
+        combinedMap[createdTime].listSerialsRemoved = serialNumbers;
+      });
+      
+      lKilled.forEach(({ createdTime, serialNumbers }) => {
+        ensureEntry(createdTime, combinedMap);
+        combinedMap[createdTime].listSerialsKilled = serialNumbers;
+      });
+      
+      const finalList = Object.values(combinedMap);
+
+      finalList.sort((a, b) => new Date(b.createdTime) - new Date(a.createdTime));
+
+      setMapList(finalList);
+      
     }
-  }, [modalDataFiltered]);
+  }, [modalDataFiltered, date]);
 
   return (
     <>
@@ -78,7 +148,7 @@ export function ModalItemSerialsDetails({
                     <Stack direction="row" alignItems="center" spacing={1} flexGrow={1} sx={{ width: 1 }}>
                       <ListItemText
                         primary={<Typography variant="h6">{modalTitle} (SKU: {modalDataFiltered?.sku})</Typography>}
-                        secondary={<Typography variant="body2">Date: {fDateTime(modalDataFiltered?.createdTime)}</Typography>}
+                        secondary={<Typography variant="body2">Date: {fDate(modalDataFiltered?.date)}</Typography>}
                       />
                     </Stack>
                   </Grid>
@@ -98,16 +168,17 @@ export function ModalItemSerialsDetails({
                       order={table?.order}
                       orderBy={table?.orderBy}
                       headLabel={TABLE_HEAD}
-                      rowCount={modalDataFiltered?.length}
+                      rowCount={mapList?.length}
                       onSort={table?.onSort}
                     />
                     <TableBody>
-                      {modalDataFiltered?.logs.map((row, index) => (
+                      {mapList?.map((row, index) => (
                         <>
-                          <TableRow key={`${index}-${fDateTime(row.lastSeen)}`}>
-                            <TableCell>{fDateTime(row.lastSeen)}</TableCell>
-                            <TableCell>{listNews.join(', ')}</TableCell>
-                            <TableCell>{listLosts.join(', ')}</TableCell>
+                          <TableRow key={`${index}-${fDateTime(row.createdTime)}-${uuidv4(index)}`}>
+                            <TableCell>{fDateTime(row.createdTime)}</TableCell>
+                            <TableCell sx={{ color: 'success.main' }}>{row.listSerialsNews.join(', ')}</TableCell>
+                            <TableCell sx={{ color: 'error.main' }}>{row.listSerialsRemoved.join(', ')}</TableCell>
+                            <TableCell sx={{ color: 'warning.main' }}>{row.listSerialsKilled.join(', ')}</TableCell>
                           </TableRow>
                         </>
                       ))}

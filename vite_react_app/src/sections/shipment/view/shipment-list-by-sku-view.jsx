@@ -134,7 +134,7 @@ export function ShipmentListBySkuView() {
 
   const allShipments = useMemo(() => shipments || null, [shipments]);
 
-  console.log('allShipments:', allShipments);
+  // console.log('allShipments:', allShipments);
 
   const allPackages = useMemo(() => {
     if (allShipments) {

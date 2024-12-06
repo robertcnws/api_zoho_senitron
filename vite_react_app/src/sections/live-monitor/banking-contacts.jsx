@@ -135,9 +135,15 @@ function Item({ item, sx, setModalDataFiltered, handleOpenModal, date, ...other 
               >
                 <Iconify icon="eva:arrow-ios-upward-fill" width={16} height={16} />
                 <span>
-                  {item.logs.reduce(
-                    (acc, h) => acc + (h.currentStatusName.toLowerCase().includes('live') ? 1 : 0), 0)
-                  } Received
+                  <b>{
+                    item.logs.reduce((acc, h) => {
+                      if (h.currentStatusName?.toLowerCase().includes('live') && !acc.seen.has(h.serialNumber)) {
+                        acc.seen.add(h.serialNumber);
+                        acc.count += 1;
+                      }
+                      return acc;
+                    }, { count: 0, seen: new Set() }).count
+                  }</b> Live
                 </span>
               </Box>
             )}
@@ -148,19 +154,31 @@ function Item({ item, sx, setModalDataFiltered, handleOpenModal, date, ...other 
               >
                 <Iconify icon="eva:arrow-ios-downward-fill" width={16} height={16} />
                 <span>
-                  {item.logs.reduce(
-                    (acc, h) => acc + (
-                      (h.currentStatusName.toLowerCase().includes('removed') || h.currentStatusName.toLowerCase().includes('kill')) ? 1 : 0
-                    ), 0)
-                  } Shipped (Removed: {item.logs.reduce(
-                    (acc, h) => acc + (
-                      h.currentStatusName.toLowerCase().includes('removed') ? 1 : 0
-                    ), 0)
-                  }, Kill: {item.logs.reduce(
-                    (acc, h) => acc + (
-                      h.currentStatusName.toLowerCase().includes('kill') ? 1 : 0
-                    ), 0)
-                  })
+                  <b>{
+                    item.logs.reduce((acc, h) => {
+                      if (!h.currentStatusName?.toLowerCase().includes('live') && !acc.seen.has(h.serialNumber)) {
+                        acc.seen.add(h.serialNumber);
+                        acc.count += 1;
+                      }
+                      return acc;
+                    }, { count: 0, seen: new Set() }).count
+                  }</b> Shipped <span style={{ color: 'orange', fontSize: 'smaller' }}>------</span> <span>(Removed: <b>{
+                    item.logs.reduce((acc, h) => {
+                      if (h.currentStatusName?.toLowerCase().includes('remove') && !acc.seen.has(h.serialNumber)) {
+                        acc.seen.add(h.serialNumber);
+                        acc.count += 1;
+                      }
+                      return acc;
+                    }, { count: 0, seen: new Set() }).count
+                  }</b>, Kill: <b>{
+                      item.logs.reduce((acc, h) => {
+                        if (h.currentStatusName?.toLowerCase().includes('kill') && !acc.seen.has(h.serialNumber)) {
+                          acc.seen.add(h.serialNumber);
+                          acc.count += 1;
+                        }
+                        return acc;
+                      }, { count: 0, seen: new Set() }).count
+                    }</b>)</span>
                 </span>
               </Box>
             )}
