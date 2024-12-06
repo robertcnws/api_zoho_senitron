@@ -288,7 +288,7 @@ def load_senitron_inventory_item_assets_logs(request):
                     
             selected_items = [v['item_data'] for v in items_map.values()]
             
-            logger.info('Selected senitron items assets logs to insert:', len(selected_items))
+            logger.info(f'Selected senitron items assets logs to insert: {len(selected_items)}')
             
             assets = []
             for item_data in selected_items:
