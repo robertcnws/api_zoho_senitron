@@ -10,22 +10,26 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db.models import Max
-from .models import AppConfig, \
-                    ZohoInventoryItem, \
-                    ZohoInventoryShipmentSalesOrder, \
-                    LoginUser, \
-                    ZohoSkuTrackInfo, \
-                    ZohoShipmentOrder, \
-                    ZohoPackage, \
-                    ZohoItemAssetsTrack, \
-                    JobsUpdatingTimes, \
+from .models import (
+                    AppConfig, 
+                    ZohoInventoryItem, 
+                    ZohoInventoryShipmentSalesOrder, 
+                    LoginUser, 
+                    ZohoSkuTrackInfo, 
+                    ZohoShipmentOrder, 
+                    ZohoPackage, 
+                    ZohoItemAssetsTrack, 
+                    JobsUpdatingTimes, 
                     ManualUpdatingJobs
+                )
 from api_senitron.models import SenitronItem, TimelineItem
-from .manage_instances import create_inventory_item_instance, \
-                              create_inventory_sales_order_instance, \
-                              create_inventory_shipment_instance, \
-                              create_inventory_package_instance, \
+from .manage_instances import (
+                              create_inventory_item_instance,
+                              create_inventory_sales_order_instance,
+                              create_inventory_shipment_instance, 
+                              create_inventory_package_instance, 
                               create_zoho_item_assets_track_instance
+                            )
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.db import transaction

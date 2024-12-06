@@ -1,4 +1,7 @@
-import { useCallback, useContext, useEffect } from 'react';
+import { useCallback, useEffect, useContext } from 'react';
+
+import dayjs from 'dayjs';
+import axios from 'axios';
 
 import Stack from '@mui/material/Stack';
 import MenuList from '@mui/material/MenuList';
@@ -6,34 +9,81 @@ import MenuItem from '@mui/material/MenuItem';
 import TextField from '@mui/material/TextField';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { formHelperTextClasses } from '@mui/material/FormHelperText';
 
 import { Iconify } from 'src/components/iconify';
 import { usePopover, CustomPopover } from 'src/components/custom-popover';
-import { CONFIG } from 'src/config-global';
-import axios from 'axios';
+
 import { LoadingContext } from 'src/auth/context/loading-context';
-import { Checkbox, FormControl, InputLabel, ListItemText, OutlinedInput, Select } from '@mui/material';
-import { generatePrintablePDF } from 'src/utils/printable-pdf';
+import { CONFIG } from 'src/config-global';
 import ExportCSV from 'src/utils/export-csv';
-import { Label } from 'src/components/label';
 import { fDate } from 'src/utils/format-time';
-import { height } from '@mui/system';
+import { generatePrintablePDF } from 'src/utils/printable-pdf';
+
 
 // ----------------------------------------------------------------------
 
-export function ItemTableToolbar({ filters, onResetPage, options, dataFiltered, headersCSV, setUpdating, isListAll = true, title, setTitleLinearProgress }) {
+export function ItemTableShippedLogsToolbar({ 
+  filters, 
+  onResetPage, 
+  options, 
+  dataFiltered, 
+  headersCSV, 
+  setUpdating, 
+  isListAll = true, 
+  globalDateFilters,
+  title, 
+  setTitleLinearProgress 
+}) {
   const popover = usePopover();
 
   const { setLoading, setError, setComponent } = useContext(LoadingContext);
 
+
+  useEffect(() => {
+    setComponent('sales orders');
+  }, [setComponent]);
+
+  useEffect(() => {
+    if (localStorage.getItem('startDate')) filters.setState({ startDate: dayjs(localStorage.getItem('startDate')) });
+    if (localStorage.getItem('endDate')) filters.setState({ endDate: dayjs(localStorage.getItem('endDate')) });
+    const today = dayjs();
+    if (!filters.state.startDate && !filters.state.endDate) {
+      filters.setState({
+        startDate: today.subtract(1, 'day'),
+        endDate: today,
+      });
+      globalDateFilters.setState({
+        startDate: today.subtract(1, 'day'),
+        endDate: today,
+      });
+    }
+  }, [filters, globalDateFilters]);
+
   const handleFilterName = useCallback(
     (event) => {
       onResetPage();
-      filters.setState({ name: event.target.value });
+      filters.setState({ salesorderNumber: event.target.value });
     },
     [filters, onResetPage]
   );
 
+  const handleFilterEndDate = useCallback(
+    (newValue) => {
+      onResetPage();
+      const isoString = newValue.toISOString();
+      localStorage.setItem('endDate', isoString);
+      filters.setState({ endDate: dayjs(isoString) });
+      localStorage.setItem('startDate', dayjs(isoString).subtract(1, 'day').toISOString());
+      filters.setState({ startDate: dayjs(isoString).subtract(1, 'day') });
+      globalDateFilters.setState({
+        startDate: dayjs(isoString).subtract(1, 'day'),
+        endDate: dayjs(isoString),
+      });
+    },
+    [filters, globalDateFilters, onResetPage]
+  );
 
   return (
     <>
@@ -44,36 +94,40 @@ export function ItemTableToolbar({ filters, onResetPage, options, dataFiltered, 
         sx={{ p: 2.5, pr: { xs: 2.5, md: 1 } }}
       >
 
+        <DatePicker
+          label="Date"
+          value={filters.state.endDate}
+          onChange={handleFilterEndDate}
+          slotProps={{
+            textField: {
+              fullWidth: true,
+            },
+          }}
+          sx={{
+            maxWidth: { md: 200 },
+            [`& .${formHelperTextClasses.root}`]: {
+              position: { md: 'absolute' },
+              bottom: { md: -40 },
+            },
+          }}
+          format='YYYY-MM-DD'
+        />
+
         <Stack direction="row" alignItems="center" spacing={2} flexGrow={1} sx={{ width: 1 }}>
-          {!isListAll && (
-            <Label color='info' sx={{ height: 55, width: 100 }}>
-              <ListItemText
-                primary='SKUs on'
-                secondary={fDate(new Date())}
-                primaryTypographyProps={{ variant: 'body2', noWrap: true }}
-                secondaryTypographyProps={{
-                  mt: 0.5,
-                  component: 'span',
-                  variant: 'caption',
-                }}
-              />
-            </Label>
-          )}
-          {/* {dataFiltered?.length > 0 && ( */}
-            <TextField
-              fullWidth
-              value={filters.state.name}
-              onChange={handleFilterName}
-              placeholder={isListAll ? "Search by item (NAME, SKU, ID or STOCK ON HAND)..." : "Search by item SKU..."}
-              // disabled={dataFiltered?.length === 0}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled' }} />
-                  </InputAdornment>
-                ),
-              }}
-            />
+          <TextField
+            fullWidth
+            value={filters.state.name}
+            onChange={handleFilterName}
+            placeholder={isListAll ? "Search by item (NAME, SKU, ID or STOCK ON HAND)..." : "Search by item SKU..."}
+            // disabled={dataFiltered?.length === 0}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled' }} />
+                </InputAdornment>
+              ),
+            }}
+          />
           {/* )} */}
 
           <IconButton onClick={popover.onOpen}>
@@ -102,10 +156,9 @@ export function ItemTableToolbar({ filters, onResetPage, options, dataFiltered, 
             <MenuItem
               onClick={() => {
                 popover.onClose();
-                // setLoading(true);
                 setUpdating(true);
                 setTitleLinearProgress('Fetching updates shipments from Zoho...');
-                const date = fDate(new Date(), 'YYYY-MM-DD');
+                const date = fDate(filters.state.endDate, 'YYYY-MM-DD');
                 axios
                   .post(`${CONFIG.apiUrl}/api_zoho/load/inventory_shipments/`, {
                     start_date: date,
@@ -124,7 +177,7 @@ export function ItemTableToolbar({ filters, onResetPage, options, dataFiltered, 
               }}
             >
               <Iconify icon="mdi:update" />
-              {`Fetch Updates from Zoho (${fDate(new Date(), 'YYYY-MM-DD')})`}
+              {`Fetch Updates from Zoho (${fDate(filters.state.endDate, 'YYYY-MM-DD')})`}
             </MenuItem>
           )}
           {isListAll && (

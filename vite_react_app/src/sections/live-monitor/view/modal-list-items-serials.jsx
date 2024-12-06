@@ -23,10 +23,11 @@ export function ModalListItemsSerials({
     handleFilterName,
     itemsAssetsLogsInfo,
     table,
+    globalDateFilters,
     ...other
 }) {
 
-    const date = fDate(new Date(), 'YYYY-MM-DD');
+    const date = fDate(globalDateFilters.state.endDate, 'YYYY-MM-DD');
 
     const listFiltered = useMemo(() => itemsAssetsLogsInfo.filter(item => fDate(item.date, 'YYYY-MM-DD') === date), [itemsAssetsLogsInfo, date]);
 
@@ -79,7 +80,7 @@ export function ModalListItemsSerials({
                         {listFiltered ? (
                             <Box sx={{ gap: 3, display: 'flex', flexDirection: 'column' }}>
                                 <BankingContacts
-                                    title="Items Shipped / Received"
+                                    title="Items Shipped / Live"
                                     subheader={`
                   ${listFiltered?.length} 
                   ${lastLog.createdTime ? ` SKUs with last changes at ${fDateTime(lastLog.createdTime)}` : `SKUs without changes`
@@ -91,6 +92,7 @@ export function ModalListItemsSerials({
                                     table={table}
                                     filters={filters}
                                     handleFilterName={handleFilterName}
+                                    globalDateFilters={globalDateFilters}
                                 />
                             </Box>
                         ) : (

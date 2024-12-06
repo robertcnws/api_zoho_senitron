@@ -77,6 +77,7 @@ export function ModalItemSerialsDetails({
         const removedLogs = groupLogs.filter(l => l.currentStatusName?.toLowerCase().includes('remove'));
         const serialNumbers = removedLogs.map(l => l.serialNumber);
         const uniqueSerialNumbers = [...new Set(serialNumbers)]; 
+        uniqueSerialNumbers.sort();
         return {
           createdTime: dateTime,
           serialNumbers: uniqueSerialNumbers,
@@ -87,6 +88,7 @@ export function ModalItemSerialsDetails({
         const killedLogs = groupLogs.filter(l => l.currentStatusName?.toLowerCase().includes('kill'));
         const serialNumbers = killedLogs.map(l => l.serialNumber);
         const uniqueSerialNumbers = [...new Set(serialNumbers)]; 
+        uniqueSerialNumbers.sort();
         return {
           createdTime: dateTime,
           serialNumbers: uniqueSerialNumbers,
@@ -172,7 +174,7 @@ export function ModalItemSerialsDetails({
                       onSort={table?.onSort}
                     />
                     <TableBody>
-                      {mapList?.map((row, index) => (
+                      {mapList?.slice(0, 10).map((row, index) => (
                         <>
                           <TableRow key={`${index}-${fDateTime(row.createdTime)}-${uuidv4(index)}`}>
                             <TableCell>{fDateTime(row.createdTime)}</TableCell>

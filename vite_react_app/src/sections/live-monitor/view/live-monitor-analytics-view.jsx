@@ -66,6 +66,11 @@ export function LiveMonitorAnalyticsView() {
 
   const filters = useSetState({ name: '' });
 
+  const globalDateFilters = useSetState({
+    startDate: null,
+    endDate: null,
+  });
+
   const table = useTable({ defaultDense: true });
 
   const itemsZohoSenitronRef = useRef(null);
@@ -86,7 +91,13 @@ export function LiveMonitorAnalyticsView() {
     itemsSenitronZoho,
   } = useDataContext();
 
-  const date = fDate(new Date(), 'YYYY-MM-DD');
+  const [date, setDate] = useState(null);
+
+  useEffect(() => {
+    if (globalDateFilters.state.startDate && globalDateFilters.state.endDate) {
+      setDate(fDate(globalDateFilters.state.endDate, 'YYYY-MM-DD'));
+    }
+  }, [globalDateFilters]);
 
   const totalsNewsTrack = useMemo(() => {
     if (itemsAssetsLogsInfo && itemsAssetsLogsInfo.length > 0) {
@@ -232,7 +243,8 @@ export function LiveMonitorAnalyticsView() {
       itemsZohoData &&
       totalZohoQty !== null &&
       totalSenitronQty !== null &&
-      totalErrors !== null &&
+      totalErrors !== null && 
+      globalDateFilters.state.endDate !== null &&
       !updating
     ) {
       setDataLoaded(true);
@@ -246,6 +258,7 @@ export function LiveMonitorAnalyticsView() {
     totalZohoQty,
     totalSenitronQty,
     totalErrors,
+    globalDateFilters.state.endDate,
     updating,
   ]);
 
@@ -387,6 +400,7 @@ export function LiveMonitorAnalyticsView() {
                       updating={updating}
                       setUpdating={setUpdating}
                       setTitleLinearProgress={setTitleLinearProgress}
+                      globalDateFilters={globalDateFilters}
                     />
 
                   </Box>
@@ -462,6 +476,7 @@ export function LiveMonitorAnalyticsView() {
             handleFilterName={handleFilterName}
             itemsAssetsLogsInfo={itemsAssetsLogsInfo}
             table={table}
+            globalDateFilters={globalDateFilters}
           />
 
 

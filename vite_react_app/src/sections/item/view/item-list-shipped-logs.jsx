@@ -34,7 +34,7 @@ import { ConfirmDialog } from 'src/components/custom-dialog';
 
 import { LoadingContext } from 'src/auth/context/loading-context';
 import { useDataContext } from 'src/auth/context/data/data-context';
-import { fDate } from 'src/utils/format-time';
+import { fDate, fIsBetween } from 'src/utils/format-time';
 import {
     useTable,
     emptyRows,
@@ -50,6 +50,7 @@ import {
 import { ItemTableRow } from '../item-table-row';
 import { ItemTableToolbar } from '../item-table-toolbar';
 import { ItemTableFiltersResult } from '../item-table-filters-result';
+import { ItemTableShippedLogsToolbar } from '../item-table-shipped-logs-toolbar';
 
 
 
@@ -74,6 +75,7 @@ const headersCSV = [
 // ----------------------------------------------------------------------
 
 export function ItemListShippedLogsView({
+
     setTotalsItemsNoReconciled,
     setTotalsItemsLost,
     setTotalsItemsAll,
@@ -81,7 +83,8 @@ export function ItemListShippedLogsView({
     setListItemsLost,
     updating,
     setUpdating,
-    setTitleLinearProgress
+    setTitleLinearProgress,
+    globalDateFilters
 }) {
 
     const {
@@ -108,7 +111,12 @@ export function ItemListShippedLogsView({
 
     const [tableData, setTableData] = useState([]);
 
-    const filters = useSetState({ name: '', status: STATUS_OPTIONS.includes(localStorage.getItem('itemStatus')) ? localStorage.getItem('itemStatus') : 'all' });
+    const filters = useSetState({
+        name: '',
+        status: STATUS_OPTIONS.includes(localStorage.getItem('itemStatus')) ? localStorage.getItem('itemStatus') : 'all',
+        startDate: null,
+        endDate: null,
+    });
 
 
     useEffect(() => {
@@ -142,7 +150,9 @@ export function ItemListShippedLogsView({
     const listSerials = useMemo(() => itemsAssetsLogsInfo, [itemsAssetsLogsInfo]);
 
 
-    const listShipments = useMemo(() => finalGroupedArray?.filter((item) => item.date === date), [finalGroupedArray, date]);
+    // const listShipments = useMemo(() => finalGroupedArray?.filter((item) => item.date === fDate(filters.state.endDate, 'YYYY-MM-DD')), [finalGroupedArray, filters.state.endDate]);
+
+    const listShipments = useMemo(() => finalGroupedArray, [finalGroupedArray]);
 
     // console.log('listShipments', listShipments);
 
@@ -189,12 +199,12 @@ export function ItemListShippedLogsView({
     }, [listSerials, listShipments, itemsZohoSenitron, handleShippedSerialQuantity]);
 
     useEffect(() => {
-        setListItemsLost(tableData?.filter((item) => item.differenceShipped < 0 && !item.isReconciled));
-        setTotalsItemsLost(tableData?.filter((item) => item.differenceShipped < 0 && !item.isReconciled).length);
-        setListItemsNoReconciled(tableData?.filter((item) => item.differenceShipped > 0 && !item.isReconciled));
-        setTotalsItemsNoReconciled(tableData?.filter((item) => item.differenceShipped > 0 && !item.isReconciled).length);
+        setListItemsLost(tableData?.filter((item) => item.differenceShipped < 0 && !item.isReconciled && item.date === fDate(filters.state.endDate, 'YYYY-MM-DD')));
+        setTotalsItemsLost(tableData?.filter((item) => item.differenceShipped < 0 && !item.isReconciled && item.date === fDate(filters.state.endDate, 'YYYY-MM-DD')).length);
+        setListItemsNoReconciled(tableData?.filter((item) => item.differenceShipped > 0 && !item.isReconciled && item.date === fDate(filters.state.endDate, 'YYYY-MM-DD')));
+        setTotalsItemsNoReconciled(tableData?.filter((item) => item.differenceShipped > 0 && !item.isReconciled && item.date === fDate(filters.state.endDate, 'YYYY-MM-DD')).length);
         setTotalsItemsAll(tableData?.length);
-    }, [tableData, setTotalsItemsLost, setTotalsItemsNoReconciled, setTotalsItemsAll, setListItemsLost, setListItemsNoReconciled]);
+    }, [tableData, setTotalsItemsLost, setTotalsItemsNoReconciled, setTotalsItemsAll, setListItemsLost, setListItemsNoReconciled, filters.state.endDate]);
 
     const dataFiltered = applyFilter({
         inputData: tableData,
@@ -300,9 +310,9 @@ export function ItemListShippedLogsView({
                                 value={tab.value}
                                 label={tab.label}
                                 sx={{
-                                    bgcolor: tab.value === 'lost' && tableData.filter((it) => it.differenceShipped < 0 && !it.isReconciled).length > 0 ? 'error.main' :
-                                        tab.value === 'not_matched' && tableData.filter((it) => it.differenceShipped > 0 && !it.isReconciled).length > 0 ? 'warning.main' : 'transparent',
-                                    color: tab.value === 'lost' && tableData.filter((it) => it.differenceShipped < 0 && !it.isReconciled).length > 0 ? 'white' : 'inherit',
+                                    bgcolor: tab.value === 'lost' && tableData.filter((it) => it.differenceShipped < 0 && !it.isReconciled && it.date === fDate(filters.state.endDate, 'YYYY-MM-DD')).length > 0 ? 'error.main' :
+                                        tab.value === 'not_matched' && tableData.filter((it) => it.differenceShipped > 0 && !it.isReconciled && it.date === fDate(filters.state.endDate, 'YYYY-MM-DD')).length > 0 ? 'warning.main' : 'transparent',
+                                    color: tab.value === 'lost' && tableData.filter((it) => it.differenceShipped < 0 && !it.isReconciled && it.date === fDate(filters.state.endDate, 'YYYY-MM-DD')).length > 0 ? 'white' : 'inherit',
                                     px: 1.5,
                                     py: 1,
                                     borderRadius: '8px',
@@ -321,12 +331,12 @@ export function ItemListShippedLogsView({
                                         }
                                     >
                                         {tab.value === 'matched' ?
-                                            tableData.filter((it) => it.differenceShipped === 0).length :
+                                            tableData.filter((it) => it.differenceShipped === 0 && it.date === fDate(filters.state.endDate, 'YYYY-MM-DD')).length :
                                             tab.value === 'not_matched' ?
-                                                tableData.filter((it) => it.differenceShipped > 0 && !it.isReconciled).length :
+                                                tableData.filter((it) => it.differenceShipped > 0 && !it.isReconciled && it.date === fDate(filters.state.endDate, 'YYYY-MM-DD')).length :
                                                 tab.value === 'lost' ?
-                                                    tableData.filter((it) => it.differenceShipped < 0 && !it.isReconciled).length :
-                                                    tableData.length
+                                                    tableData.filter((it) => it.differenceShipped < 0 && !it.isReconciled && it.date === fDate(filters.state.endDate, 'YYYY-MM-DD')).length :
+                                                    tableData.filter((it) => it.date === fDate(filters.state.endDate, 'YYYY-MM-DD')).length
                                         }
                                     </Label>
                                 }
@@ -335,7 +345,7 @@ export function ItemListShippedLogsView({
                     </Tabs>
                 )}
 
-                <ItemTableToolbar
+                <ItemTableShippedLogsToolbar
                     filters={filters}
                     onResetPage={table.onResetPage}
                     options={{ values: STATUS_OPTIONS.map((option) => option.label) }}
@@ -344,6 +354,7 @@ export function ItemListShippedLogsView({
                     setUpdating={setUpdating}
                     setTitleLinearProgress={setTitleLinearProgress}
                     isListAll={false}
+                    globalDateFilters={globalDateFilters}
                     title={filters.state.status === 'all' ? 'All SKUs' :
                         filters.state.status === 'lost' ? 'Losts Shipped SKUs' :
                             filters.state.status === 'matched' ? 'Shipped SKUs matched' :
@@ -450,7 +461,7 @@ export function ItemListShippedLogsView({
 }
 
 function applyFilter({ inputData, comparator, filters }) {
-    const { name, status } = filters;
+    const { name, status, startDate, endDate } = filters;
 
     const stabilizedThis = inputData.map((el, index) => [el, index]);
 
@@ -475,6 +486,9 @@ function applyFilter({ inputData, comparator, filters }) {
         inputData = inputData.filter((item) => item.differenceShipped === 0);
     } else if (status === 'not_matched') {
         inputData = inputData.filter((item) => item.differenceShipped > 0 && !item.isReconciled);
+    }
+    if (startDate && endDate) {
+        inputData = inputData.filter((item) => fIsBetween(item.date, startDate, endDate));
     }
     return inputData;
 }

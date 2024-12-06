@@ -35,10 +35,11 @@ export function BankingContacts({
   table,
   filters,
   handleFilterName,
+  globalDateFilters,
   ...other
 }) {
 
-  const date = fDate(new Date(), 'YYYY-MM-DD');
+  const date = fDate(globalDateFilters.state.endDate, 'YYYY-MM-DD');
 
   const [modalDataFiltered, setModalDataFiltered] = useState(null);
   const modalItemSerialsDetailsTitle = 'Item Serials Details';
@@ -137,7 +138,9 @@ function Item({ item, sx, setModalDataFiltered, handleOpenModal, date, ...other 
                 <span>
                   <b>{
                     item.logs.reduce((acc, h) => {
-                      if (h.currentStatusName?.toLowerCase().includes('live') && !acc.seen.has(h.serialNumber)) {
+                      if (h.currentStatusName?.toLowerCase().includes('live')
+                        && !acc.seen.has(h.serialNumber)
+                        && fDate(h.createdTime, 'YYYY-MM-DD').includes(date)) {
                         acc.seen.add(h.serialNumber);
                         acc.count += 1;
                       }

@@ -2,18 +2,23 @@ from django.shortcuts import render
 from django.conf import settings
 from django.http import JsonResponse
 from django.db import transaction
+from dateutil.parser import parse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from .models import SenitronItem, \
-                    SenitronItemAsset, \
-                    TimelineItem, \
-                    SenitronStatus, \
+from .models import (
+                    SenitronItem, 
+                    SenitronItemAsset, 
+                    TimelineItem, 
+                    SenitronStatus, 
                     SenitronItemAssetLogs
+                )
 from api_zoho.models import ZohoInventoryItem
-from .manage_instances import create_inventory_item_instance, \
-                              create_inventory_item_asset_instance, \
+from .manage_instances import (
+                              create_inventory_item_instance, 
+                              create_inventory_item_asset_instance, 
                               create_inventory_item_asset_logs_instance
+                            )
 from datetime import datetime
 from django.utils import timezone
 from requests.adapters import HTTPAdapter
@@ -259,8 +264,34 @@ def load_senitron_inventory_item_assets_logs(request):
             response.raise_for_status()
             items = response.json().get('assets', [])
             
-            assets = []
+            items_map = {}
+
             for item_data in items:
+                serial_number = item_data.get('serial_number')
+                current_status = item_data.get('current_status', {})
+                current_status_id = current_status.get('id')
+                current_status_name = current_status.get('name')
+                last_seen_str = item_data.get('last_seen')
+                
+                if last_seen_str:
+                    last_seen_dt = parse(last_seen_str)
+                else:
+                    continue
+
+                key = (serial_number, current_status_id, current_status_name)
+                
+                if key not in items_map or last_seen_dt > items_map[key]['last_seen_dt']:
+                    items_map[key] = {
+                        'item_data': item_data,
+                        'last_seen_dt': last_seen_dt
+                    }
+                    
+            selected_items = [v['item_data'] for v in items_map.values()]
+            
+            logger.info('Selected senitron items assets logs to insert:', len(selected_items))
+            
+            assets = []
+            for item_data in selected_items:
                 asset = create_inventory_item_asset_logs_instance(logger, item_data)
                 if asset:
                     assets.append(asset)
@@ -297,6 +328,6 @@ def load_senitron_inventory_item_assets_logs(request):
 @permission_classes([AllowAny])
 def remove_old_senitron_items_assets_logs(request):
     now = timezone.now()
-    three_days_ago = now - timezone.timedelta(days=3)
+    three_days_ago = now - timezone.timedelta(days=30)
     SenitronItemAssetLogs.objects.filter(created_time__lt=three_days_ago).delete()
-    return JsonResponse({'message': 'Old Senitron Items Assets Logs removed successfully'}, status=200)
+    return JsonResponse({'message': '30 days old Senitron Items Assets Logs removed successfully'}, status=200)
