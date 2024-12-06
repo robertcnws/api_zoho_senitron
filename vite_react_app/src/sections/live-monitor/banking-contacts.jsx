@@ -162,15 +162,17 @@ function Item({ item, sx, setModalDataFiltered, handleOpenModal, date, ...other 
                       }
                       return acc;
                     }, { count: 0, seen: new Set() }).count
-                  }</b> Shipped <span style={{ color: 'orange', fontSize: 'smaller' }}>------</span> <span>(Removed: <b>{
-                    item.logs.reduce((acc, h) => {
-                      if (h.currentStatusName?.toLowerCase().includes('remove') && !acc.seen.has(h.serialNumber)) {
-                        acc.seen.add(h.serialNumber);
-                        acc.count += 1;
-                      }
-                      return acc;
-                    }, { count: 0, seen: new Set() }).count
-                  }</b>, Kill: <b>{
+                  }</b> Shipped <span style={{ color: 'orange', fontSize: 'smaller' }}> </span>
+                  <span style={{ color: 'orange', fontSize: 'smaller' }}>
+                    (Removed: <b>{
+                      item.logs.reduce((acc, h) => {
+                        if (h.currentStatusName?.toLowerCase().includes('remove') && !acc.seen.has(h.serialNumber)) {
+                          acc.seen.add(h.serialNumber);
+                          acc.count += 1;
+                        }
+                        return acc;
+                      }, { count: 0, seen: new Set() }).count
+                    }</b>, Kill: <b>{
                       item.logs.reduce((acc, h) => {
                         if (h.currentStatusName?.toLowerCase().includes('kill') && !acc.seen.has(h.serialNumber)) {
                           acc.seen.add(h.serialNumber);
