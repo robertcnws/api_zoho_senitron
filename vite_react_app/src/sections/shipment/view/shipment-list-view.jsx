@@ -90,6 +90,7 @@ export function ShipmentListView() {
 
 
   useEffect(() => {
+    localStorage.removeItem('routeShipmentByLiveMonitor');
     const page = localStorage.getItem('orderPage');
     if (page) {
       table.setPage(parseInt(page, 10));

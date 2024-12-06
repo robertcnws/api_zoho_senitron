@@ -436,7 +436,7 @@ export function LiveMonitorAnalyticsView() {
                       data={
                         [
                           { status: 'Canceled', value: totalsLostsTrack + totalsNewsTrack, quantity: totalsLostsTrack },
-                          { status: 'Sold', value: totalsNewsTrack + totalsNewsTrack, quantity: totalsNewsTrack },
+                          { status: 'Sold', value: totalsLostsTrack + totalsNewsTrack, quantity: totalsNewsTrack },
                         ]
                       }
                       sx={{ boxShadow: { md: 'none' } }}

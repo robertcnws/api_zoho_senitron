@@ -25,7 +25,7 @@ export function ShipmentDetailsView({ shipment }) {
   return (
     <DashboardContent>
       <ShipmentDetailsToolbar
-        backLink={paths.dashboard.shipment.root}
+        backLink={localStorage.getItem('routeShipmentByLiveMonitor') ?  paths.dashboard.general.liveMonitor : paths.dashboard.shipment.root}
         orderNumber={shipment?.shipmentNumber}
         createdAt={shipment?.createdTime}
         status={status}

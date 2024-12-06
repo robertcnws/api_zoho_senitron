@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useContext, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useContext, useMemo } from 'react';
 import axios from 'axios';
 import Box from '@mui/material/Box';
 import Tab from '@mui/material/Tab';
@@ -12,7 +12,7 @@ import TableContainer from '@mui/material/TableContainer';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import Alert from '@mui/material/Alert';
-import { LinearProgress, TableCell, TableRow } from '@mui/material';
+import { Collapse, Grid, LinearProgress, Link, ListItemText, Paper, Stack, TableCell, TableRow } from '@mui/material';
 
 import { paths } from 'src/routes/paths';
 import { useRouter } from 'src/routes/hooks';
@@ -25,6 +25,7 @@ import { varAlpha } from 'src/theme/styles';
 import { DashboardContent } from 'src/layouts/dashboard';
 import { ITEM_STATUS_SHORT_OPTIONS, ITEM_SYNC_OPTIONS, useItemsQuery, useSenitronItemsQuery } from 'src/_mock/_items';
 import { CONFIG } from 'src/config-global';
+import { usePopover } from 'src/components/custom-popover';
 
 import { Label } from 'src/components/label';
 import { toast } from 'src/components/snackbar';
@@ -51,6 +52,7 @@ import { ItemTableRow } from '../item-table-row';
 import { ItemTableToolbar } from '../item-table-toolbar';
 import { ItemTableFiltersResult } from '../item-table-filters-result';
 import { ItemTableShippedLogsToolbar } from '../item-table-shipped-logs-toolbar';
+
 
 
 
@@ -99,10 +101,12 @@ export function ItemListShippedLogsView({
     const { isMobile } = useContext(LoadingContext);
 
     const TABLE_HEAD = [
-        { id: 'sku', label: 'SKU', width: isMobile ? 100 : 250 },
+        { id: 'sku', label: 'SKU', width: isMobile ? 100 : 350 },
+        { id: 'date', label: 'Date', width: isMobile ? 50 : 200 },
         { id: 'itemTotalQty', label: 'Qty Shipped', width: isMobile ? 50 : 100 },
         { id: 'shipmentSerialsQuantity', label: 'RFID Count', width: isMobile ? 50 : 100 },
         { id: 'differenceShipped', label: 'Difference', width: isMobile ? 50 : 100 },
+        { id: '' },
     ];
 
     const table = useTable({ defaultDense: true });
@@ -110,6 +114,20 @@ export function ItemListShippedLogsView({
     const router = useRouter();
 
     const [tableData, setTableData] = useState([]);
+
+    const [openRowIds, setOpenRowIds] = useState(new Set());
+
+    const toggleRow = (id) => {
+        setOpenRowIds(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(id)) {
+                newSet.delete(id);
+            } else {
+                newSet.add(id);
+            }
+            return newSet;
+        });
+    };
 
     const filters = useSetState({
         name: '',
@@ -240,6 +258,14 @@ export function ItemListShippedLogsView({
         [router, filters]
     );
 
+    const handleViewShipment = useCallback(
+        (id) => {
+            localStorage.setItem('routeShipmentByLiveMonitor', id);
+            router.push(paths.dashboard.shipment.details(id));
+        },
+        [router]
+    );
+
     // if (!tableData || tableData.length === 0) {
     //     return (
     //         <DashboardContent>
@@ -285,6 +311,78 @@ export function ItemListShippedLogsView({
             </DashboardContent>
         );
     }
+
+    const renderSecondary = (row) => (
+        <TableRow>
+            <TableCell sx={{ p: 0, border: 'none' }} colSpan={8}>
+                <Collapse
+                    in={openRowIds.has(row.itemId)}
+                    timeout="auto"
+                    unmountOnExit
+                    sx={{ bgcolor: 'background.neutral' }}
+                    key={`${row.id}-collapse`}
+                >
+                    <Paper sx={{ m: 1.5 }} key='renderSecondary'>
+                        {row.linePackages?.map((item, index) => (
+                            <React.Fragment key={`${item.package_id}-${index}`}>
+                                <Stack
+                                    direction="row"
+                                    alignItems="center"
+                                    sx={{
+                                        p: (theme) => theme.spacing(1, 1, 1, 1),
+                                        '&:not(:last-of-type)': {
+                                            borderBottom: (theme) => `solid 2px ${theme.vars.palette.background.neutral}`,
+                                        },
+                                    }}
+                                >
+                                    <Grid container spacing={2} alignItems="center">
+                                        <Grid item xs={11}>
+                                            <ListItemText
+                                                secondary={
+                                                    <>
+                                                        <Grid container spacing={1}>
+                                                            <Grid item xs={4}>
+                                                                <Typography variant="body2">
+                                                                    SKU: <strong>{row.sku}</strong>
+                                                                </Typography>
+                                                            </Grid>
+                                                            <Grid item xs={3}>
+                                                                <Typography variant="body2">
+                                                                    # Pkg: <strong>{item.packageNumber}</strong>
+                                                                </Typography>
+                                                            </Grid>
+                                                            <Grid item xs={3}>
+                                                                # Shipment: <strong> </strong>
+                                                                <Link color="inherit" onClick={() => handleViewShipment(item.shipmentId)} underline="always" sx={{ cursor: 'pointer' }}>
+                                                                    <strong>{item.shipmentNumber}</strong>
+                                                                </Link>
+                                                            </Grid>
+                                                            <Grid item xs={2}>
+                                                                <Typography variant="body2">
+                                                                    Pkg Qty: <strong>{parseInt(item.quantity, 10)}</strong>
+                                                                </Typography>
+                                                            </Grid>
+                                                        </Grid>
+                                                    </>
+                                                }
+                                                primaryTypographyProps={{ variant: 'body2' }}
+                                                secondaryTypographyProps={{
+                                                    component: 'span',
+                                                    color: 'text.disabled',
+                                                    mt: 0.5,
+                                                    ml: 0.5,
+                                                }}
+                                            />
+                                        </Grid>
+                                    </Grid>
+                                </Stack>
+                            </React.Fragment>
+                        ))}
+                    </Paper>
+                </Collapse>
+            </TableCell>
+        </TableRow>
+    );
 
     return (
         <>
@@ -397,26 +495,57 @@ export function ItemListShippedLogsView({
                                                 table.page * table.rowsPerPage + table.rowsPerPage
                                             )
                                             .map((row) => (
-                                                <TableRow key={row.itemId} sx={{ cursor: 'pointer' }} onClick={() => handleViewRow(row.itemId)}>
-                                                    <TableCell >{row.sku}</TableCell>
-                                                    <TableCell>{row.itemTotalQty}</TableCell>
-                                                    <TableCell>
-                                                        {!row.isReconciled ? row.shippedSerialsQuantity : row.itemTotalQty}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Label
-                                                            sx={{ cursor: 'pointer' }}
-                                                            variant="soft"
-                                                            color={
-                                                                (row.differenceShipped === 0 ? 'success' :
-                                                                    row.differenceShipped > 0 && !row.isReconciled ? 'warning' :
-                                                                        row.differenceShipped < 0 && !row.isReconciled ? 'error' : 'info')
-                                                            }
-                                                        >
-                                                            {!row.isReconciled ? row.differenceShipped : 0}
-                                                        </Label>
-                                                    </TableCell>
-                                                </TableRow>
+                                                <React.Fragment key={row.itemId}>
+                                                    <TableRow key={row.itemId} sx={{ cursor: 'pointer' }}>
+                                                        <TableCell>
+                                                            <Link color="inherit" onClick={() => handleViewRow(row.itemId)} underline="always" sx={{ cursor: 'pointer' }}>
+                                                                {row.sku}
+                                                            </Link>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <ListItemText
+                                                                primary={fDate(row.date)}
+                                                                primaryTypographyProps={{ variant: 'body2', noWrap: true }}
+                                                            />
+                                                        </TableCell>
+                                                        <TableCell>{row.itemTotalQty}</TableCell>
+                                                        <TableCell>
+                                                            {!row.isReconciled ? row.shippedSerialsQuantity : row.itemTotalQty}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Label
+                                                                sx={{ cursor: 'pointer' }}
+                                                                variant="soft"
+                                                                color={
+                                                                    (row.differenceShipped === 0 ? 'success' :
+                                                                        row.differenceShipped > 0 && !row.isReconciled ? 'warning' :
+                                                                            row.differenceShipped < 0 && !row.isReconciled ? 'error' : 'info')
+                                                                }
+                                                            >
+                                                                {!row.isReconciled ? row.differenceShipped : 0}
+                                                            </Label>
+                                                        </TableCell>
+                                                        <TableCell align="right" sx={{ px: 1, whiteSpace: 'nowrap' }}>
+                                                            {row.linePackages?.length > 0 ? (
+                                                                <IconButton
+                                                                    color={openRowIds.has(row.itemId) ? 'inherit' : 'default'}
+                                                                    onClick={() => toggleRow(row.itemId)}
+                                                                    sx={{ ...(openRowIds.has(row.itemId) && { bgcolor: 'action.hover' }) }}
+                                                                >
+                                                                    <Iconify icon={openRowIds.has(row.itemId) ? "eva:arrow-ios-upward-fill" : "eva:arrow-ios-downward-fill"} />
+                                                                </IconButton>
+                                                            ) : (
+                                                                <Label
+                                                                    variant="soft"
+                                                                    color="warning"
+                                                                >
+                                                                    No Data
+                                                                </Label>
+                                                            )}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                    {openRowIds.has(row.itemId) && renderSecondary(row)}
+                                                </React.Fragment>
                                             ))}
 
                                         <TableEmptyRows

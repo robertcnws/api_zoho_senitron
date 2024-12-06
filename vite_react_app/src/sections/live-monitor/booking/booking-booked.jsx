@@ -26,7 +26,7 @@ export function BookingBooked({ title, subheader, data, openModal, setOpenModal,
 
             <LinearProgress
               variant="determinate"
-              value={progress.value}
+              value={progress.value !== 0 ? (progress.quantity / progress.value) * 100 : 0}
               sx={{
                 height: 8,
                 bgcolor: (theme) => varAlpha(theme.vars.palette.grey['500Channel'], 0.16),
