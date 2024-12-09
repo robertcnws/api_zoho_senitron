@@ -494,9 +494,9 @@ export function ItemListShippedLogsView({
                                                 table.page * table.rowsPerPage,
                                                 table.page * table.rowsPerPage + table.rowsPerPage
                                             )
-                                            .map((row) => (
-                                                <React.Fragment key={row.itemId}>
-                                                    <TableRow key={row.itemId} sx={{ cursor: 'pointer' }}>
+                                            .map((row, index) => (
+                                                <React.Fragment key={`${row.itemId}-${index}`}>
+                                                    <TableRow key={`${row.itemId}-${index}`} sx={{ cursor: 'pointer' }}>
                                                         <TableCell>
                                                             <Link color="inherit" onClick={() => handleViewRow(row.itemId)} underline="always" sx={{ cursor: 'pointer' }}>
                                                                 {row.sku}

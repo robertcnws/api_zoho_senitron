@@ -271,6 +271,9 @@ def load_senitron_inventory_item_assets_logs(request):
                 current_status = item_data.get('current_status', {})
                 current_status_id = current_status.get('id')
                 current_status_name = current_status.get('name')
+                last_status = item_data.get('last_status', {})
+                last_status_id = last_status.get('id')
+                last_status_name = last_status.get('name')
                 last_seen_str = item_data.get('last_seen')
                 
                 if last_seen_str:
@@ -278,15 +281,16 @@ def load_senitron_inventory_item_assets_logs(request):
                 else:
                     continue
 
-                key = (serial_number, current_status_id, current_status_name)
+                key = (serial_number, current_status_id, current_status_name, last_status_id, last_status_name)
                 
                 if key not in items_map or last_seen_dt > items_map[key]['last_seen_dt']:
+                # if key not in items_map:
                     items_map[key] = {
                         'item_data': item_data,
                         'last_seen_dt': last_seen_dt
                     }
                     
-            selected_items = [v['item_data'] for v in items_map.values()]
+            selected_items = [v['item_data'] for v in items_map.values() if v['item_data']['current_status']['id'] != v['item_data']['last_status']['id']]
             
             logger.info(f'Selected senitron items assets logs to insert: {len(selected_items)}')
             

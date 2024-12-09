@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { gql, useQuery } from '@apollo/client';
+import { CONFIG } from 'src/config-global';
 
 const GET_ZOHO_SHIPMENT_ORDERS = gql`
   query GetZohoShipmentOrders($startDate: String, $endDate: String) {
@@ -89,7 +90,7 @@ export const useShipmentsQuery = (startDate, endDate) => {
   });
 
   useEffect(() => {
-    startPolling(5000); 
+    startPolling(CONFIG.pollingInterval); 
     return () => {
       stopPolling();
     };

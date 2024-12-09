@@ -229,6 +229,8 @@ class Query(graphene.ObjectType):
     
     def resolve_all_senitron_grouped_logs(self, info, start_date=None, **kwargs):
         logs = SenitronItemAssetLogs.objects.annotate(date=TruncDate('created_time'))
+        
+        logs = logs.filter(~Q(current_status_id=F('last_status_id')))
 
         if start_date:
             logs = logs.filter(date=start_date)
@@ -245,6 +247,7 @@ class Query(graphene.ObjectType):
                 date=date_group,
                 logs=logs_in_group
             ))
+        
         return result
 
 schema = graphene.Schema(query=Query)

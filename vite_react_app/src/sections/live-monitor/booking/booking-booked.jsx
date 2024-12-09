@@ -9,7 +9,7 @@ import { varAlpha } from 'src/theme/styles';
 
 // ----------------------------------------------------------------------
 
-export function BookingBooked({ title, subheader, data, openModal, setOpenModal, handleOpenModal, ...other }) {
+export function BookingBooked({ title, subheader, data, openModal, setOpenModal, handleOpenModal, isLive, setIsLive, ...other }) {
   return (
     <Card {...other}>
       <CardHeader title={title} subheader={subheader} />
@@ -18,9 +18,10 @@ export function BookingBooked({ title, subheader, data, openModal, setOpenModal,
         {data.map((progress) => (
           <li key={progress.status} style={{ cursor: 'pointer' }}>
             <Box sx={{ mb: 1, display: 'flex', alignItems: 'center' }} onClick={() => {
+              setIsLive(progress.status !== 'Canceled');
               handleOpenModal('listItemsSerials');
             }}>
-              <Box sx={{ typography: 'overline', flexGrow: 1 }}>{progress.status === 'Canceled' ? 'Shipped Items' : 'Live Items'}</Box>
+              <Box sx={{ typography: 'overline', flexGrow: 1 }}>{progress.status === 'Canceled' ? 'Shipped Items' : 'Received Items'}</Box>
               <Box sx={{ typography: 'subtitle1' }}>{fShortenNumber(progress.quantity)}</Box>
             </Box>
 

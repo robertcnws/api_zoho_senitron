@@ -243,13 +243,27 @@ export const DataProvider = ({ children }) => {
 
     const itemsAssetsLogsInfo = useMemo(() => 
         objectsGroupedLogs?.map(group => {
-            const liveLogs = group.logs.filter(log => log.currentStatusName && log.currentStatusName.toLowerCase().includes('live'));
-            const killedLogs = group.logs.filter(log => log.currentStatusName && log.currentStatusName.toLowerCase().includes('kill'));
-            const removedLogs = group.logs.filter(log => log.currentStatusName && log.currentStatusName.toLowerCase().includes('removed'));
+            const liveLogs = group.logs.filter(
+                log => log.currentStatusName && log.currentStatusName.toLowerCase().includes('live') && !log.lastStatusName.toLowerCase().includes('live')
+            );
+            const killedLogs = group.logs.filter(
+                log => log.currentStatusName && log.currentStatusName.toLowerCase().includes('kill') && !log.lastStatusName.toLowerCase().includes('kill')
+            );
+            const removedLogs = group.logs.filter(
+                log => log.currentStatusName && log.currentStatusName.toLowerCase().includes('removed') && !log.lastStatusName.toLowerCase().includes('removed')
+            );
+
+            const liveLogsSet = [...new Set(liveLogs.map(log => log.serialNumber))].sort();
+            const killedLogsSet = [...new Set(killedLogs.map(log => log.serialNumber))].sort();
+            const removedLogsSet = [...new Set(removedLogs.map(log => log.serialNumber))].sort();
             
-            const uniqueLiveCount = new Set(liveLogs.map(log => log.serialNumber)).size;
-            const uniqueKilledCount = new Set(killedLogs.map(log => log.serialNumber)).size;
-            const uniqueRemovedCount = new Set(removedLogs.map(log => log.serialNumber)).size;
+            const uniqueLiveCount = liveLogsSet.length;
+            const uniqueKilledCount = killedLogsSet.length;
+            const uniqueRemovedCount = removedLogsSet.length;
+
+            if (uniqueLiveCount === 0 && uniqueKilledCount === 0 && uniqueRemovedCount === 0) {
+                return null;
+            }
     
             return {
                 itemNumber: group.itemNumber,
@@ -258,6 +272,9 @@ export const DataProvider = ({ children }) => {
                 totalLive: uniqueLiveCount,
                 totalKilled: uniqueKilledCount,
                 totalRemoved: uniqueRemovedCount,
+                liveLogsSet,
+                killedLogsSet,
+                removedLogsSet,
                 logs: group.logs,
             };
         })

@@ -127,5 +127,13 @@ class SenitronItemAssetLogs(models.Model):
     updated_at = models.DateTimeField(blank=True, null=True)
     created_time = models.DateTimeField(default=timezone.now)
     
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['serial_number', 'current_status_id', 'current_status_name', 'last_status_id', 'last_status_name', 'updated_at'],
+                name='unique_asset_log_combination'
+            ),
+        ]
+    
     def __str__(self):
         return f"Item {self.item_number} - Serial: {self.serial_number} - EPC: {self.epc} - Status: {self.current_status_name} - Serial: {self.serial_number} - Last Seen: {self.last_seen}"

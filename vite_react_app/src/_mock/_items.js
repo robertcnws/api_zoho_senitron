@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { gql, useQuery } from '@apollo/client';
+import { CONFIG } from 'src/config-global';
 
 const GET_ZOHO_INVENTORY_ITEMS = gql`
   {
@@ -90,7 +91,7 @@ export const useItemsQuery = () => {
   const { loading, error, data, startPolling, stopPolling } = useQuery(GET_ZOHO_INVENTORY_ITEMS);
 
   useEffect(() => {
-    startPolling(5000); 
+    startPolling(CONFIG.pollingInterval); 
     return () => {
       stopPolling();
     };
@@ -110,7 +111,7 @@ export const useSenitronItemsQuery = () => {
       const currentHour = now.getHours();
       
       if (currentHour >= 7 && currentHour < 17) {
-        startPolling(900000); // 15 minutos
+        startPolling(CONFIG.pollingInterval * 3); // 15 minutos
       } else {
         stopPolling();
       }

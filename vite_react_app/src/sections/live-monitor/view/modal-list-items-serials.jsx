@@ -24,12 +24,18 @@ export function ModalListItemsSerials({
     itemsAssetsLogsInfo,
     table,
     globalDateFilters,
+    isLive,
+    setIsLive,
     ...other
 }) {
 
     const date = fDate(globalDateFilters.state.endDate, 'YYYY-MM-DD');
 
     const listFiltered = useMemo(() => itemsAssetsLogsInfo.filter(item => fDate(item.date, 'YYYY-MM-DD') === date), [itemsAssetsLogsInfo, date]);
+
+    const totalListShipped = useMemo(() => listFiltered?.filter((item) => item.totalKilled > 0 || item.totalRemoved > 0).length, [listFiltered]);
+
+    const totalListLive = useMemo(() => listFiltered?.filter((item) => item.totalLive > 0).length, [listFiltered]);
 
     const lastLog = listFiltered?.length > 0 ? listFiltered[0].logs[listFiltered[0].logs.length - 1] : 0;
 
@@ -83,10 +89,10 @@ export function ModalListItemsSerials({
                         {listFiltered ? (
                             <Box sx={{ gap: 3, display: 'flex', flexDirection: 'column' }}>
                                 <BankingContacts
-                                    title="Items Shipped / Live"
+                                    title={`Items ${isLive ? 'Received' : 'Shipped'}`}
                                     subheader={`
-                  ${listFiltered?.length} 
-                  ${lastLog.createdTime ? ` SKUs with last changes at ${fDateTime(lastLog.createdTime)}` : `SKUs without changes`
+                  ${isLive ? totalListLive : totalListShipped} 
+                  ${lastLog.createdTime ? ` SKUs with last changes at ${fDate(lastLog.createdTime)}` : `SKUs without changes`
                                         }`}
                                     list={listFiltered}
                                     openModal={openModal}
@@ -97,6 +103,8 @@ export function ModalListItemsSerials({
                                     handleFilterName={handleFilterName}
                                     globalDateFilters={globalDateFilters}
                                     setStateWidthModal={setStateWidthModal}
+                                    isLive={isLive}
+                                    setIsLive={setIsLive}
                                 />
                             </Box>
                         ) : (

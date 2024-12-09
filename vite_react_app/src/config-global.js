@@ -12,6 +12,7 @@ export const CONFIG = {
   apiUrl: import.meta.env.VITE_BACKEND_URL ?? '',
   apiHost: import.meta.env.VITE_BACKEND_HOST ?? '',
   apiDomain: import.meta.env.VITE_BACKEND_DOMAIN ?? '',
+  pollingInterval: import.meta.env.VITE_POLLING_INTERVAL ?? 10000,
   /**
    * Auth
    * @method jwt | amplify | firebase | supabase | auth0

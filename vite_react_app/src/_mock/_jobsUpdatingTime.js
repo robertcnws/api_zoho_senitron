@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { gql, useQuery } from '@apollo/client';
+import { CONFIG } from 'src/config-global';
 
 const GET_JOBS_UPDTING_TIMES = gql`
   {
@@ -14,7 +15,7 @@ export const useJobsUpdatingTimesQuery = () => {
   const { loading, error, data, startPolling, stopPolling } = useQuery(GET_JOBS_UPDTING_TIMES);
 
   useEffect(() => {
-    startPolling(5000); 
+    startPolling(CONFIG.pollingInterval); 
     return () => {
       stopPolling();
     };

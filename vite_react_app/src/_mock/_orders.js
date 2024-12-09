@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { gql, useQuery } from '@apollo/client';
+import { CONFIG } from 'src/config-global';
 
 const GET_ZOHO_INVENTORY_SALES_ORDERS = gql`
   query GetZohoInventorySalesOrders($startDate: String, $endDate: String) {
@@ -54,7 +55,7 @@ export const useSalesOrdersQuery = (startDate, endDate) => {
       const currentHour = now.getHours();
       
       if (currentHour >= 7 && currentHour < 17) {
-        startPolling(900000); // 15 minutos
+        startPolling(CONFIG.pollingInterval); // 15 minutos
       } else {
         stopPolling();
       }

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { gql, useQuery } from '@apollo/client';
+import { CONFIG } from 'src/config-global';
 
 const GET_TIMELINES_ITEMS = gql`
   {
@@ -50,7 +51,7 @@ export const useTimelineItemsQuery = () => {
   const { loading, error, data, startPolling, stopPolling } = useQuery(GET_TIMELINES_ITEMS);
 
   useEffect(() => {
-    startPolling(5000); 
+    startPolling(CONFIG.pollingInterval); 
     return () => {
       stopPolling();
     };

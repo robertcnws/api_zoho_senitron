@@ -93,6 +93,8 @@ export function LiveMonitorAnalyticsView() {
 
   const [date, setDate] = useState(null);
 
+  const [isLive, setIsLive] = useState(true);
+
   useEffect(() => {
     if (globalDateFilters.state.startDate && globalDateFilters.state.endDate) {
       setDate(fDate(globalDateFilters.state.endDate, 'YYYY-MM-DD'));
@@ -472,6 +474,8 @@ export function LiveMonitorAnalyticsView() {
                       openModal={openModal}
                       setOpenModal={setOpenModal}
                       handleOpenModal={handleOpenModal}
+                      isLive={isLive}
+                      setIsLive={setIsLive}
                     />
                   </Box>
 
@@ -506,6 +510,8 @@ export function LiveMonitorAnalyticsView() {
             itemsAssetsLogsInfo={itemsAssetsLogsInfo}
             table={table}
             globalDateFilters={globalDateFilters}
+            isLive={isLive}
+            setIsLive={setIsLive}
           />
 
 

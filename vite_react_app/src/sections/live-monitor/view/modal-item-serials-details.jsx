@@ -33,7 +33,7 @@ export function ModalItemSerialsDetails({
 
   const TABLE_HEAD = [
     { id: 'createdTime', label: 'Date', width: 300 },
-    { id: 'news', label: 'Live (Serials)', width: 300 },
+    { id: 'news', label: 'Received (Serials)', width: 300 },
     { id: 'removed', label: 'Removed (Serials)', width: 300 },
     { id: 'killed', label: 'Killed (Serials)', width: 300 },
   ];
@@ -65,7 +65,7 @@ export function ModalItemSerialsDetails({
       const lNews = Object.entries(groupedByDateTime).map(([dateTime, lgs]) => {
         const liveLogs = lgs.filter(l => l.currentStatusName?.toLowerCase().includes('live'));
         const serialNumbers = liveLogs.map(l => l.serialNumber);
-        const uniqueSerialNumbers = [...new Set(serialNumbers)]; 
+        const uniqueSerialNumbers = [...new Set(serialNumbers)];
         uniqueSerialNumbers.sort();
         return {
           createdTime: dateTime,
@@ -76,7 +76,7 @@ export function ModalItemSerialsDetails({
       const lRemoved = Object.entries(groupedByDateTime).map(([dateTime, groupLogs]) => {
         const removedLogs = groupLogs.filter(l => l.currentStatusName?.toLowerCase().includes('remove'));
         const serialNumbers = removedLogs.map(l => l.serialNumber);
-        const uniqueSerialNumbers = [...new Set(serialNumbers)]; 
+        const uniqueSerialNumbers = [...new Set(serialNumbers)];
         uniqueSerialNumbers.sort();
         return {
           createdTime: dateTime,
@@ -87,7 +87,7 @@ export function ModalItemSerialsDetails({
       const lKilled = Object.entries(groupedByDateTime).map(([dateTime, groupLogs]) => {
         const killedLogs = groupLogs.filter(l => l.currentStatusName?.toLowerCase().includes('kill'));
         const serialNumbers = killedLogs.map(l => l.serialNumber);
-        const uniqueSerialNumbers = [...new Set(serialNumbers)]; 
+        const uniqueSerialNumbers = [...new Set(serialNumbers)];
         uniqueSerialNumbers.sort();
         return {
           createdTime: dateTime,
@@ -107,28 +107,28 @@ export function ModalItemSerialsDetails({
       }
 
       const combinedMap = {};
-      
+
       lNews.forEach(({ createdTime, serialNumbers }) => {
         ensureEntry(createdTime, combinedMap);
         combinedMap[createdTime].listSerialsNews = serialNumbers;
       });
-      
+
       lRemoved.forEach(({ createdTime, serialNumbers }) => {
         ensureEntry(createdTime, combinedMap);
         combinedMap[createdTime].listSerialsRemoved = serialNumbers;
       });
-      
+
       lKilled.forEach(({ createdTime, serialNumbers }) => {
         ensureEntry(createdTime, combinedMap);
         combinedMap[createdTime].listSerialsKilled = serialNumbers;
       });
-      
+
       const finalList = Object.values(combinedMap);
 
       finalList.sort((a, b) => new Date(b.createdTime) - new Date(a.createdTime));
 
       setMapList(finalList);
-      
+
     }
   }, [modalDataFiltered, date]);
 
@@ -174,7 +174,7 @@ export function ModalItemSerialsDetails({
                       onSort={table?.onSort}
                     />
                     <TableBody>
-                      {mapList?.slice(0, 10).map((row, index) => (
+                      {/* {mapList?.slice(0, 50).map((row, index) => (
                         <>
                           <TableRow key={`${index}-${fDateTime(row.createdTime)}-${uuidv4(index)}`}>
                             <TableCell>{fDateTime(row.createdTime)}</TableCell>
@@ -183,13 +183,31 @@ export function ModalItemSerialsDetails({
                             <TableCell sx={{ color: 'warning.main' }}>{row.listSerialsKilled.join(', ')}</TableCell>
                           </TableRow>
                         </>
-                      ))}
+                      ))} */}
                       {/* {Array.from({ length: max }).map((_, index) => (
                         <TableRow key={index}>
                           <TableCell>{modalDataFiltered?.differences.news[index] || ''}</TableCell>
                           <TableCell>{modalDataFiltered?.differences.losts[index] || ''}</TableCell>
                         </TableRow>
                       ))} */}
+                      <TableRow key='unique_key'>
+                        <TableCell>{date}</TableCell>
+                        <TableCell sx={{ color: 'success.main' }}>
+                          <div style={{ whiteSpace: 'pre-line', fontFamily: 'monospace' }}>
+                            {modalDataFiltered?.liveLogsSet.join('\n')}
+                          </div>
+                        </TableCell>
+                        <TableCell sx={{ color: 'error.main' }}>
+                          <div style={{ whiteSpace: 'pre-line', fontFamily: 'monospace' }}>
+                            {modalDataFiltered?.removedLogsSet.join('\n')}
+                          </div>
+                        </TableCell>
+                        <TableCell sx={{ color: 'warning.main' }}>
+                          <div style={{ whiteSpace: 'pre-line', fontFamily: 'monospace' }}>
+                            {modalDataFiltered?.killedLogsSet.join('\n')}
+                          </div>
+                        </TableCell>
+                      </TableRow>
                     </TableBody>
                   </Table>
                 </TableContainer>

@@ -64,7 +64,7 @@ export function ItemTableShippedLogsToolbar({
   const handleFilterName = useCallback(
     (event) => {
       onResetPage();
-      filters.setState({ salesorderNumber: event.target.value });
+      filters.setState({ name: event.target.value });
     },
     [filters, onResetPage]
   );
