@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { LoadingContext } from 'src/auth/context/loading-context';
-import { fDate } from 'src/utils/format-time';
+import { fDate, fDateTime } from 'src/utils/format-time';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Button from '@mui/material/Button';
@@ -13,7 +13,7 @@ import { Label } from 'src/components/label';
 
 import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
-import { MenuItem, MenuList, Table, TableBody, TableCell, TableContainer, TableRow } from '@mui/material';
+import { Collapse, MenuItem, MenuList, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableRow } from '@mui/material';
 import { emptyRows, getComparator, TableEmptyRows, TableHeadCustom, TableNoData, TablePaginationCustom } from 'src/components/table';
 import { ModalItemSerialsDetails } from './view/modal-item-serials-details';
 import { ModalSublistItemsSerials } from './view/modal-sublist-items-serials';
@@ -92,6 +92,76 @@ export function BankingContacts({
   });
 
   const canReset = !!filters.state.name;
+
+  const [openRowIds, setOpenRowIds] = useState(new Set());
+
+  const toggleRow = (id) => {
+    setOpenRowIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  const renderSecondary = (row) => (
+    <TableRow sx={{ borderColor: 'red'}}>
+      <TableCell sx={{ p: 0, border: 'none' }} colSpan={5}>
+        <Collapse
+          in={openRowIds.has(row.itemNumber)}
+          timeout="auto"
+          unmountOnExit
+          sx={{ bgcolor: 'background.neutral' }}
+          key={`${row.itemNumber}-collapse`}
+        >
+          <Paper sx={{ m: 1.5 }} key='renderSecondary'>
+            {row.logs?.map((item, index) => (
+              <React.Fragment key={`${item.senitronId}-${index}`}>
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  sx={{
+                    p: (theme) => theme.spacing(1, 1, 1, 1),
+                    '&:not(:last-of-type)': {
+                      borderBottom: (theme) => `solid 2px ${theme.vars.palette.background.neutral}`,
+                    },
+                  }}
+                >
+                  {/* <ListItemText>{item.serialNumber?.trim()}<br /></ListItemText>
+                  <ListItemText>{item.currentStatusName?.trim()}</ListItemText>
+                  <ListItemText>{fDateTime(item.lastSeen)}</ListItemText>
+                  <ListItemText>{row.lastZone?.trim()}</ListItemText>
+                  <ListItemText>{item.reason?.trim()}</ListItemText> */}
+                  <TableContainer sx={{ width: '100%' }}>
+                    <Table size="small">
+                      <TableBody>
+                        <TableRow>
+                          <TableCell sx={{ width: 200 }}><Label variant='soft'>{row.sku}</Label></TableCell>
+                          <TableCell sx={{ width: 100 }}>
+                            <Label variant='soft' color={item.currentStatusName.toLowerCase().includes('remove') ? 'error' :
+                              item.currentStatusName.toLowerCase().includes('kill') ? 'warning' : 'success'}>
+                              {item.currentStatusName}
+                            </Label>
+                          </TableCell>
+                          <TableCell sx={{ width: 100 }}>Serial<br/><Label variant='soft'>{item.serialNumber}</Label></TableCell>
+                          <TableCell sx={{ width: 100 }}>Datetime<br/><Label variant='soft'>{fDateTime(item.lastSeen)}</Label></TableCell>
+                          <TableCell sx={{ width: 200 }}>Last Zone<br/><Label variant='soft'>{item.lastZone}</Label></TableCell>
+                          <TableCell sx={{ width: 200 }}>Reason<br/><Label variant='soft'>{item.reason}</Label></TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Stack>
+              </React.Fragment>
+            ))}
+          </Paper>
+        </Collapse>
+      </TableCell>
+    </TableRow>
+  );
 
   return (
     <>
@@ -189,19 +259,39 @@ export function BankingContacts({
                                     table.page * table.rowsPerPage,
                                     table.page * table.rowsPerPage + table.rowsPerPage
                                   ).map((item, index) => (
-                                    <TableRow key={`${item.itemId}-${index}`} >
-                                      <TableCell sx={{ width: isMobile ? 200 : 650 }}>{item.sku}</TableCell>
-                                      <TableCell sx={{ width: isMobile ? 100 : 200 }}>
-                                        <Label variant="soft" color='success'>{calculateTotalStatus({ date, item, status: 'live' })}</Label>
-                                      </TableCell>
-                                      <TableCell sx={{ width: isMobile ? 100 : 200 }}>
-                                        <Label variant="soft" color='error'>{calculateTotalStatus({ date, item, status: 'remove' })}</Label>
-                                      </TableCell>
-                                      <TableCell sx={{ width: isMobile ? 100 : 200 }}>
-                                        <Label variant="soft" color='warning'>{calculateTotalStatus({ date, item, status: 'kill' })}</Label>
-                                      </TableCell>
-                                      <TableCell> </TableCell>
-                                    </TableRow>
+                                    <React.Fragment key={`${item.itemNumber}-${index}`}>
+                                      <TableRow key={`${item.itemNumber}-${index}`} >
+                                        <TableCell sx={{ width: isMobile ? 200 : 650 }}>{item.sku}</TableCell>
+                                        <TableCell sx={{ width: isMobile ? 100 : 200 }}>
+                                          <Label variant="soft" color='success'>{calculateTotalStatus({ date, item, status: 'live' })}</Label>
+                                        </TableCell>
+                                        <TableCell sx={{ width: isMobile ? 100 : 200 }}>
+                                          <Label variant="soft" color='error'>{calculateTotalStatus({ date, item, status: 'remove' })}</Label>
+                                        </TableCell>
+                                        <TableCell sx={{ width: isMobile ? 100 : 200 }}>
+                                          <Label variant="soft" color='warning'>{calculateTotalStatus({ date, item, status: 'kill' })}</Label>
+                                        </TableCell>
+                                        <TableCell align="right" sx={{ px: 1, whiteSpace: 'nowrap' }}>
+                                          {item.logs?.length > 0 ? (
+                                            <IconButton
+                                              color={openRowIds.has(item.itemNumber) ? 'inherit' : 'default'}
+                                              onClick={() => toggleRow(item.itemNumber)}
+                                              sx={{ ...(openRowIds.has(item.itemNumber) && { bgcolor: 'action.hover' }) }}
+                                            >
+                                              <Iconify icon={openRowIds.has(item.itemNumber) ? "eva:arrow-ios-upward-fill" : "eva:arrow-ios-downward-fill"} />
+                                            </IconButton>
+                                          ) : (
+                                            <Label
+                                              variant="soft"
+                                              color="warning"
+                                            >
+                                              No Data
+                                            </Label>
+                                          )}
+                                        </TableCell>
+                                      </TableRow>
+                                      {openRowIds.has(item.itemNumber) && renderSecondary(item)}
+                                    </React.Fragment>
                                   ))}
                                 <TableEmptyRows
                                   height={table.dense ? 56 : 56 + 20}
@@ -216,7 +306,7 @@ export function BankingContacts({
                           <TableContainer sx={{ width: '100%', bgcolor: 'background.paper', p: 1 }}>
                             <Table>
                               <TableBody>
-                                <TableNoData notFound={dataFiltered.length === 0} sx={{ height: 50 }}/>
+                                <TableNoData notFound={dataFiltered.length === 0} sx={{ height: 50 }} />
                               </TableBody>
                             </Table>
                           </TableContainer>

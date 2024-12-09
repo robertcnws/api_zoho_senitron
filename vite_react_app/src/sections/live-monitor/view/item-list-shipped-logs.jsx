@@ -60,10 +60,10 @@ import { ItemTableShippedLogsToolbar } from '../item-table-shipped-logs-toolbar'
 // ----------------------------------------------------------------------
 
 const STATUS_OPTIONS = [
-    { value: 'all', label: 'All SKUs' },
-    { value: 'lost', label: 'Lost Shipped SKUs' },
-    { value: 'not_matched', label: 'Shipped SKUs NOT reconciled' },
-    { value: 'matched', label: 'Shipped SKUs matched' },
+    { value: 'all', label: 'All' },
+    { value: 'lost', label: 'Losts' },
+    { value: 'not_matched', label: 'NOT Reconciled' },
+    { value: 'matched', label: 'Matched' },
 
 ];
 
