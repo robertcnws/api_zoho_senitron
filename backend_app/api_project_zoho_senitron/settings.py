@@ -321,9 +321,9 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'api_project_zoho_senitron_async_sequence.tasks.task_sequence_2_min',
         'schedule': crontab(minute='*/2', hour='7-17', day_of_week='mon-sat'),
     },
-    'run-task-sequence-every-15-min-mon-sat': {
-        'task': 'api_project_zoho_senitron_async_sequence.tasks.task_sequence_15_min',
-        'schedule': crontab(minute='*/15', hour='7-17', day_of_week='mon-sat'),
+    'run-task-sequence-every-45-min-mon-sat': {
+        'task': 'api_project_zoho_senitron_async_sequence.tasks.task_sequence_45_min',
+        'schedule': crontab(minute='*/45', hour='7-17', day_of_week='mon-sat'),
     },
 
     # Domingo

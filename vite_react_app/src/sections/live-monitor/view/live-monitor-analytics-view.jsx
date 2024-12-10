@@ -105,34 +105,48 @@ export function LiveMonitorAnalyticsView() {
     }
   }, [globalDateFilters]);
 
-  const totalsNewsTrack = useMemo(() => {
+  const filteredData = useMemo(() => {
     if (itemsAssetsLogsInfo && itemsAssetsLogsInfo.length > 0) {
-      return itemsAssetsLogsInfo?.filter(item => fDate(item.date, 'YYYY-MM-DD') === date).reduce(
+      return itemsAssetsLogsInfo?.map(item => {
+        const filteredLogs = item.logs?.filter(log => fDate(log.createdAt, 'YYYY-MM-DD') === date);
+        return {
+          ...item,
+          logs: filteredLogs,
+        };
+      }).filter(item => item.logs.length > 0);
+    }
+    return null;
+  }, [itemsAssetsLogsInfo, date]);
+  
+
+  const totalsNewsTrack = useMemo(() => {
+    if (filteredData) {
+      return filteredData?.filter(item => fDate(item.date, 'YYYY-MM-DD') === date).reduce(
         (acc, item) => acc + item.totalLive, 0
       );
     }
     return 0;
-  }, [itemsAssetsLogsInfo, date]);
+  }, [filteredData, date]);
 
 
   const totalsRemovedTrack = useMemo(() => {
-    if (itemsAssetsLogsInfo && itemsAssetsLogsInfo.length > 0) {
-      return itemsAssetsLogsInfo?.filter(item => fDate(item.date, 'YYYY-MM-DD') === date).reduce(
+    if (filteredData) {
+      return filteredData?.filter(item => fDate(item.date, 'YYYY-MM-DD') === date).reduce(
         (acc, item) => acc + item.totalRemoved, 0
       );
     }
     return 0;
-  }, [itemsAssetsLogsInfo, date]);
+  }, [filteredData, date]);
 
 
   const totalsKilledTrack = useMemo(() => {
-    if (itemsAssetsLogsInfo && itemsAssetsLogsInfo.length > 0) {
-      return itemsAssetsLogsInfo?.filter(item => fDate(item.date, 'YYYY-MM-DD') === date).reduce(
+    if (filteredData) {
+      return filteredData?.filter(item => fDate(item.date, 'YYYY-MM-DD') === date).reduce(
         (acc, item) => acc + item.totalKilled, 0
       );
     }
     return 0;
-  }, [itemsAssetsLogsInfo, date]);
+  }, [filteredData, date]);
 
   const totalsLostsTrack = useMemo(() => totalsRemovedTrack + totalsKilledTrack, [totalsRemovedTrack, totalsKilledTrack]);
 
@@ -251,6 +265,7 @@ export function LiveMonitorAnalyticsView() {
       totalSenitronQty !== null &&
       totalErrors !== null &&
       globalDateFilters.state.endDate !== null &&
+      filteredData !== null &&
       !updating
     ) {
       setDataLoaded(true);
@@ -265,6 +280,7 @@ export function LiveMonitorAnalyticsView() {
     totalSenitronQty,
     totalErrors,
     globalDateFilters.state.endDate,
+    filteredData,
     updating,
   ]);
 
@@ -330,7 +346,7 @@ export function LiveMonitorAnalyticsView() {
 
   return (
     <>
-      {!itemsZohoSenitron || !itemsSenitronZoho || !itemsZohoData ||
+      {!itemsZohoSenitron || !itemsSenitronZoho || !itemsZohoData || filteredData === null ||
         totalZohoQty === null || totalSenitronQty === null || totalErrors === null || updating ? (
         <>
           <Box
@@ -381,9 +397,9 @@ export function LiveMonitorAnalyticsView() {
                 <Grid xs={!isMobile ? 2 : 6} sm={!isMobile ? 2 : 6} md={!isMobile ? 2 : 6}>
                   <Alert
                     severity="error"
-                    icon={<AnimatedIcon icon="mdi:error" color="error" width="25px"/>}
+                    icon={<AnimatedIcon icon="mdi:error" color="error" width="25px" />}
                     sx={{ mb: 2, cursor: 'pointer', p: 1 }}>
-                    <Typography variant="body2" sx={{ fontSize: '14px'}}>
+                    <Typography variant="body2" sx={{ fontSize: '14px' }}>
                       <b>{countLostItems}</b> Items lost today
                     </Typography>
                   </Alert>
@@ -527,7 +543,7 @@ export function LiveMonitorAnalyticsView() {
             handleOpenModal={handleOpenModal}
             filters={filters}
             handleFilterName={handleFilterName}
-            itemsAssetsLogsInfo={itemsAssetsLogsInfo}
+            itemsAssetsLogsInfo={filteredData}
             table={table}
             globalDateFilters={globalDateFilters}
             isLive={isLive}

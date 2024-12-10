@@ -32,7 +32,7 @@ export const generatePrintablePDF = ({ data, title }) => {
 
     const rows = data.map((item, index) => ({
         index: index + 1,
-        sku: item.sku,
+        sku: item.sku || `Name:  ${item.name}`,
         stockOnHand: item.stockOnHand,
         quantity: item.quantity,
         difference: item.difference,
@@ -95,19 +95,21 @@ export const generateItemPrintablePDF = ({ item, senitronItem }) => {
         { dataKey: 'value', header: 'Valor' },
     ];
 
+    const senitronCount = senitronItem?.count || 0;
+
     const generalInfoRows = [
-        { field: 'Name', value: item.name },
-        { field: 'SKU', value: item.sku },
-        { field: 'On Hand', value: item.stockOnHand },
-        { field: 'RFID Count', value: senitronItem.count },
-        { field: 'Difference', value: senitronItem.count - item.stockOnHand },
-        { field: 'Description', value: item.description },
-        { field: 'Price', value: item.rate },
-        { field: 'Type of Product', value: item.productType },
-        { field: 'Group', value: item.groupName },
-        { field: 'Status', value: item.status },
-        { field: 'Origin', value: item.source },
-        { field: 'Type of Item', value: item.itemType },
+        { field: 'Name', value: item.name || 'N/A' },
+        { field: 'SKU', value: item.sku || 'N/A' },
+        { field: 'On Hand', value: item.stockOnHand || 0 },
+        { field: 'RFID Count', value: senitronCount },
+        { field: 'Difference', value: senitronCount - item.stockOnHand || 0 },
+        { field: 'Description', value: item.description || 'N/A' },
+        { field: 'Price', value: item.rate || 0 },
+        { field: 'Type of Product', value: item.productType || 'N/A' },
+        { field: 'Group', value: item.groupName || 'N/A' },
+        { field: 'Status', value: item.status || 'N/A' },
+        { field: 'Origin', value: item.source || 'N/A' },
+        { field: 'Type of Item', value: item.itemType || 'N/A' },
         { field: 'Linked with ZohoCRM', value: item.isLinkedWithZohocrm ? 'YES' : 'NO' },
     ];
 
@@ -123,16 +125,7 @@ export const generateItemPrintablePDF = ({ item, senitronItem }) => {
 
     const assetsStartY = doc.lastAutoTable.finalY + 20;
 
-    const assetsColumns = [
-        { dataKey: 'id', header: 'ID' },
-        { dataKey: 'serialNumber', header: 'Serial Number' },
-        { dataKey: 'firstSeen', header: 'First Seen' },
-        { dataKey: 'lastSeen', header: 'Last Seen' },
-        { dataKey: 'lastZone', header: 'Last Zone' },
-        { dataKey: 'status', header: 'Status' },
-    ];
-
-    const assetsRows = senitronItem.assets.map(asset => ({
+    const assetsRows = senitronItem?.assets.map(asset => ({
         id: asset.id,
         serialNumber: asset.serialNumber,
         firstSeen: fDateTime(asset.firstSeen),
@@ -141,8 +134,20 @@ export const generateItemPrintablePDF = ({ item, senitronItem }) => {
         status: asset.status.name,
     }));
 
-    doc.setFontSize(14);
-    doc.text('Assets:', margin + 25, assetsStartY - 2, { align: 'center' });
+    let assetsColumns = [];
+
+    if (assetsRows?.length > 0) {
+        assetsColumns = [
+            { dataKey: 'id', header: 'ID' },
+            { dataKey: 'serialNumber', header: 'Serial Number' },
+            { dataKey: 'firstSeen', header: 'First Seen' },
+            { dataKey: 'lastSeen', header: 'Last Seen' },
+            { dataKey: 'lastZone', header: 'Last Zone' },
+            { dataKey: 'status', header: 'Status' },
+        ];
+        doc.setFontSize(14);
+        doc.text('Assets:', margin + 25, assetsStartY - 2, { align: 'center' });
+    }
 
     doc.autoTable({
         columns: assetsColumns,
@@ -176,37 +181,37 @@ export const generateItemPrintablePDF = ({ item, senitronItem }) => {
 // ----------------------------------------------------------------------
 
 export const generateItemShipmentPrintablePDF = ({ data }) => {
-    const doc = new JsPDF('p', 'pt', 'a4'); 
+    const doc = new JsPDF('p', 'pt', 'a4');
 
     const margin = 40;
     const logoWidth = 120;
     const logoHeight = 40;
     let currentY = margin;
-    
+
     if (logoBase64) {
         doc.addImage(logoBase64, 'PNG', margin, currentY, logoWidth, logoHeight);
     }
 
     const title = 'Items in Shipments';
-    
+
     doc.setFontSize(16);
     // doc.setFont('helvetica', 'bold');
     doc.text(title, margin + logoWidth + 10, currentY + 25);
-    
+
     const date = new Date().toLocaleDateString();
     doc.setFontSize(10);
     // doc.setFont('helvetica', 'normal');
     doc.text(`Date: ${date}`, doc.internal.pageSize.getWidth() - margin - 100, currentY + 25);
 
-    currentY += logoHeight + 30; 
+    currentY += logoHeight + 30;
 
     data?.forEach((item, index) => {
-        const estimatedHeight = 100; 
+        const estimatedHeight = 100;
         if (currentY + estimatedHeight > doc.internal.pageSize.getHeight() - margin) {
             addFooter(doc, margin);
             doc.addPage();
             currentY = margin;
-            
+
             if (logoBase64) {
                 doc.addImage(logoBase64, 'PNG', margin, currentY, logoWidth, logoHeight);
             }
@@ -221,7 +226,7 @@ export const generateItemShipmentPrintablePDF = ({ data }) => {
 
             currentY += logoHeight + 30;
         }
-        
+
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
         doc.text(`Item ID: ${item.itemId}`, margin, currentY);
@@ -233,7 +238,7 @@ export const generateItemShipmentPrintablePDF = ({ data }) => {
         currentY += 15;
         doc.text(`Total Quantity: ${item.itemTotalQty}`, margin, currentY);
         currentY += 15;
-        
+
         const packagesData = item.linePackages.map(pkg => ({
             packageId: pkg.packageId,
             packageNumber: pkg.packageNumber,
@@ -249,7 +254,7 @@ export const generateItemShipmentPrintablePDF = ({ data }) => {
             { header: 'Shipment ID', dataKey: 'shipmentId' },
             { header: '# Shipment', dataKey: 'shipmentNumber' },
         ];
-        
+
         doc.autoTable({
             head: [packageColumns.map(col => col.header)],
             body: packagesData.map(pkg => packageColumns.map(col => pkg[col.dataKey])),
@@ -264,15 +269,15 @@ export const generateItemShipmentPrintablePDF = ({ data }) => {
             },
         });
 
-        currentY = doc.previousAutoTable.finalY + 20; 
+        currentY = doc.previousAutoTable.finalY + 20;
 
         doc.setDrawColor(200);
         doc.line(margin, currentY, doc.internal.pageSize.getWidth() - margin, currentY);
         currentY += 10;
     });
-    
+
     addFooter(doc, margin);
-    
+
     const pdfBlob = doc.output('blob');
 
     const blobUrl = URL.createObjectURL(pdfBlob);
@@ -283,6 +288,133 @@ export const generateItemShipmentPrintablePDF = ({ data }) => {
         URL.revokeObjectURL(blobUrl);
     }, 1000);
 };
+
+// ----------------------------------------------------------------------
+
+export const generateItemShipmentLogsPrintablePDF = ({ data, title }) => {
+    const doc = new JsPDF('p', 'pt', 'a4');
+
+    const margin = 40;
+    const logoWidth = 120;
+    const logoHeight = 40;
+    let currentY = margin;
+
+    // Agregar logo si está disponible
+    if (logoBase64) {
+        doc.addImage(logoBase64, 'PNG', margin, currentY, logoWidth, logoHeight);
+    }
+
+    // Agregar título
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold'); // Asegúrate de definir la fuente si es necesario
+    doc.text(title, margin + logoWidth + 10, currentY + 25);
+
+    // Agregar fecha
+    const date = new Date().toLocaleDateString();
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Date: ${date}`, doc.internal.pageSize.getWidth() - margin - 100, currentY + 25);
+
+    currentY += logoHeight + 30;
+
+    const packageTableColumns = [
+        { header: 'Package ID', dataKey: 'packageId' },
+        { header: '# Package', dataKey: 'packageNumber' },
+        { header: 'Quantity', dataKey: 'quantity' },
+        { header: 'Shipment ID', dataKey: 'shipmentId' },
+        { header: '# Shipment', dataKey: 'shipmentNumber' },
+    ];
+
+    data?.forEach((item, index) => {
+        const estimatedHeight = 100;
+        if (currentY + estimatedHeight > doc.internal.pageSize.getHeight() - margin) {
+            addFooter(doc, margin);
+            doc.addPage();
+            currentY = margin;
+
+            if (logoBase64) {
+                doc.addImage(logoBase64, 'PNG', margin, currentY, logoWidth, logoHeight);
+            }
+
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.text(title, margin + logoWidth + 10, currentY + 25);
+
+            doc.setFontSize(10);
+            // doc.setFont('helvetica', 'normal');
+            doc.text(`Date: ${date}`, doc.internal.pageSize.getWidth() - margin - 100, currentY + 25);
+
+            currentY += logoHeight + 30;
+        }
+
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Item ID: ${item.itemId}`, margin, currentY);
+        currentY += 15;
+        doc.setFont('helvetica', 'normal');
+        doc.text(`SKU: ${item.sku}`, margin, currentY);
+        currentY += 15;
+        doc.text(`Date: ${item.date}`, margin, currentY);
+        currentY += 15;
+        doc.text(`Total Quantity: ${item.itemTotalQty}`, margin, currentY);
+        currentY += 15;
+        doc.text(`RFID Count: ${!item.isReconciled ? item.shippedSerialsQuantity : item.itemTotalQty}`, margin, currentY);
+        currentY += 15;
+        doc.text(`Difference: ${!item.isReconciled ? item.differenceShipped : 0}`, margin, currentY);
+        currentY += 15;
+
+        // Preparar datos para la tabla secundaria (linePackages)
+        const packagesData = item.linePackages?.map(pkg => ({
+            packageId: pkg.packageId,
+            packageNumber: pkg.packageNumber,
+            quantity: pkg.quantity,
+            shipmentId: pkg.shipmentId,
+            shipmentNumber: pkg.shipmentNumber,
+        }));
+
+        if (packagesData?.length > 0) {
+            doc.autoTable({
+                head: [packageTableColumns.map(col => col.header)],
+                body: packagesData?.map(pkg => packageTableColumns.map(col => pkg[col.dataKey])),
+                startY: currentY,
+                margin: { left: margin + 20, right: margin },
+                styles: { fontSize: 12 }, // Asegurar que el tamaño de fuente sea consistente
+                headStyles: {
+                    fillColor: [22, 160, 133],
+                    halign: 'center',
+                    fontSize: 12 // Tamaño de fuente para los encabezados
+                },
+                theme: 'striped',
+                showHead: 'firstPage',
+                tableWidth: 'auto',
+            });
+            currentY = doc.previousAutoTable.finalY + 20;
+        }
+
+        else {
+            currentY += 20;
+        }
+
+        // Dibujar una línea separadora entre items
+        doc.setDrawColor(200);
+        doc.line(margin, currentY, doc.internal.pageSize.getWidth() - margin, currentY);
+        currentY += 25;
+    });
+
+    // Agregar pie de página final
+    addFooter(doc, margin);
+
+    // Generar el PDF y abrirlo en una nueva pestaña
+    const pdfBlob = doc.output('blob');
+    const blobUrl = URL.createObjectURL(pdfBlob);
+    window.open(blobUrl, '_blank');
+
+    // Revocar el objeto URL después de un tiempo para liberar memoria
+    setTimeout(() => {
+        URL.revokeObjectURL(blobUrl);
+    }, 1000);
+};
+
 
 const addFooter = (doc, margin) => {
     const currentYear = new Date().getFullYear();

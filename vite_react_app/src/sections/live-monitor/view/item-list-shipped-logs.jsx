@@ -239,7 +239,8 @@ export function ItemListShippedLogsView({
 
 
             const filteredData = updatedRDataZohoSenitron?.map(item => {
-                const filteredLogs = item.logs?.filter(log => fDate(log.createdAt) === filters.state.endDate);
+                
+                const filteredLogs = item.logs?.filter(log => fDate(log.createdAt, 'YYYY-MM-DD') === fDate(filters.state.endDate, 'YYYY-MM-DD'));
                 return {
                     ...item,
                     logs: filteredLogs,

@@ -19,7 +19,7 @@ import { LoadingContext } from 'src/auth/context/loading-context';
 import { CONFIG } from 'src/config-global';
 import ExportCSV from 'src/utils/export-csv';
 import { fDate } from 'src/utils/format-time';
-import { generatePrintablePDF } from 'src/utils/printable-pdf';
+import { generateItemShipmentLogsPrintablePDF, generatePrintablePDF } from 'src/utils/printable-pdf';
 
 
 // ----------------------------------------------------------------------
@@ -146,7 +146,11 @@ export function ItemTableShippedLogsToolbar({
           <MenuItem
             onClick={() => {
               popover.onClose();
-              generatePrintablePDF({ data: dataFiltered, title });
+              generateItemShipmentLogsPrintablePDF({ 
+                data: dataFiltered, 
+                title: filters.state.status === 'all' ? 'All Shipped Items' : 
+                filters.state.status === 'lost' ? 'Lost Shipped Items' : 
+                filters.state.status === 'not_matched' ? 'Shipped Items to Reconcile' : 'Matched Shipped Items' });
             }}
           >
             <Iconify icon="solar:printer-minimalistic-bold" />

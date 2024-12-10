@@ -7,4 +7,6 @@ app = Celery('api_project_zoho_senitron')
 
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
+app.conf.beat_scheduler = 'celery.beat.PersistentScheduler' 
+
 app.autodiscover_tasks()
