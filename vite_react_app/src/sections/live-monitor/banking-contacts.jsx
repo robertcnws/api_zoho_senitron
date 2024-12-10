@@ -60,7 +60,7 @@ export function BankingContacts({
     { id: 'sku', label: 'SKU', width: isMobile ? 200 : 650 },
     { id: 'live', label: 'Received', width: isMobile ? 100 : 200 },
     { id: 'removed', label: 'Removed', width: isMobile ? 100 : 200 },
-    { id: 'killed', label: 'Killed', width: isMobile ? 100 : 200 },
+    { id: 'killed', label: 'Killed', width: isMobile ? 100 : 100 },
     { id: '' },
   ];
 
@@ -141,15 +141,15 @@ export function BankingContacts({
                         <TableRow>
                           <TableCell sx={{ width: 200 }}><Label variant='soft'>{row.sku}</Label></TableCell>
                           <TableCell sx={{ width: 100 }}>
-                            <Label variant='soft' color={item.currentStatusName.toLowerCase().includes('remove') ? 'error' :
+                            <Label align='center' variant='soft' color={item.currentStatusName.toLowerCase().includes('remove') ? 'error' :
                               item.currentStatusName.toLowerCase().includes('kill') ? 'warning' : 'success'}>
                               {item.currentStatusName}
                             </Label>
                           </TableCell>
                           <TableCell sx={{ width: 100 }}>Serial<br/><Label variant='soft'>{item.serialNumber}</Label></TableCell>
-                          <TableCell sx={{ width: 100 }}>Datetime<br/><Label variant='soft'>{fDateTime(item.lastSeen)}</Label></TableCell>
+                          <TableCell sx={{ width: 100 }}>Created<br/><Label variant='soft'>{fDateTime(item.createdAt)}</Label></TableCell>
                           <TableCell sx={{ width: 200 }}>Last Zone<br/><Label variant='soft'>{item.lastZone}</Label></TableCell>
-                          <TableCell sx={{ width: 200 }}>Reason<br/><Label variant='soft'>{item.reason}</Label></TableCell>
+                          <TableCell sx={{ width: 200 }}>Reason<br/><Label variant='soft'>{item.reason.substring(0, 25)}</Label></TableCell>
                         </TableRow>
                       </TableBody>
                     </Table>

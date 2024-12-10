@@ -35,6 +35,7 @@ import { AnalyticsWidgetSummary } from '../analytics-widget-summary';
 import { ModalSublistItems } from './modal-sublist-items';
 import { AnalyticsCurrentVisits } from '../analytics-current-visits';
 import { ModalListItemsSerials } from './modal-list-items-serials';
+import { CourseWidgetSummary } from '../../course/course-widget-summary';
 
 
 const headersCSV = [
@@ -102,7 +103,9 @@ export function OverviewAnalyticsView() {
     itemsAssetsLogsInfo,
     itemsZohoSenitron,
     itemsSenitronZoho,
+    countLostItems,
   } = useDataContext();
+
 
   const itemsSynced = useMemo(() => {
     if (itemsZohoData) {
@@ -378,6 +381,13 @@ export function OverviewAnalyticsView() {
       });
   }
 
+  const [updatedCountLostItems, setUpdatedCountLostItems] = useState(countLostItems);
+
+  useEffect(() => {
+    console.log('countLostItems', countLostItems);
+    setUpdatedCountLostItems(countLostItems);
+  }, [countLostItems]);
+
 
   return (
     <>
@@ -415,44 +425,58 @@ export function OverviewAnalyticsView() {
       ) : (
         <>
           <DashboardContent maxWidth="xl">
-            <Grid container spacing={3}>
-              <Grid xs={!isMobile ? 9.5 : 6} sm={!isMobile ? 9.5 : 6} md={!isMobile ? 9.5 : 6}>
-                <WelcomeTypography
-                  userLogged={userLogged}
-                  manualUpdatingJobsData={manualUpdatingJobsData}
-                  jobsUpdatingTimeData={jobsUpdatingTimeData}
-                  itemsZohoSenitron={itemsZohoSenitron}
-                  setUpdating={setUpdating}
-                  setError={setError}
-                  handleSetManualUpdatingJobs={handleSetManualUpdatingJobs}
-                  setTitleLinearProgress={setTitleLinearProgress}
-                  isMobile={isMobile}
-                />
+            {!isMobile && (
+              <Grid container spacing={2}>
+                <Grid xs={countLostItems === 0 ? 9.5 : 8} sm={countLostItems === 0 ? 9.5 : 8} md={countLostItems === 0 ? 9.5 : 8}>
+                  <WelcomeTypography
+                    userLogged={userLogged}
+                    manualUpdatingJobsData={manualUpdatingJobsData}
+                    jobsUpdatingTimeData={jobsUpdatingTimeData}
+                    itemsZohoSenitron={itemsZohoSenitron}
+                    setUpdating={setUpdating}
+                    setError={setError}
+                    handleSetManualUpdatingJobs={handleSetManualUpdatingJobs}
+                    setTitleLinearProgress={setTitleLinearProgress}
+                    isMobile={isMobile}
+                  />
+                </Grid >
+                {itemsIgnoreErrors.length > 0 && (
+                  <Grid xs={countLostItems === 0 ? 2.5 : 2} sm={countLostItems === 0 ? 2.5 : 2} md={countLostItems === 0 ? 2.5 : 2}>
+                    <Alert
+                      severity="warning"
+                      icon={<AnimatedIcon icon="mdi:alert" color="warning" width="25px" />}
+                      sx={{ mb: 2, cursor: 'pointer', p: 1 }}
+                      onClick={
+                        () => {
+                          handleOpenModal('subListItems')
+                          setModalListItems(itemsIgnoreErrors)
+                          setModalTitle(`SKUs with errors ignored`)
+                          setModalButtonColor('warning.main')
+                          setHasIgnoredErrors(true)
+                          setValueIgnoreErrors(false)
+                          setIsIgnore(false)
+                        }
+                      }>
+                      <Typography variant="body2" sx={{ fontSize: '14px' }}>
+                        <b>{itemsIgnoreErrors.length}</b> SKUs with errors ignored
+                      </Typography>
+                    </Alert>
+                  </Grid>
+                )}
+                {updatedCountLostItems > 0 && (
+                  <Grid xs={2} sm={2} md={2}>
+                    <Alert
+                      severity="error"
+                      icon={<AnimatedIcon icon="mdi:error" color="error" width="25px" />}
+                      sx={{ mb: 2, cursor: 'pointer', p: 1 }}>
+                      <Typography variant="body2" sx={{ fontSize: '14px' }}>
+                        <b>{updatedCountLostItems}</b> Items lost today
+                      </Typography>
+                    </Alert>
+                  </Grid>
+                )}
               </Grid >
-              {itemsIgnoreErrors.length > 0 && (
-                <Grid xs={!isMobile ? 2.5 : 6} sm={!isMobile ? 2.5 : 6} md={!isMobile ? 2.5 : 6}>
-                  <Alert
-                    severity="warning"
-                    icon={<AnimatedIcon icon="mdi:alert" color="warning" />}
-                    sx={{ mb: 2, cursor: 'pointer' }}
-                    onClick={
-                      () => {
-                        handleOpenModal('subListItems')
-                        setModalListItems(itemsIgnoreErrors)
-                        setModalTitle(`SKUs with errors ignored`)
-                        setModalButtonColor('warning.main')
-                        setHasIgnoredErrors(true)
-                        setValueIgnoreErrors(false)
-                        setIsIgnore(false)
-                      }
-                    }>
-                    <Typography variant="body2">
-                      <b>{itemsIgnoreErrors.length}</b> SKUs with errors ignored
-                    </Typography>
-                  </Alert>
-                </Grid>
-              )}
-            </Grid >
+            )}
 
             <Grid container spacing={3}>
               <Grid xs={12} sm={6} md={3}>

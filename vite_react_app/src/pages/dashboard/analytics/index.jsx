@@ -1,5 +1,5 @@
 import { Helmet } from 'react-helmet-async';
-import { DataProvider } from 'src/auth/context/data/data-context';
+
 
 import { CONFIG } from 'src/config-global';
 
@@ -14,11 +14,8 @@ export default function Page() {
     <>
       <Helmet>
         <title> {metadata.title}</title>
-      </Helmet>
-
-      <DataProvider>
-        <OverviewAnalyticsView />
-      </DataProvider>
+      </Helmet>                           
+      <OverviewAnalyticsView />
     </>
   );
 }

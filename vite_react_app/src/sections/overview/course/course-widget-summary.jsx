@@ -7,10 +7,18 @@ import { fNumber } from 'src/utils/format-number';
 import { varAlpha } from 'src/theme/styles';
 
 import { SvgColor } from 'src/components/svg-color';
+import AnimatedIcon from 'src/components/animate/animated-icon';
 
 // ----------------------------------------------------------------------
 
-export function CourseWidgetSummary({ sx, icon, title, total, color = 'warning', ...other }) {
+export function CourseWidgetSummary({
+  sx,
+  icon,
+  title,
+  total,
+  color = 'warning',
+  ...other
+}) {
   return (
     <Card sx={{ py: 3, pl: 3, pr: 2.5, ...sx }} {...other}>
       <Box sx={{ flexGrow: 1 }}>
@@ -45,8 +53,7 @@ export function CourseWidgetSummary({ sx, icon, title, total, color = 'warning',
           position: 'absolute',
           transform: 'rotate(40deg)',
           background: (theme) =>
-            `linear-gradient(to right, ${
-              theme.vars.palette[color].main
+            `linear-gradient(to right, ${theme.vars.palette[color].main
             } 0%, ${varAlpha(theme.vars.palette[color].mainChannel, 0)} 100%)`,
         }}
       />

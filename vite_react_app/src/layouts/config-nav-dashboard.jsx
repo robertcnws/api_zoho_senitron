@@ -3,6 +3,10 @@ import { paths } from 'src/routes/paths';
 import { CONFIG } from 'src/config-global';
 
 import { SvgColor } from 'src/components/svg-color';
+import { Iconify } from 'src/components/iconify';
+import { Label } from 'src/components/label';
+import { useContext } from 'react';
+import { useDataContext } from 'src/auth/context/data/data-context';
 
 // ----------------------------------------------------------------------
 
@@ -42,9 +46,11 @@ const ICONS = {
 
 const userLogged = JSON.parse(localStorage.getItem('userLogged'));
 
+// const { countLostItems } = useDataContext();
+
 // ----------------------------------------------------------------------
 
-export const navData = [
+export const navData = (countLostItems) => [
   /**
    * Overview
    */
@@ -54,7 +60,22 @@ export const navData = [
       // { title: 'App', path: paths.dashboard.root, icon: ICONS.dashboard },
       // { title: 'Ecommerce', path: paths.dashboard.general.ecommerce, icon: ICONS.ecommerce },
       { title: 'Analytics', path: paths.dashboard.general.analytics, icon: ICONS.analytics },
-      { title: 'Live Monitor', path: paths.dashboard.general.liveMonitor, icon: ICONS.radar },
+      {
+        title: 'Live Monitor',
+        path: paths.dashboard.general.liveMonitor,
+        icon: ICONS.radar,
+        info: (
+           countLostItems  > 0 && (
+            <Label
+              color="error"
+              variant="inverted"
+              startIcon={<Iconify icon="solar:bell-bing-bold-duotone" />}
+            >
+              {`${countLostItems} Lost`}
+            </Label>
+          )
+        ),
+      },
       // { title: 'Banking', path: paths.dashboard.general.banking, icon: ICONS.banking },
       // { title: 'Booking', path: paths.dashboard.general.booking, icon: ICONS.booking },
       // { title: 'File', path: paths.dashboard.general.file, icon: ICONS.file },

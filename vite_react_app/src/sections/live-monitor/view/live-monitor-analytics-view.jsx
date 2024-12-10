@@ -7,7 +7,7 @@ import { fDate, fDateTime } from 'src/utils/format-time';
 import { LoadingContext } from 'src/auth/context/loading-context';
 import { Iconify } from 'src/components/iconify';
 import { Label } from 'src/components/label';
-import { Box, Stack, LinearProgress, Button } from '@mui/material';
+import { Box, Stack, LinearProgress, Button, Alert } from '@mui/material';
 import { paths } from 'src/routes/paths';
 import { useRouter } from 'src/routes/hooks';
 import { useSetState } from 'src/hooks/use-set-state';
@@ -26,6 +26,7 @@ import {
 } from 'src/_mock';
 
 import { WelcomeTypography } from 'src/sections/welcome-typography/welcome-typography';
+import AnimatedIcon from 'src/components/animate/animated-icon';
 
 
 import { ItemListShippedLogsView } from 'src/sections/live-monitor/view/item-list-shipped-logs';
@@ -34,6 +35,7 @@ import { BookingCheckInWidgets } from 'src/sections/live-monitor/booking/booking
 import { BookingBooked } from 'src/sections/live-monitor/booking/booking-booked';
 import { BookingTotalIncomes } from 'src/sections/live-monitor/booking/booking-total-incomes';
 import { ModalListItemsSerials } from './modal-list-items-serials';
+
 
 
 // ----------------------------------------------------------------------
@@ -89,6 +91,8 @@ export function LiveMonitorAnalyticsView() {
     itemsAssetsLogsInfo,
     itemsZohoSenitron,
     itemsSenitronZoho,
+    countLostItems,
+    setCountLostItems
   } = useDataContext();
 
   const [date, setDate] = useState(null);
@@ -360,7 +364,7 @@ export function LiveMonitorAnalyticsView() {
         <>
           <DashboardContent maxWidth="xl">
             <Grid container spacing={3}>
-              <Grid xs={!isMobile ? 9.5 : 6} sm={!isMobile ? 9.5 : 6} md={!isMobile ? 9.5 : 6}>
+              <Grid xs={!isMobile ? 10 : 6} sm={!isMobile ? 10 : 6} md={!isMobile ? 10 : 6}>
                 <WelcomeTypography
                   userLogged={userLogged}
                   manualUpdatingJobsData={manualUpdatingJobsData}
@@ -373,6 +377,18 @@ export function LiveMonitorAnalyticsView() {
                   isMobile={isMobile}
                 />
               </Grid >
+              {countLostItems > 0 && (
+                <Grid xs={!isMobile ? 2 : 6} sm={!isMobile ? 2 : 6} md={!isMobile ? 2 : 6}>
+                  <Alert
+                    severity="error"
+                    icon={<AnimatedIcon icon="mdi:error" color="error" width="25px"/>}
+                    sx={{ mb: 2, cursor: 'pointer', p: 1 }}>
+                    <Typography variant="body2" sx={{ fontSize: '14px'}}>
+                      <b>{countLostItems}</b> Items lost today
+                    </Typography>
+                  </Alert>
+                </Grid>
+              )}
             </Grid >
 
             <Grid container spacing={3}>
@@ -423,6 +439,10 @@ export function LiveMonitorAnalyticsView() {
                     }}
                   >
                     <ItemListShippedLogsView
+                      // itemsAssetsLogsInfo={itemsAssetsLogsInfo}
+                      // itemsZohoSenitron={itemsZohoSenitron}
+                      // finalGroupedArray={itemsAssetsLogsInfo}
+                      // setCountLostItems={setCountLostItems}
                       setTotalsItemsNoReconciled={setTotalsItemsNoReconciled}
                       setTotalsItemsLost={setTotalsItemsLost}
                       setTotalsItemsAll={setTotalsItemsAll}

@@ -10,6 +10,7 @@ import { _contacts, _notifications } from 'src/_mock';
 
 import { Logo } from 'src/components/logo';
 import { useSettingsContext } from 'src/components/settings';
+import { useDataContext } from 'src/auth/context/data/data-context';
 
 import { Main } from './main';
 import { NavMobile } from './nav-mobile';
@@ -32,9 +33,17 @@ import { navData as dashboardNavData } from '../config-nav-dashboard';
 import { NotificationsDrawer } from '../components/notifications-drawer';
 import { CustomFooter, Footer } from '../main/footer';
 
+
 // ----------------------------------------------------------------------
 
 export function DashboardLayout({ sx, children, header, data }) {
+
+  const {
+    countLostItems
+  } = useDataContext();
+
+  // const countLostItems = 11;
+
   const theme = useTheme();
 
   const mobileNavOpen = useBoolean();
@@ -45,7 +54,7 @@ export function DashboardLayout({ sx, children, header, data }) {
 
   const layoutQuery = 'lg';
 
-  const navData = data?.nav ?? dashboardNavData;
+  const navData = data?.nav ?? dashboardNavData(countLostItems);
 
   const isNavMini = settings.navLayout === 'mini';
   const isNavHorizontal = settings.navLayout === 'horizontal';

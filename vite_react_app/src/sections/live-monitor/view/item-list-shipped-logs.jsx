@@ -62,7 +62,7 @@ import { ItemTableShippedLogsToolbar } from '../item-table-shipped-logs-toolbar'
 const STATUS_OPTIONS = [
     { value: 'all', label: 'All' },
     { value: 'lost', label: 'Losts' },
-    { value: 'not_matched', label: 'NOT Reconciled' },
+    { value: 'not_matched', label: 'To Reconcile' },
     { value: 'matched', label: 'Matched' },
 
 ];
@@ -77,7 +77,9 @@ const headersCSV = [
 // ----------------------------------------------------------------------
 
 export function ItemListShippedLogsView({
-
+    // itemsAssetsLogsInfo,
+    // itemsZohoSenitron,
+    // finalGroupedArray,
     setTotalsItemsNoReconciled,
     setTotalsItemsLost,
     setTotalsItemsAll,
@@ -93,10 +95,8 @@ export function ItemListShippedLogsView({
         itemsAssetsLogsInfo,
         itemsZohoSenitron,
         finalGroupedArray,
+        setCountLostItems,
     } = useDataContext();
-
-
-    const date = fDate(new Date(), 'YYYY-MM-DD');
 
     const { isMobile } = useContext(LoadingContext);
 
@@ -165,14 +165,22 @@ export function ItemListShippedLogsView({
     );
 
 
-    const listSerials = useMemo(() => itemsAssetsLogsInfo, [itemsAssetsLogsInfo]);
+    const listSerials = useMemo(
+        () => itemsAssetsLogsInfo?.filter((item) => item.date === fDate(filters.state.endDate, 'YYYY-MM-DD')),
+        [itemsAssetsLogsInfo, filters.state.endDate]);
 
 
-    // const listShipments = useMemo(() => finalGroupedArray?.filter((item) => item.date === fDate(filters.state.endDate, 'YYYY-MM-DD')), [finalGroupedArray, filters.state.endDate]);
+    const listShipments = useMemo(
+        () => finalGroupedArray?.filter((item) => item.date === fDate(filters.state.endDate, 'YYYY-MM-DD')),
+        [finalGroupedArray, filters.state.endDate]);
 
-    const listShipments = useMemo(() => finalGroupedArray, [finalGroupedArray]);
+    // const listShipments = useMemo(() => finalGroupedArray, [finalGroupedArray]);
 
     // console.log('listShipments', listShipments);
+
+    const updateCountItemLost = useCallback(
+        (count) => setCountLostItems(count), [setCountLostItems]
+    );
 
 
     useEffect(() => {
@@ -186,7 +194,7 @@ export function ItemListShippedLogsView({
             const syncedShipments = listShipments?.filter(item => allowedIdsSet.has(item.itemId));
 
             const rData = syncedShipments?.map((item) => {
-                const senitronItem = listSerials?.find((sItem) => sItem?.itemId === item.itemId);
+                const senitronItem = listSerials?.find((sItem) => sItem?.itemNumber === item.itemId);
                 return {
                     ...item,
                     shippedSerialsQuantity: handleShippedSerialQuantity(senitronItem) || 0,
@@ -196,6 +204,7 @@ export function ItemListShippedLogsView({
                         (acc, h) => acc + (h.currentStatusName.toLowerCase().includes('live') ? 1 : 0), 0
                     ) || 0,
                     isReconciled: false,
+                    logs: senitronItem?.logs,
                 };
             });
 
@@ -208,13 +217,64 @@ export function ItemListShippedLogsView({
 
             });
 
-            setTableData(rDataZohoSenitron);
-            // };
-            // update();
-            // const interval = setInterval(update, 2000);
-            // return () => clearInterval(interval);
+            const existingItemIds = new Set(rDataZohoSenitron.map(item => item.itemId));
+
+            const newItems = listSerials
+                .filter(item => !existingItemIds.has(item.itemNumber))
+                .map(item => ({
+                    ...item,
+                    itemId: item.itemNumber,
+                    itemTotalQty: 0,
+                    shippedSerialsQuantity: handleShippedSerialQuantity(item) || 0,
+                    differenceShipped: handleShippedSerialQuantity(item) ?
+                        (0 - handleShippedSerialQuantity(item)) : 0,
+                    receivedSerialsQuantity: item?.logs.reduce(
+                        (acc, h) => acc + (h.currentStatusName.toLowerCase().includes('live') ? 1 : 0), 0
+                    ) || 0,
+                }));
+
+
+            const updatedRDataZohoSenitron = [...rDataZohoSenitron, ...newItems];
+
+
+
+            const filteredData = updatedRDataZohoSenitron?.map(item => {
+                const filteredLogs = item.logs?.filter(log => fDate(log.createdAt) === filters.state.endDate);
+                return {
+                    ...item,
+                    logs: filteredLogs,
+                };
+            });
+
+            const finalFilteredData = filteredData?.map((item) => {
+                const senitronItem = itemsZohoSenitron?.find((sItem) => sItem?.itemId === item.itemId);
+                return {
+                    ...item,
+                    isReconciled: parseInt(senitronItem?.stockOnHand, 10) - parseInt(senitronItem?.quantity, 10) === 0 || false,
+                }
+
+            });
+
+            // console.log('finalFilteredData', finalFilteredData);
+
+            const lostCount = finalFilteredData.filter(
+                (it) => it.differenceShipped < 0 && !it.isReconciled && it.date === fDate(filters.state.endDate, 'YYYY-MM-DD')
+            ).length;
+
+            if (lostCount > 0 && fDate(filters.state.endDate, 'YYYY-MM-DD') === fDate(new Date(), 'YYYY-MM-DD')) {
+                updateCountItemLost(lostCount);
+            }
+            else {
+                updateCountItemLost(0);
+            }
+
+            setTableData(finalFilteredData);
+
         }
-    }, [listSerials, listShipments, itemsZohoSenitron, handleShippedSerialQuantity]);
+        else {
+            updateCountItemLost(0);
+        }
+    }, [listSerials, listShipments, itemsZohoSenitron, filters.state.endDate, setCountLostItems, handleShippedSerialQuantity, updateCountItemLost]);
 
     useEffect(() => {
         setListItemsLost(tableData?.filter((item) => item.differenceShipped < 0 && !item.isReconciled && item.date === fDate(filters.state.endDate, 'YYYY-MM-DD')));
@@ -487,6 +547,7 @@ export function ItemListShippedLogsView({
                                         rowCount={dataFiltered.length}
                                         numSelected={table.selected.length}
                                         onSort={table.onSort}
+                                        sx={{ color: 'red' }}
                                     />
                                     <TableBody>
                                         {dataFiltered
@@ -539,7 +600,7 @@ export function ItemListShippedLogsView({
                                                                     variant="soft"
                                                                     color="warning"
                                                                 >
-                                                                    No Data
+                                                                    No Data Shipment
                                                                 </Label>
                                                             )}
                                                         </TableCell>
@@ -553,12 +614,12 @@ export function ItemListShippedLogsView({
                                             emptyRows={emptyRows(table.page, table.rowsPerPage, dataFiltered.length)}
                                         />
 
-                                        <TableNoData notFound={notFound} />
+                                        <TableNoData notFound={notFound} sx={{ height: 220 }}/>
                                     </TableBody>
                                 </Table>
                             </TableContainer>
                         ) : (
-                            <TableContainer sx={{ width: '100%', bgcolor: 'background.paper', p: 1 }}>
+                            <TableContainer sx={{ width: '100%', bgcolor: 'background.paper', p: 1  }}>
                                 <Table>
                                     <TableBody>
                                         <TableNoData notFound={tableData.length === 0} />
@@ -604,9 +665,9 @@ function applyFilter({ inputData, comparator, filters }) {
 
     if (name) {
         inputData = inputData.filter(
-            (item) => item.name.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
-                item.sku.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
-                item.itemId.toString().indexOf(name.toLowerCase()) !== -1
+            (item) => item.name?.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
+                item.sku?.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
+                item.itemId?.toString().indexOf(name.toLowerCase()) !== -1
         );
     }
     if (status === 'lost') {

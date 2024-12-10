@@ -1,6 +1,6 @@
 // src/contexts/DataContext.jsx
 
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { createContext, useContext, useMemo, useState } from 'react';
 import { useItemsQuery, useSenitronItemsQuery } from 'src/_mock/_items';
 import { useShipmentsQuery } from 'src/_mock/_shipment';
 import { usePackagesQuery } from 'src/_mock/_package';
@@ -16,6 +16,8 @@ const DataContext = createContext();
 export const useDataContext = () => useContext(DataContext);
 
 export const DataProvider = ({ children }) => {
+
+    const [countLostItems, setCountLostItems] = useState(0);
 
     const { data: items, loading: loadingItems, error: errorItems } = useItemsQuery();
     const { data: senitronItems, loading: loadingSenitronItems, error: errorSenitronItems } = useSenitronItemsQuery();
@@ -281,6 +283,9 @@ export const DataProvider = ({ children }) => {
     , [objectsGroupedLogs]);
 
 
+    
+
+
 
     const value = useMemo(
         () => ({
@@ -301,6 +306,8 @@ export const DataProvider = ({ children }) => {
             itemsZohoSenitron,
             itemsSenitronZoho,
             finalGroupedArray,
+            countLostItems,
+            setCountLostItems,
         }),
         [
             items,
@@ -320,6 +327,8 @@ export const DataProvider = ({ children }) => {
             itemsZohoSenitron,
             itemsSenitronZoho,
             finalGroupedArray,
+            countLostItems,
+            setCountLostItems,
         ]
     );
 
