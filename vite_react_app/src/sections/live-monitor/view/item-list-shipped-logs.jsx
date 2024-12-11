@@ -239,7 +239,7 @@ export function ItemListShippedLogsView({
 
 
             const filteredData = updatedRDataZohoSenitron?.map(item => {
-                
+
                 const filteredLogs = item.logs?.filter(log => fDate(log.createdAt, 'YYYY-MM-DD') === fDate(filters.state.endDate, 'YYYY-MM-DD'));
                 return {
                     ...item,
@@ -468,36 +468,43 @@ export function ItemListShippedLogsView({
                                 iconPosition="end"
                                 value={tab.value}
                                 label={tab.label}
-                                sx={{
-                                    bgcolor: tab.value === 'lost' && tableData.filter((it) => it.differenceShipped < 0 && !it.isReconciled && it.date === fDate(filters.state.endDate, 'YYYY-MM-DD')).length > 0 ? 'error.main' :
-                                        tab.value === 'not_matched' && tableData.filter((it) => it.differenceShipped > 0 && !it.isReconciled && it.date === fDate(filters.state.endDate, 'YYYY-MM-DD')).length > 0 ? 'warning.main' : 'transparent',
-                                    color: tab.value === 'lost' && tableData.filter((it) => it.differenceShipped < 0 && !it.isReconciled && it.date === fDate(filters.state.endDate, 'YYYY-MM-DD')).length > 0 ? 'white' : 'inherit',
-                                    px: 1.5,
-                                    py: 1,
-                                    borderRadius: '8px',
-                                }}
+
                                 icon={
-                                    <Label
-                                        variant={
-                                            ((tab.value === 'lost' || tab.value === 'not_matched' || tab.value === filters.state.status) && 'filled') ||
-                                            'soft'
-                                        }
-                                        color={
-                                            (tab.value === 'matched' && 'success') ||
-                                            (tab.value === 'not_matched' && 'warning') ||
-                                            (tab.value === 'lost' && 'error') ||
-                                            'default'
-                                        }
+                                    <Box
+                                        sx={{
+                                            bgcolor: tab.value === 'lost' && tableData.filter((it) => it.differenceShipped < 0 && !it.isReconciled && it.date === fDate(filters.state.endDate, 'YYYY-MM-DD')).length > 0 ? 'error.main' :
+                                                tab.value === 'not_matched' && tableData.filter((it) => it.differenceShipped > 0 && !it.isReconciled && it.date === fDate(filters.state.endDate, 'YYYY-MM-DD')).length > 0 ? 'warning.main' : 'transparent',
+                                            color: tab.value === 'lost' && tableData.filter((it) => it.differenceShipped < 0 && !it.isReconciled && it.date === fDate(filters.state.endDate, 'YYYY-MM-DD')).length > 0 ? 'white' : 'inherit',
+                                            px: 1,
+                                            py: 0.5,
+                                            borderRadius: '8px',
+                                            border: tab.value === 'lost' && tableData.filter((it) => it.differenceShipped < 0 && !it.isReconciled && it.date === fDate(filters.state.endDate, 'YYYY-MM-DD')).length > 0 ? '2px solid red' :
+                                                tab.value === 'not_matched' && tableData.filter((it) => it.differenceShipped > 0 && !it.isReconciled && it.date === fDate(filters.state.endDate, 'YYYY-MM-DD')).length > 0 ? '2px solid #F57C00' : '1px solid transparent',
+                                            display: 'inline-block',
+                                        }}
                                     >
-                                        {tab.value === 'matched' ?
-                                            tableData.filter((it) => it.differenceShipped === 0 && it.date === fDate(filters.state.endDate, 'YYYY-MM-DD')).length :
-                                            tab.value === 'not_matched' ?
-                                                tableData.filter((it) => it.differenceShipped > 0 && !it.isReconciled && it.date === fDate(filters.state.endDate, 'YYYY-MM-DD')).length :
-                                                tab.value === 'lost' ?
-                                                    tableData.filter((it) => it.differenceShipped < 0 && !it.isReconciled && it.date === fDate(filters.state.endDate, 'YYYY-MM-DD')).length :
-                                                    tableData.filter((it) => it.date === fDate(filters.state.endDate, 'YYYY-MM-DD')).length
-                                        }
-                                    </Label>
+                                        <Label
+                                            variant={
+                                                ((tab.value === 'lost' || tab.value === 'not_matched' || tab.value === filters.state.status) && 'filled') ||
+                                                'soft'
+                                            }
+                                            color={
+                                                (tab.value === 'matched' && 'success') ||
+                                                (tab.value === 'not_matched' && 'warning') ||
+                                                (tab.value === 'lost' && 'error') ||
+                                                'default'
+                                            }
+                                        >
+                                            {tab.value === 'matched' ?
+                                                tableData.filter((it) => it.differenceShipped === 0 && it.date === fDate(filters.state.endDate, 'YYYY-MM-DD')).length :
+                                                tab.value === 'not_matched' ?
+                                                    tableData.filter((it) => it.differenceShipped > 0 && !it.isReconciled && it.date === fDate(filters.state.endDate, 'YYYY-MM-DD')).length :
+                                                    tab.value === 'lost' ?
+                                                        tableData.filter((it) => it.differenceShipped < 0 && !it.isReconciled && it.date === fDate(filters.state.endDate, 'YYYY-MM-DD')).length :
+                                                        tableData.filter((it) => it.date === fDate(filters.state.endDate, 'YYYY-MM-DD')).length
+                                            }
+                                        </Label>
+                                    </Box>
                                 }
                             />
                         ))}
@@ -615,12 +622,12 @@ export function ItemListShippedLogsView({
                                             emptyRows={emptyRows(table.page, table.rowsPerPage, dataFiltered.length)}
                                         />
 
-                                        <TableNoData notFound={notFound} sx={{ height: 80 }}/>
+                                        <TableNoData notFound={notFound} sx={{ height: 80 }} />
                                     </TableBody>
                                 </Table>
                             </TableContainer>
                         ) : (
-                            <TableContainer sx={{ width: '100%', bgcolor: 'background.paper', p: 1  }}>
+                            <TableContainer sx={{ width: '100%', bgcolor: 'background.paper', p: 1 }}>
                                 <Table>
                                     <TableBody>
                                         <TableNoData notFound={tableData.length === 0} />

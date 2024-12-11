@@ -13,7 +13,7 @@ from .models import (
                     SenitronStatus, 
                     SenitronItemAssetLogs
                 )
-from api_zoho.models import ZohoInventoryItem
+from api_zoho.models import ZohoInventoryItem, JobsUpdatingTimes
 from .manage_instances import (
                               create_inventory_item_instance, 
                               create_inventory_item_asset_instance, 
@@ -136,6 +136,12 @@ def load_senitron_inventory_items(request):
                 fields=['tags_count', 'qty'],
                 batch_size=1000
             )
+            
+    previous_day = timezone.now()
+            
+    JobsUpdatingTimes.objects.filter(last_updated__lt=previous_day).delete()
+            
+    JobsUpdatingTimes.objects.create(last_updated=timezone.now())
 
     return JsonResponse({'message': 'Senitron Items loaded successfully'}, status=200)
 
@@ -214,6 +220,12 @@ def load_senitron_inventory_item_assets(request):
                 if page_result:
                     has_more = True  
             page += MAX_WORKERS
+            
+    previous_day = timezone.now()
+            
+    JobsUpdatingTimes.objects.filter(last_updated__lt=previous_day).delete()
+            
+    JobsUpdatingTimes.objects.create(last_updated=timezone.now())
             
     logger.info(f"Senitron Item Assets loaded successfully")
     
@@ -323,6 +335,12 @@ def load_senitron_inventory_item_assets_logs(request):
                     has_more = True  
             page += MAX_WORKERS
             
+    previous_day = timezone.now()
+            
+    JobsUpdatingTimes.objects.filter(last_updated__lt=previous_day).delete()
+            
+    JobsUpdatingTimes.objects.create(last_updated=timezone.now())
+            
     logger.info(f"Senitron Item Assets Logs loaded successfully")
     
     return JsonResponse({'message': 'Senitron Items Assets Logs loaded successfully'}, status=200)
@@ -335,3 +353,5 @@ def remove_old_senitron_items_assets_logs(request):
     three_days_ago = now - timezone.timedelta(days=30)
     SenitronItemAssetLogs.objects.filter(created_time__lt=three_days_ago).delete()
     return JsonResponse({'message': '30 days old Senitron Items Assets Logs removed successfully'}, status=200)
+
+

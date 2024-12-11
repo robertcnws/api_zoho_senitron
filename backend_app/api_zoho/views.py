@@ -491,6 +491,12 @@ def load_inventory_items(request):
             )
         if timeline_items:
             TimelineItem.objects.bulk_create(timeline_items, batch_size=200, ignore_conflicts=True)
+            
+    previous_day = timezone.now()
+            
+    JobsUpdatingTimes.objects.filter(last_updated__lt=previous_day).delete()
+            
+    JobsUpdatingTimes.objects.create(last_updated=timezone.now())
 
     logger.info(f"Items processed successfully: {len(new_items)} created, {len(items_to_update)} updated")
     return JsonResponse({'message': 'Items loaded successfully'}, status=200)
