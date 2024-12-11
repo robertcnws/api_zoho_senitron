@@ -447,7 +447,7 @@ export function ItemListShippedLogsView({
 
     return (
         <>
-            <Card sx={{ minHeight: isMobile ? '100%' : '70vh' }}>
+            <Card sx={{ minHeight: isMobile ? '100%' : '40vh' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1 }}>
                     <Typography variant="h6">Shipped Logs</Typography>
                 </Box>
@@ -537,8 +537,8 @@ export function ItemListShippedLogsView({
                     <Scrollbar>
                         {tableData?.length > 0 ? (
                             <TableContainer sx={{
-                                maxHeight: filters.state.status === 'all' ? 405 : 305,
-                                minHeight: filters.state.status === 'all' ? 405 : 305
+                                maxHeight: filters.state.status === 'all' ? 305 : 205,
+                                minHeight: filters.state.status === 'all' ? 305 : 205
                             }}>
                                 <Table size={table.dense ? 'small' : 'medium'} sx={{ minWidth: 960 }} stickyHeader>
                                     <TableHeadCustom
@@ -615,7 +615,7 @@ export function ItemListShippedLogsView({
                                             emptyRows={emptyRows(table.page, table.rowsPerPage, dataFiltered.length)}
                                         />
 
-                                        <TableNoData notFound={notFound} sx={{ height: 220 }}/>
+                                        <TableNoData notFound={notFound} sx={{ height: 80 }}/>
                                     </TableBody>
                                 </Table>
                             </TableContainer>

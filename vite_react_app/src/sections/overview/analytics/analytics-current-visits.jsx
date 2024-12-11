@@ -64,22 +64,20 @@ export function AnalyticsCurrentVisits({
       senitronItems.forEach((sItem) => {
         sItemMap.set(sItem.itemNumber, sItem);
       });
-      zohoItems.forEach((zItem) => {
+      zohoItems.filter(item => item.syncedWithSenitron).forEach((zItem) => {
         const sItem = sItemMap.get(zItem.itemId);
-        if (sItem) {
-          const max = Math.max(zItem.stockOnHand, sItem.count);
-          const min = Math.min(zItem.stockOnHand, sItem.count);
-          const match = (min / max) * 100;
-          newData.push({
-            itemId: zItem.itemId,
-            name: zItem.name,
-            sku: zItem.sku,
-            stockOnHand: zItem.stockOnHand,
-            quantity: sItem.count,
-            difference: parseInt(sItem.count, 10) - parseInt(zItem.stockOnHand, 10),
-            percentage: match,
-          });
-        }
+        const max = Math.max(zItem.stockOnHand, sItem?.count ?? 0);
+        const min = Math.min(zItem.stockOnHand, sItem?.count ?? 0);
+        const match = max !== 0 ? Math.floor((min / max) * 100) : max === 0 && min === 0 ? 100 : 0;
+        newData.push({
+          itemId: zItem.itemId,
+          name: zItem.name,
+          sku: zItem.sku,
+          stockOnHand: zItem.stockOnHand,
+          quantity: sItem?.count ?? 0,
+          difference: parseInt(sItem?.count ?? 0, 10) - parseInt(zItem.stockOnHand, 10),
+          percentage: match,
+        });
       });
       setModalDataFiltered(newData);
     }
@@ -136,7 +134,7 @@ export function AnalyticsCurrentVisits({
   });
 
   const handleViewSublists = (seriesIndex) => modalDataFiltered?.filter((item) =>
-    seriesIndex === 0 ? item.percentage === 100 :
+    seriesIndex === 0 ? parseInt(item.percentage, 10) === 100 :
       seriesIndex === 1 ? item.percentage >= 90 && item.percentage < 100 :
         seriesIndex === 2 ? item.percentage >= 80 && item.percentage < 90 :
           seriesIndex === 3 ? item.percentage >= 70 && item.percentage < 80 :

@@ -148,7 +148,7 @@ export function OverviewAnalyticsView() {
         const senitronQty = senitronItem?.count || 0;
         const max = Math.max(zohoQty, senitronQty);
         const min = Math.min(zohoQty, senitronQty);
-        const match = Math.floor((min / max) * 100) || 0;
+        const match = max !== 0 ? Math.floor((min / max) * 100) : max === 0 && min === 0 ? 100 : 0;
         return match;
       });
       const sseriesAvg = processingNumbers(sseries);
@@ -384,7 +384,6 @@ export function OverviewAnalyticsView() {
   const [updatedCountLostItems, setUpdatedCountLostItems] = useState(countLostItems);
 
   useEffect(() => {
-    console.log('countLostItems', countLostItems);
     setUpdatedCountLostItems(countLostItems);
   }, [countLostItems]);
 

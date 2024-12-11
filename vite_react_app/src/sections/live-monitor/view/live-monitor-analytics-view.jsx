@@ -35,6 +35,8 @@ import { BookingCheckInWidgets } from 'src/sections/live-monitor/booking/booking
 import { BookingBooked } from 'src/sections/live-monitor/booking/booking-booked';
 import { BookingTotalIncomes } from 'src/sections/live-monitor/booking/booking-total-incomes';
 import { ModalListItemsSerials } from './modal-list-items-serials';
+import { ItemListShippedLogsTotals } from './item-list-shipped-logs-totals';
+import { ItemListShippedLogsTotalsTable } from './item-list-shipped-logs-totals-table';
 
 
 
@@ -99,6 +101,8 @@ export function LiveMonitorAnalyticsView() {
 
   const [isLive, setIsLive] = useState(true);
 
+  const [stateWidthModal, setStateWidthModal] = React.useState('md');
+
   useEffect(() => {
     if (globalDateFilters.state.startDate && globalDateFilters.state.endDate) {
       setDate(fDate(globalDateFilters.state.endDate, 'YYYY-MM-DD'));
@@ -117,7 +121,10 @@ export function LiveMonitorAnalyticsView() {
     }
     return null;
   }, [itemsAssetsLogsInfo, date]);
-  
+
+
+  const lastLog = filteredData?.length > 0 ? filteredData[0].logs[filteredData[0].logs.length - 1] : 0;
+
 
   const totalsNewsTrack = useMemo(() => {
     if (filteredData) {
@@ -455,10 +462,6 @@ export function LiveMonitorAnalyticsView() {
                     }}
                   >
                     <ItemListShippedLogsView
-                      // itemsAssetsLogsInfo={itemsAssetsLogsInfo}
-                      // itemsZohoSenitron={itemsZohoSenitron}
-                      // finalGroupedArray={itemsAssetsLogsInfo}
-                      // setCountLostItems={setCountLostItems}
                       setTotalsItemsNoReconciled={setTotalsItemsNoReconciled}
                       setTotalsItemsLost={setTotalsItemsLost}
                       setTotalsItemsAll={setTotalsItemsAll}
@@ -530,6 +533,76 @@ export function LiveMonitorAnalyticsView() {
                     listItemsNoReconciled={listItemsNoReconciled}
                     listItemsLost={listItemsLost}
                   />
+                </Grid>
+              </Grid>
+
+              <Grid container xs={12}>
+
+                <Grid xs={12} md={6} lg={6}>
+                  <Box
+                    sx={{
+                      mb: 1,
+                      p: { md: 1 },
+                      display: 'flex',
+                      gap: { xs: 3, md: 1 },
+                      borderRadius: { md: 2 },
+                      flexDirection: 'column',
+                      bgcolor: { md: 'background.neutral' },
+                      minHeight: { md: '100%' },
+                    }}
+                  >
+                    <ItemListShippedLogsTotals
+                      title='Items Received/Shipped'
+                      subheader={`
+                  ${filteredData.length} 
+                  ${lastLog.createdTime ? ` SKUs with last changes at ${fDate(lastLog.createdTime)}` : `SKUs without changes`
+                        }`}
+                      list={filteredData}
+                      openModal={openModal}
+                      setOpenModal={setOpenModal}
+                      handleOpenModal={handleOpenModal}
+                      table={table}
+                      filters={filters}
+                      handleFilterName={handleFilterName}
+                      globalDateFilters={globalDateFilters}
+                      setStateWidthModal={setStateWidthModal}
+                      isLive={isLive}
+                      setIsLive={setIsLive}
+                    />
+                  </Box>
+                </Grid>
+                <Grid xs={12} md={6} lg={6}>
+                  <Box
+                    sx={{
+                      mb: 1,
+                      p: { md: 1 },
+                      display: 'flex',
+                      gap: { xs: 3, md: 1 },
+                      borderRadius: { md: 2 },
+                      flexDirection: 'column',
+                      bgcolor: { md: 'background.neutral' },
+                      minHeight: { md: '100%' },
+                    }}
+                  >
+                    <ItemListShippedLogsTotalsTable
+                      title='Details Items Received/Shipped'
+                      subheader={`
+                  ${filteredData.length} 
+                  ${lastLog.createdTime ? ` SKUs with last changes at ${fDate(lastLog.createdTime)}` : `SKUs without changes`
+                        }`}
+                      list={filteredData}
+                      openModal={openModal}
+                      setOpenModal={setOpenModal}
+                      handleOpenModal={handleOpenModal}
+                      table={table}
+                      filters={filters}
+                      handleFilterName={handleFilterName}
+                      globalDateFilters={globalDateFilters}
+                      setStateWidthModal={setStateWidthModal}
+                      isLive={isLive}
+                      setIsLive={setIsLive}
+                    />
+                  </Box>
                 </Grid>
               </Grid>
 
