@@ -426,7 +426,20 @@ export function OverviewAnalyticsView() {
           <DashboardContent maxWidth="xl">
             {!isMobile && (
               <Grid container spacing={2}>
-                <Grid xs={countLostItems === 0 ? 9.5 : 8} sm={countLostItems === 0 ? 9.5 : 8} md={countLostItems === 0 ? 9.5 : 8}>
+                <Grid 
+                xs={
+                  countLostItems === 0 && itemsIgnoreErrors.length === 0 ? 12 : 
+                  (countLostItems === 0 && itemsIgnoreErrors.length > 0) || (countLostItems > 0 && itemsIgnoreErrors.length === 0) ? 9.5 : 8
+                } 
+                sm={
+                  countLostItems === 0 && itemsIgnoreErrors.length === 0 ? 12 : 
+                  (countLostItems === 0 && itemsIgnoreErrors.length > 0) || (countLostItems > 0 && itemsIgnoreErrors.length === 0) ? 9.5 : 8
+                }
+                md={
+                  countLostItems === 0 && itemsIgnoreErrors.length === 0 ? 12 : 
+                  (countLostItems === 0 && itemsIgnoreErrors.length > 0) || (countLostItems > 0 && itemsIgnoreErrors.length === 0) ? 9.5 : 8
+                }
+                >
                   <WelcomeTypography
                     userLogged={userLogged}
                     manualUpdatingJobsData={manualUpdatingJobsData}
@@ -463,13 +476,13 @@ export function OverviewAnalyticsView() {
                   </Grid>
                 )}
                 {updatedCountLostItems > 0 && (
-                  <Grid xs={2} sm={2} md={2}>
+                  <Grid xs={itemsIgnoreErrors.length === 0 ? 2.5 : 2} sm={itemsIgnoreErrors.length === 0 ? 2.5 : 2} md={itemsIgnoreErrors.length === 0 ? 2.5 : 2}>
                     <Alert
                       severity="error"
                       icon={<AnimatedIcon icon="mdi:error" color="error" width="25px" />}
                       sx={{ mb: 2, cursor: 'pointer', p: 1 }}>
                       <Typography variant="body2" sx={{ fontSize: '14px' }}>
-                        <b>{updatedCountLostItems}</b> Items lost today
+                        <b>{updatedCountLostItems}</b> {itemsIgnoreErrors.length === 0 ? `Items lost today ( ${fDateTime(new Date(), 'YYYY-MM-DD HH:mm')} ) ` : `Items lost today`} 
                       </Typography>
                     </Alert>
                   </Grid>
