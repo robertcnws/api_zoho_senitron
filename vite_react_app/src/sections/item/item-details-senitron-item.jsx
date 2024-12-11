@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -21,6 +21,7 @@ export function ItemDetailsSenitronItems({ item }) {
 
   const { setLoading, setError, setComponent } = useContext(LoadingContext);
   const [currentItem, setCurrentItem] = useState(item);
+  const userLogged = useMemo(() => JSON.parse(localStorage.getItem('userLogged')), []);
 
   useEffect(() => {
     const socket = new WebSocket(`wss://${CONFIG.apiHost}/${CONFIG.apiDomain}/ws/senitron_inventory_items_assets/`);
@@ -136,10 +137,14 @@ export function ItemDetailsSenitronItems({ item }) {
                 setComponent(`senitron inventory item (ID: ${currentItem.itemNumber}) details`);
                 setLoading(true);
                 axios
-                  .post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_items/`)
+                  .post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_items/`, {
+                    username: userLogged.data.username,
+                  })
                   .then(() => {
                     axios
-                      .post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_item_assets/`)
+                      .post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_item_assets/`, {
+                        username: userLogged.data.username,
+                      })
                       .then(() => {
                         console.log('Senitron Inventory items fetched');
                       })

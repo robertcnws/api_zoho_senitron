@@ -10,12 +10,15 @@ import { useJobsUpdatingTimesQuery } from 'src/_mock/_jobsUpdatingTime';
 import { useManualUpdatingJobsQuery } from 'src/_mock/_manualUpdatingJobs';
 import { useTimelineItemsQuery } from 'src/_mock/_timelineItems';
 import { useSenitronAssetsLogsQuery } from 'src/_mock/_itemAssetsLogs';
+import { useNotificationsQuery } from 'src/_mock/_notification';
 
 const DataContext = createContext();
 
 export const useDataContext = () => useContext(DataContext);
 
 export const DataProvider = ({ children }) => {
+
+    const userLogged = useMemo(() => JSON.parse(localStorage.getItem('userLogged')), []);
 
     const [countLostItems, setCountLostItems] = useState(0);
 
@@ -27,6 +30,7 @@ export const DataProvider = ({ children }) => {
     const { data: manualUpdatingJobs, loading: loadingManualUpdatingJobs, error: errorManualUpdatingJobs } = useManualUpdatingJobsQuery();
     const { data: shipments, loading: loadingShipments, error: errorShipments } = useShipmentsQuery(null, null);
     const { data: senitronAssetsLogs, loading: loadingSenitronAssetsLogs, error: errorSenitronAssetsLogs } = useSenitronAssetsLogsQuery(null);
+    const { data: notifications, loading: loadingNotifications, error: errorNotifications } = useNotificationsQuery(userLogged?.data.username);
 
     const loading = loadingItems ||
         loadingSenitronItems ||
@@ -35,7 +39,8 @@ export const DataProvider = ({ children }) => {
         loadingJobsUpdatingTime ||
         loadingManualUpdatingJobs ||
         loadingShipments ||
-        loadingSenitronAssetsLogs;
+        loadingSenitronAssetsLogs || 
+        loadingNotifications;
     const error = errorItems ||
         errorSenitronItems ||
         errorTimelineItems ||
@@ -43,7 +48,11 @@ export const DataProvider = ({ children }) => {
         errorJobsUpdatingTime ||
         errorManualUpdatingJobs ||
         errorShipments ||
-        errorSenitronAssetsLogs;
+        errorSenitronAssetsLogs || 
+        errorNotifications;
+
+    
+    const userNotifications = useMemo(() => notifications || null, [notifications]);
 
     const itemsZohoData = useMemo(() => items || null, [items]);
 
@@ -289,6 +298,7 @@ export const DataProvider = ({ children }) => {
 
     const value = useMemo(
         () => ({
+            userNotifications,
             items,
             senitronItems,
             timelineItems,
@@ -310,6 +320,7 @@ export const DataProvider = ({ children }) => {
             setCountLostItems,
         }),
         [
+            userNotifications,
             items,
             senitronItems,
             timelineItems,

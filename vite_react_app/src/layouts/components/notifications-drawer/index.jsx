@@ -24,33 +24,46 @@ import { NotificationItem } from './notification-item';
 
 // ----------------------------------------------------------------------
 
-const TABS = [
-  { value: 'all', label: 'All', count: 22 },
-  { value: 'unread', label: 'Unread', count: 12 },
-  { value: 'archived', label: 'Archived', count: 10 },
-];
-
-// ----------------------------------------------------------------------
-
 export function NotificationsDrawer({ data = [], sx, ...other }) {
   const drawer = useBoolean();
+
+  const [notifications, setNotifications] = useState(data);
+
+  const [filteredNotifications, setFilteredNotifications] = useState(notifications);
 
   const [currentTab, setCurrentTab] = useState('all');
 
   const handleChangeTab = useCallback((event, newValue) => {
     setCurrentTab(newValue);
-  }, []);
+    if (newValue === 'all') {
+      setFilteredNotifications(notifications);
+    }
+    else if (newValue === 'unread') {
+      setFilteredNotifications(notifications?.filter((item) => item.read === false));
+    }
+    else if (newValue === 'archived') {
+      setFilteredNotifications(notifications?.filter((item) => item.read === true));
+    }
+  }, [notifications]);
 
-  const [notifications, setNotifications] = useState(data);
+  
 
-  const totalUnRead = notifications.filter((item) => item.isUnRead === true).length;
+  const totalUnRead = notifications?.filter((item) => item.read === false).length;
+
+  const totalRead = notifications?.filter((item) => item.read === true).length;
 
   const handleMarkAllAsRead = () => {
-    setNotifications(notifications.map((notification) => ({ ...notification, isUnRead: false })));
+    setNotifications(notifications?.map((notification) => ({ ...notification, read: true })));
   };
 
+  const TABS = [
+    { value: 'all', label: 'All', count: notifications?.length },
+    { value: 'unread', label: 'Unread', count: totalUnRead },
+    { value: 'archived', label: 'Archived', count: totalRead },
+  ];
+
   const renderHead = (
-    <Stack direction="row" alignItems="center" sx={{ py: 2, pl: 2.5, pr: 1, minHeight: 68 }}>
+    <Stack direction="row" alignItems="center" sx={{ py: 2, pl: 2.5, pr: 1, minHeight: 50 }}>
       <Typography variant="h6" sx={{ flexGrow: 1 }}>
         Notifications
       </Typography>
@@ -101,7 +114,7 @@ export function NotificationsDrawer({ data = [], sx, ...other }) {
   const renderList = (
     <Scrollbar>
       <Box component="ul">
-        {notifications?.map((notification) => (
+        {filteredNotifications?.map((notification) => (
           <Box component="li" key={notification.id} sx={{ display: 'flex' }}>
             <NotificationItem notification={notification} />
           </Box>
@@ -142,7 +155,7 @@ export function NotificationsDrawer({ data = [], sx, ...other }) {
         onClose={drawer.onFalse}
         anchor="right"
         slotProps={{ backdrop: { invisible: true } }}
-        PaperProps={{ sx: { width: 1, maxWidth: 420 } }}
+        PaperProps={{ sx: { width: 1, maxWidth: 420, maxHeight: '96%' } }}
       >
         {renderHead}
 

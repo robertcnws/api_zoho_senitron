@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useContext } from 'react';
+import { useCallback, useEffect, useContext, useMemo } from 'react';
 
 import dayjs from 'dayjs';
 import axios from 'axios';
@@ -39,6 +39,8 @@ export function ItemTableShippedLogsToolbar({
   const popover = usePopover();
 
   const { setLoading, setError, setComponent } = useContext(LoadingContext);
+
+  const userLogged = useMemo(() => JSON.parse(localStorage.getItem('userLogged')), []);
 
 
   useEffect(() => {
@@ -166,6 +168,7 @@ export function ItemTableShippedLogsToolbar({
                 axios
                   .post(`${CONFIG.apiUrl}/api_zoho/load/inventory_shipments/`, {
                     start_date: date,
+                    username: userLogged.data.username,
                   })
                   .then(() => {
                     console.log('Inventory shipments and packages fetched');
@@ -201,7 +204,9 @@ export function ItemTableShippedLogsToolbar({
                   setUpdating(true);
                   setTitleLinearProgress('Fetching Item Updates from Zoho...');
                   axios
-                    .post(`${CONFIG.apiUrl}/api_zoho/load/inventory_items/`)
+                    .post(`${CONFIG.apiUrl}/api_zoho/load/inventory_items/`, {
+                      username: userLogged.data.username,
+                    })
                     .then(() => {
                       console.log('Inventory items fetched');
                     })
@@ -223,7 +228,9 @@ export function ItemTableShippedLogsToolbar({
                   setUpdating(true);
                   setTitleLinearProgress('Fetching Item Updates from Senitron...');
                   axios
-                    .post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_item_assets/`)
+                    .post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_item_assets/`, {
+                      username: userLogged.data.username,
+                    })
                     .then(() => {
                       console.log('Zoho Inventory items fetched');
                       console.log('Senitron Inventory items fetched');

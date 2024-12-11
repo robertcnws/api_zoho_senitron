@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useContext } from 'react';
+import { useCallback, useEffect, useContext, useMemo } from 'react';
 
 import dayjs from 'dayjs';
 import axios from 'axios';
@@ -23,6 +23,8 @@ import { CONFIG } from 'src/config-global';
 
 export function ShipmentTableToolbar({ filters, onResetPage, dateError, setUpdating, setTitleLinearProgress }) {
   const popover = usePopover();
+
+  const userLogged = useMemo(() => JSON.parse(localStorage.getItem('userLogged')), []);
 
   const { setLoading, setError, setComponent } = useContext(LoadingContext);
   
@@ -172,6 +174,7 @@ export function ShipmentTableToolbar({ filters, onResetPage, dateError, setUpdat
               axios
                 .post(`${CONFIG.apiUrl}/api_zoho/load/inventory_shipments/`, {
                   start_date: filters.state.endDate.format('YYYY-MM-DD'),
+                  username: userLogged.data.username,
                 })
                 .then(() => {
                   console.log('Inventory shipments and packages fetched');

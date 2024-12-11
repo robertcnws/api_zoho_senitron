@@ -11,9 +11,15 @@ from .models import (
                     SenitronItemAsset, 
                     TimelineItem, 
                     SenitronStatus, 
-                    SenitronItemAssetLogs
+                    SenitronItemAssetLogs,
+                    Notification,
+                    NotificationUser
                 )
-from api_zoho.models import ZohoInventoryItem, JobsUpdatingTimes
+from api_zoho.models import (
+                    ZohoInventoryItem, 
+                    JobsUpdatingTimes,
+                    LoginUser
+                )
 from .manage_instances import (
                               create_inventory_item_instance, 
                               create_inventory_item_asset_instance, 
@@ -152,6 +158,7 @@ def load_senitron_inventory_items(request):
 def load_senitron_inventory_item_assets(request):
     
     data = json.loads(request.body) if request.body else {}
+    username = data.get('username', None)
     params = {
         'api_key': settings.API_KEY_SENITRON,
         'per_page': 250  
@@ -226,7 +233,12 @@ def load_senitron_inventory_item_assets(request):
     JobsUpdatingTimes.objects.filter(last_updated__lt=previous_day).delete()
             
     JobsUpdatingTimes.objects.create(last_updated=timezone.now())
-            
+    
+    module='senitron_item_assets'
+    info='has loaded new info from Senitron Item Assets'
+    type='load'
+    create_notification(module, info, type, username)
+    
     logger.info(f"Senitron Item Assets loaded successfully")
     
     return JsonResponse({'message': 'Senitron Items Assets loaded successfully'}, status=200)
@@ -238,6 +250,7 @@ def load_senitron_inventory_item_assets(request):
 def load_senitron_inventory_item_assets_logs(request):
     
     data = json.loads(request.body) if request.body else {}
+    username = data.get('username', None)
     
     now = timezone.now()
     
@@ -340,6 +353,11 @@ def load_senitron_inventory_item_assets_logs(request):
     JobsUpdatingTimes.objects.filter(last_updated__lt=previous_day).delete()
             
     JobsUpdatingTimes.objects.create(last_updated=timezone.now())
+    
+    module='senitron_item_assets_logs'
+    info='has loaded new info from status logs of Senitron Item Assets'
+    type='load'
+    create_notification(module, info, type, username)
             
     logger.info(f"Senitron Item Assets Logs loaded successfully")
     
@@ -353,5 +371,30 @@ def remove_old_senitron_items_assets_logs(request):
     three_days_ago = now - timezone.timedelta(days=30)
     SenitronItemAssetLogs.objects.filter(created_time__lt=three_days_ago).delete()
     return JsonResponse({'message': '30 days old Senitron Items Assets Logs removed successfully'}, status=200)
+
+
+# EXTRA FUNCTIONS
+
+def create_notification(module, info, type, username):
+    notification = Notification.objects.create(
+        module=module,
+        info=info,
+        type=type,
+    )
+    
+    user = LoginUser.objects.filter(username=username).first()
+    
+    username = user.username if user else 'System Job'
+    
+    all_users = LoginUser.objects.all()
+    
+    for user in all_users:
+        NotificationUser.objects.create(
+            notification=notification,
+            username=username,
+            user=user
+        )
+    
+    return notification
 
 

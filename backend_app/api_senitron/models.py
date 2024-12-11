@@ -1,6 +1,6 @@
 from django.db import models
 from django.utils import timezone
-from api_zoho.models import ZohoInventoryItem
+from api_zoho.models import ZohoInventoryItem, LoginUser
 
 
 class SenitronItem(models.Model):
@@ -137,3 +137,26 @@ class SenitronItemAssetLogs(models.Model):
     
     def __str__(self):
         return f"Item {self.item_number} - Serial: {self.serial_number} - EPC: {self.epc} - Status: {self.current_status_name} - Serial: {self.serial_number} - Last Seen: {self.last_seen}"
+    
+    
+class Notification(models.Model):
+    module = models.CharField(max_length=255)
+    info = models.TextField()
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(default=timezone.now)
+    type = models.CharField(max_length=255, default='load')
+    def __str__(self):
+        return self.info
+    
+    
+class NotificationUser(models.Model):
+    id = models.AutoField(primary_key=True)
+    notification = models.ForeignKey(Notification, on_delete=models.CASCADE)
+    username = models.CharField(max_length=255)
+    user = models.ForeignKey(LoginUser, on_delete=models.CASCADE, null=True)
+    read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(default=timezone.now)
+    
+    def __str__(self):
+        return f'{self.username} - {self.notification.info}'

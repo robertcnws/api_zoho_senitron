@@ -49,6 +49,8 @@ export const UserQuickEditSchema = zod.object({
 
 export function UserQuickEditForm({ currentUser, open, onClose }) {
 
+  const userLogged = useMemo(() => JSON.parse(localStorage.getItem('userLogged')), []);
+
   const defaultValues = useMemo(
     () => ({
       id: currentUser?.id || '',
@@ -86,7 +88,8 @@ export function UserQuickEditForm({ currentUser, open, onClose }) {
     const id = currentUser.id;
     data = { 
       ...data, 
-      username: currentUser.username 
+      username: currentUser.username, 
+      manager_username: userLogged.data.username
     };
 
     const promise = axios.put(`${CONFIG.apiUrl}/api_zoho/manage_user/${id}/`, data);
@@ -104,8 +107,6 @@ export function UserQuickEditForm({ currentUser, open, onClose }) {
       await promise;
 
       // console.info('DATA', data);
-
-      const userLogged = JSON.parse(localStorage.getItem('userLogged'));
 
       if (data.username === userLogged.data.username) {
         localStorage.removeItem('userLogged');  

@@ -6,13 +6,41 @@ from graphene_django.types import DjangoObjectType
 from django.utils import timezone
 from datetime import datetime
 from rest_framework import serializers
-from .models import SenitronItem, SenitronItemAsset, SenitronStatus, TimelineItem, SenitronItemAssetLogs
-from api_zoho.models import JobsUpdatingTimes
+from .models import (
+                        SenitronItem, 
+                        SenitronItemAsset, 
+                        SenitronStatus, 
+                        TimelineItem, 
+                        SenitronItemAssetLogs,
+                        Notification,
+                        NotificationUser
+                    )
+from api_zoho.models import JobsUpdatingTimes, LoginUser
 
 class SenitronStatusType(DjangoObjectType):
     class Meta:
         model = SenitronStatus
         fields = "__all__"
+        
+        
+class NotificationType(DjangoObjectType):
+    class Meta:
+        model = Notification
+        fields = '__all__'
+
+class LoginUserType(DjangoObjectType):
+    class Meta:
+        model = LoginUser
+        fields = '__all__'
+
+class NotificationUserType(DjangoObjectType):
+    notification = graphene.Field(NotificationType)
+    user = graphene.Field(LoginUserType)
+
+    class Meta:
+        model = NotificationUser
+        fields = '__all__'
+
 
 class SenitronItemType(DjangoObjectType):
     class Meta:
@@ -156,6 +184,8 @@ class Query(graphene.ObjectType):
     
     all_senitron_grouped_logs = graphene.List(GroupedLogsType, start_date=graphene.Date(required=False))
     
+    all_notification_user = graphene.List(NotificationUserType, username=graphene.String(required=False))
+    
 
     def resolve_all_senitron_inventory_items(self, info, **kwargs):
         return SenitronItem.objects.annotate(
@@ -249,5 +279,11 @@ class Query(graphene.ObjectType):
             ))
         
         return result
+    
+    def resolve_all_notification_user(self, info, username=None, **kwargs):
+        qs = NotificationUser.objects.select_related('notification', 'user').order_by('-created_at')
+        if username:
+            qs = qs.filter(user__username=username)
+        return qs
 
 schema = graphene.Schema(query=Query)

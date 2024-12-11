@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useContext } from 'react';
+import { useCallback, useEffect, useContext, useMemo } from 'react';
 
 import dayjs from 'dayjs';
 import axios from 'axios';
@@ -23,6 +23,7 @@ import { CONFIG } from 'src/config-global';
 
 export function OrderTableToolbar({ filters, onResetPage, dateError }) {
   const popover = usePopover();
+  const userLogged = useMemo(() => JSON.parse(localStorage.getItem('userLogged')), []);
 
   const { setLoading, setError, setComponent } = useContext(LoadingContext);
   
@@ -171,6 +172,7 @@ export function OrderTableToolbar({ filters, onResetPage, dateError }) {
                 .post(`${CONFIG.apiUrl}/api_zoho/load/inventory_sales_orders/`, {
                   start_date: filters.state.startDate.format('YYYY-MM-DD'),
                   end_date: filters.state.endDate.format('YYYY-MM-DD'),
+                  username: userLogged.data.username,
                 })
                 .then(() => {
                   console.log('Inventory sales orders fetched');

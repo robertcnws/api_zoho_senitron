@@ -23,6 +23,7 @@ from .models import (
                     ManualUpdatingJobs
                 )
 from api_senitron.models import SenitronItem, TimelineItem
+from api_senitron.views import create_notification
 from .manage_instances import (
                               create_inventory_item_instance,
                               create_inventory_sales_order_instance,
@@ -90,6 +91,7 @@ def manage_user(request, user_id):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
+            payload_username = data.get('manager_username')
             user = LoginUser.objects.create_user(
                 username=data.get('username'),
                 password=data.get('password'),
@@ -108,6 +110,10 @@ def manage_user(request, user_id):
                 gender=data.get('gender', None),                
             )
             user.set_password(data.get('password'))
+            module='create_system_user'
+            info=f'has created new user: {user.username}'
+            type='create_system_user'
+            create_notification(module, info, type, payload_username)
             return JsonResponse({
                 'data': model_to_dict(user)
             }, status=201)
@@ -116,6 +122,7 @@ def manage_user(request, user_id):
     elif request.method == 'PUT':
         try:
             data = json.loads(request.body)
+            payload_username = data.get('manager_username')
             user = LoginUser.objects.filter(id=user_id).first()
             if not user:
                 return JsonResponse({'error': 'User not found'}, status=404)
@@ -135,6 +142,10 @@ def manage_user(request, user_id):
             if data.get('password'):
                 user.set_password(data.get('password'))
             user.save()
+            module='update_system_user'
+            info=f'has updated user: {user.username}'
+            type='update_system_user'
+            create_notification(module, info, type, payload_username)
             return JsonResponse({
                 'data': model_to_dict(user)
             }, status=200)
@@ -343,6 +354,7 @@ def load_inventory_items(request):
 
     data = json.loads(request.body) if request.body else {}
     item_number = data.get('item_number')
+    username = data.get('username', None)
 
     if item_number:
         params = {
@@ -499,6 +511,17 @@ def load_inventory_items(request):
     JobsUpdatingTimes.objects.create(last_updated=timezone.now())
 
     logger.info(f"Items processed successfully: {len(new_items)} created, {len(items_to_update)} updated")
+    
+    module='zoho_item'
+    info='has loaded new info from Zoho Items'
+    type='load'
+    create_notification(module, info, type, username)
+    
+    module='system_timeline'
+    info='has added new info about timelines in Zoho Items'
+    type='create_timeline'
+    create_notification(module, info, type, username)
+    
     return JsonResponse({'message': 'Items loaded successfully'}, status=200)
     
 
@@ -538,6 +561,7 @@ def load_inventory_sales_orders(request):
     data = json.loads(request.body)
     start_date = data.get('start_date')
     end_date = data.get('end_date')
+    username = data.get('username', None)
 
     if not start_date:
         return JsonResponse({'error': 'Date is missing'}, status=400)
@@ -616,6 +640,12 @@ def load_inventory_sales_orders(request):
                 ],
                 batch_size=200
             )
+            
+    module='zoho_sales_orders'
+    info='has loaded new info from Zoho Sales Orders'
+    type='load'
+    create_notification(module, info, type, username)
+    
     return JsonResponse({'message': 'Sales Orders loaded successfully'}, status=200)
 
 
@@ -692,6 +722,7 @@ def load_inventory_shipments(request):
     data = json.loads(request.body)
     start_date = data.get('start_date', None)
     end_date = data.get('end_date', None)
+    username = data.get('username', None)
     
     logger.debug(f"Start date: {start_date}, End date: {end_date}")
     
@@ -934,6 +965,11 @@ def load_inventory_shipments(request):
     JobsUpdatingTimes.objects.filter(last_updated__lt=previous_day).delete()
             
     JobsUpdatingTimes.objects.create(last_updated=timezone.now())
+    
+    module='zoho_shipment'
+    info='has loaded new info from Zoho Shipments'
+    type='load'
+    create_notification(module, info, type, username)
             
     logger.info(f"Shipments processed successfully: {len(new_shipments)} created, {len(shipments_to_update)} updated")
 
@@ -968,10 +1004,17 @@ def sync_with_senitron(request):
 @api_view(['DELETE'])
 @permission_classes([AllowAny])
 def delete_user(request, user_id):
+    data = json.loads(request.body)
+    payload_username = data.get('username', None)
     user = LoginUser.objects.filter(id=user_id).first()
+    deleted_username = user.username
     if not user:
         return JsonResponse({'error': 'User not found'}, status=404)
     user.delete()
+    module='delete_system_user'
+    info=f'has deleted username: {deleted_username}'
+    type='delete_system_user'
+    create_notification(module, info, type, payload_username)
     return JsonResponse({'message': 'User deleted successfully'}, status=200) 
 
 
@@ -981,12 +1024,18 @@ def delete_user(request, user_id):
 def delete_users(request):
     data = json.loads(request.body)
     user_ids = data.get('user_ids', [])
+    payload_username = data.get('username', None)
     if not user_ids:
         return JsonResponse({'error': 'User ids are missing'}, status=400)
     users = LoginUser.objects.filter(id__in=user_ids)
+    deleted_usernames = list(users.values_list('username', flat=True))
     if not users:
         return JsonResponse({'error': 'Users not found'}, status=404)
     users.delete()
+    module='delete_system_users'
+    info=f'has deleted usernames: {deleted_usernames}'
+    type='delete_system_users'
+    create_notification(module, info, type, payload_username)
     return JsonResponse({'message': 'Users deleted successfully'}, status=200)
 
 #############################################

@@ -31,26 +31,34 @@ export const WelcomeTypography = ({
                     setUpdating(true);
                     const payload = {
                         items: itemsZohoSenitron.filter(it => it.assets.length > 0),
+                        username: userLogged.data.username,
                     };
                     setTitleLinearProgress('Updating Items Assets Info...');
                     handleSetManualUpdatingJobs(true);
                     axios.post(`${CONFIG.apiUrl}/api_zoho/create_zoho_items_assets_track/`, payload)
                         .then(() => {
                             setTitleLinearProgress('Loading Inventory Items Updated Info from Zoho...');
-                            return axios.post(`${CONFIG.apiUrl}/api_zoho/load/inventory_items/`);
+                            return axios.post(`${CONFIG.apiUrl}/api_zoho/load/inventory_items/`, {
+                                username: userLogged.data.username,
+                            });
                         })
                         .then(() => {
                             setTitleLinearProgress('Loading Items Updated Info from Senitron...');
-                            return axios.post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_item_assets/`);
+                            return axios.post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_item_assets/`, {
+                                username: userLogged.data.username,
+                            });
                         })
                         .then(() => {
                             setTitleLinearProgress('Loading Assets Logs Updated Info from Senitron...');
-                            return axios.post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_item_assets/logs/`);
+                            return axios.post(`${CONFIG.apiUrl}/api_senitron/load/senitron_inventory_item_assets/logs/`, {
+                                username: userLogged.data.username,
+                            });
                         })
                         .then(() => {
                             setTitleLinearProgress('Fetching updates shipments from Zoho...');
                             return axios.post(`${CONFIG.apiUrl}/api_zoho/load/inventory_shipments/`, {
                                 start_date: fDate(new Date(), 'YYYY-MM-DD'),
+                                username: userLogged.data.username,
                             });
                         })
                         .then(() => {

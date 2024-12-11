@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
 import Alert from '@mui/material/Alert';
 import { useTheme } from '@mui/material/styles';
@@ -11,6 +12,7 @@ import { _contacts, _notifications } from 'src/_mock';
 import { Logo } from 'src/components/logo';
 import { useSettingsContext } from 'src/components/settings';
 import { useDataContext } from 'src/auth/context/data/data-context';
+import { LinearProgress, Typography } from '@mui/material';
 
 import { Main } from './main';
 import { NavMobile } from './nav-mobile';
@@ -34,13 +36,24 @@ import { NotificationsDrawer } from '../components/notifications-drawer';
 import { CustomFooter, Footer } from '../main/footer';
 
 
+
+
 // ----------------------------------------------------------------------
 
 export function DashboardLayout({ sx, children, header, data }) {
 
   const {
-    countLostItems
+    countLostItems,
+    userNotifications
   } = useDataContext();
+
+  const [notifications, setNotifications] = useState(null);
+
+  useEffect(() => {
+    if (userNotifications) {
+      setNotifications(userNotifications);
+    }
+  }, [userNotifications]);
 
   // const countLostItems = 11;
 
@@ -59,6 +72,51 @@ export function DashboardLayout({ sx, children, header, data }) {
   const isNavMini = settings.navLayout === 'mini';
   const isNavHorizontal = settings.navLayout === 'horizontal';
   const isNavVertical = isNavMini || settings.navLayout === 'vertical';
+
+  const [dataLoaded, setDataLoaded] = useState(false);
+
+  useEffect(() => {
+    if (
+      userNotifications
+    ) {
+      setDataLoaded(true);
+    } else {
+      setDataLoaded(false);
+    }
+  }, [
+    userNotifications
+  ]);
+
+  if (!dataLoaded) {
+    return (
+      <Box
+            sx={{
+              width: '350px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '80vh',
+              margin: 'auto'
+            }}
+          >
+            <Typography variant="body2" sx={{ mb: 1 }}>
+              Loading data...
+            </Typography>
+            <LinearProgress
+              key="error"
+              sx={{
+                mb: 2,
+                width: '100%',
+                '& .MuiLinearProgress-bar': {
+                  backgroundColor: 'black',
+                },
+                backgroundColor: '#e0e0e0',
+              }}
+            />
+          </Box>
+    );
+  }
 
   return (
     <LayoutSection
@@ -159,7 +217,7 @@ export function DashboardLayout({ sx, children, header, data }) {
                 {/* -- Language popover -- */}
                 {/* <LanguagePopover data={allLangs} /> */}
                 {/* -- Notifications popover -- */}
-                <NotificationsDrawer data={_notifications} />
+                <NotificationsDrawer data={notifications} />
                 {/* -- Contacts popover -- */}
                 {/* <ContactsPopover data={_contacts} /> */}
                 {/* -- Settings button -- */}

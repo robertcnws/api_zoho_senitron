@@ -29,6 +29,8 @@ export function UserNewEditForm({ currentUser }) {
   
   const router = useRouter();
 
+  const userLogged = useMemo(() => JSON.parse(localStorage.getItem('userLogged')), []);
+
   const { loading, error, _userList } = useUserList();
 
   const [users, setUsers] = useState(null);
@@ -131,7 +133,10 @@ export function UserNewEditForm({ currentUser }) {
     
     try {
       const id = currentUser ? currentUser.id : 0;
-      await axios.post(`${CONFIG.apiUrl}/api_zoho/manage_user/${id}/`, data);
+      await axios.post(`${CONFIG.apiUrl}/api_zoho/manage_user/${id}/`, {
+        ...data,
+        manager_username: userLogged.data.username,
+      });
       reset();
       toast.success(currentUser ? 'Update success!' : 'Create success!');
       router.push(paths.dashboard.user.list);

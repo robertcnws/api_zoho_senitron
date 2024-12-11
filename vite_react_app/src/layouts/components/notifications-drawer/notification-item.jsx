@@ -7,40 +7,69 @@ import ListItemText from '@mui/material/ListItemText';
 import ListItemAvatar from '@mui/material/ListItemAvatar';
 import ListItemButton from '@mui/material/ListItemButton';
 
+import { paths } from 'src/routes/paths';
+import { useRouter } from 'src/routes/hooks';
+
 import { fToNow } from 'src/utils/format-time';
 
 import { CONFIG } from 'src/config-global';
 
 import { Label } from 'src/components/label';
 import { FileThumbnail } from 'src/components/file-thumbnail';
+import { useCallback } from 'react';
 
 // ----------------------------------------------------------------------
 
 export function NotificationItem({ notification }) {
+
+  const router = useRouter();
+
+  const handleLink = useCallback(
+    (module, element = 'list') => {
+      router.push(
+        module === 'zoho_item' && element === 'list' ? paths.dashboard.item.list :
+          module === 'zoho_item' && element === 'analytics' ? paths.dashboard.general.analytics :
+            module === 'zoho_shipment' && element === 'list' ? paths.dashboard.shipment.list :
+              module === 'zoho_shipment' && element === 'listBySku' ? paths.dashboard.shipment.listBySku :
+                module === 'zoho_shipment' && element === 'liveMonitor' ? paths.dashboard.general.liveMonitor :
+                  module === 'create_system_user' || module === 'update_system_user' || module === 'delete_system_user' || module === 'delete_system_users' ? paths.dashboard.user.list :
+                    module === 'system_timeline' ? paths.dashboard.general.analytics :
+                      module === 'senitron_item_assets' && element === 'list' ? paths.dashboard.item.list :
+                        module === 'senitron_item_assets' && element === 'analytics' ? paths.dashboard.general.analytics :
+                          module === 'senitron_item_assets_logs' ? paths.dashboard.general.liveMonitor : ''
+      );
+    },
+    [router]
+  );
+
   const renderAvatar = (
     <ListItemAvatar>
-      {notification.avatarUrl ? (
-        <Avatar src={notification.avatarUrl} sx={{ bgcolor: 'background.neutral' }} />
-      ) : (
-        <Stack
-          alignItems="center"
-          justifyContent="center"
-          sx={{ width: 40, height: 40, borderRadius: '50%', bgcolor: 'background.neutral' }}
-        >
-          <Box
-            component="img"
-            src={`${CONFIG.assetsDir}/assets/icons/notification/${(notification.type === 'order' && 'ic-order') || (notification.type === 'chat' && 'ic-chat') || (notification.type === 'mail' && 'ic-mail') || (notification.type === 'delivery' && 'ic-delivery')}.svg`}
-            sx={{ width: 24, height: 24 }}
-          />
-        </Stack>
-      )}
+      <Stack
+        alignItems="center"
+        justifyContent="center"
+        sx={{ width: 40, height: 40, borderRadius: '50%', bgcolor: 'background.neutral' }}
+      >
+        <Box
+          component="img"
+          src={`${CONFIG.assetsDir}/assets/icons/notification/${(notification.notification.module === 'zoho_shipment' && 'ic-shipment') ||
+            (notification.notification.module === 'zoho_item' && 'ic-item') ||
+            (notification.notification.module === 'senitron_item_assets' && 'ic-assets') ||
+            (notification.notification.module === 'system_timeline' && 'ic-new-user') ||
+            (notification.notification.module === 'create_system_user' && 'ic-new-user') ||
+            (notification.notification.module === 'update_system_user' && 'ic-update-user') ||
+            (notification.notification.module === 'delete_system_user' && 'ic-delete-user') ||
+            (notification.notification.module === 'delete_system_users' && 'ic-delete-users') ||
+            (notification.notification.module === 'senitron_item_assets_logs' && 'ic-assets-logs')}.svg`}
+          sx={{ width: 24, height: 24 }}
+        />
+      </Stack>
     </ListItemAvatar>
   );
 
   const renderText = (
     <ListItemText
       disableTypography
-      primary={reader(notification.title)}
+      primary={reader(`User ${notification.username} ${notification.notification.info}`)}
       secondary={
         <Stack
           direction="row"
@@ -59,13 +88,20 @@ export function NotificationItem({ notification }) {
           }
         >
           {fToNow(notification.createdAt)}
-          {notification.category}
+          {notification.notification.module === 'zoho_shipment' && ' - Shipment' ||
+            notification.notification.module === 'zoho_item' && ' - Item' ||
+            notification.notification.module === 'senitron_item_assets' && ' - Senitron Assets' ||
+            notification.notification.module === 'create_system_user' && ' - New User' ||
+            notification.notification.module === 'update_system_user' && ' - Update User' ||
+            notification.notification.module === 'delete_system_user' && ' - Delete User' ||
+            notification.notification.module === 'delete_system_users' && ' - Delete Users' ||
+            notification.notification.module === 'senitron_item_assets_logs' && ' - Senitron Logs'}
         </Stack>
       }
     />
   );
 
-  const renderUnReadBadge = notification.isUnRead && (
+  const renderUnReadBadge = !notification.read && (
     <Box
       sx={{
         top: 26,
@@ -172,7 +208,9 @@ export function NotificationItem({ notification }) {
       <Label variant="outlined" color="warning">
         Dashboard
       </Label>
-      <Label variant="outlined">Design system</Label>
+      <Label variant="outlined">
+        Design system
+      </Label>
     </Stack>
   );
 
@@ -184,6 +222,34 @@ export function NotificationItem({ notification }) {
       <Button size="small" variant="outlined">
         Decline
       </Button>
+    </Stack>
+  );
+
+  const notificationAction = (
+    <Stack direction="row" spacing={0.75} flexWrap="wrap" sx={{ mt: 1.5 }}>
+      {notification.notification.module !== 'senitron_item_assets_logs' && (
+        <Label variant="outlined" color="info" sx={{ cursor: 'pointer' }} onClick={() => handleLink(notification.notification.module)}>
+          See in List
+        </Label>
+      )}
+      {notification.notification.module === 'zoho_shipment' && (
+        <Label variant="outlined" color="success" sx={{ cursor: 'pointer' }} onClick={() => handleLink(notification.notification.module, 'listBySku')}>
+          See in SKUs
+        </Label>
+      )}
+      {(notification.notification.module === 'zoho_item' ||
+        notification.notification.module === 'system_timeline' ||
+        notification.notification.module === 'senitron_item_assets') && (
+          <Label variant="outlined" sx={{ cursor: 'pointer' }} onClick={() => handleLink(notification.notification.module, 'analytics')}>
+            See in Analytics
+          </Label>
+        )}
+      {(notification.notification.module === 'zoho_shipment' ||
+        notification.notification.module === 'senitron_item_assets_logs') && (
+          <Label variant="outlined" color="error" sx={{ cursor: 'pointer' }} onClick={() => handleLink(notification.notification.module, 'liveMonitor')}>
+            See in Live Monitor
+          </Label>
+        )}
     </Stack>
   );
 
@@ -202,11 +268,12 @@ export function NotificationItem({ notification }) {
 
       <Stack sx={{ flexGrow: 1 }}>
         {renderText}
-        {notification.type === 'friend' && friendAction}
+        {notificationAction}
+        {/* {notification.type === 'friend' && friendAction}
         {notification.type === 'project' && projectAction}
         {notification.type === 'file' && fileAction}
         {notification.type === 'tags' && tagsAction}
-        {notification.type === 'payment' && paymentAction}
+        {notification.type === 'payment' && paymentAction} */}
       </Stack>
     </ListItemButton>
   );
@@ -219,6 +286,8 @@ function reader(data) {
     <Box
       dangerouslySetInnerHTML={{ __html: data }}
       sx={{
+        ml: 1,
+        mr: 1,
         mb: 0.5,
         '& p': { typography: 'body2', m: 0 },
         '& a': { color: 'inherit', textDecoration: 'none' },

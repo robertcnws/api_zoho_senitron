@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -22,6 +22,8 @@ export function ItemDetailsItems({ item, senitronItem, setItem, setSenitronItem,
   const { setLoading, setError, setComponent } = useContext(LoadingContext);
   const [currentItem, setCurrentItem] = useState(null);
   const [currentSenitronItem, setCurrentSenitronItem] = useState(null);
+
+  const userLogged = useMemo(() => JSON.parse(localStorage.getItem('userLogged')), []);
 
 
   useEffect(() => {
@@ -212,6 +214,7 @@ export function ItemDetailsItems({ item, senitronItem, setItem, setSenitronItem,
               onClick={() => {
                 const payload = {
                   item_number: currentItem?.itemId,
+                  username: userLogged.data.username,
                 };
                 // setComponent(`inventory item (SKU: ${currentItem?.sku}, ID: ${currentItem?.itemId}) details`);
                 // setLoading(true);
