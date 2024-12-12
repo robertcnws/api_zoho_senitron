@@ -1,6 +1,6 @@
 // src/contexts/DataContext.jsx
 
-import React, { createContext, useContext, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useItemsQuery, useSenitronItemsQuery } from 'src/_mock/_items';
 import { useShipmentsQuery } from 'src/_mock/_shipment';
 import { usePackagesQuery } from 'src/_mock/_package';
@@ -39,7 +39,7 @@ export const DataProvider = ({ children }) => {
         loadingJobsUpdatingTime ||
         loadingManualUpdatingJobs ||
         loadingShipments ||
-        loadingSenitronAssetsLogs || 
+        loadingSenitronAssetsLogs ||
         loadingNotifications;
     const error = errorItems ||
         errorSenitronItems ||
@@ -48,10 +48,21 @@ export const DataProvider = ({ children }) => {
         errorJobsUpdatingTime ||
         errorManualUpdatingJobs ||
         errorShipments ||
-        errorSenitronAssetsLogs || 
+        errorSenitronAssetsLogs ||
         errorNotifications;
 
-    
+
+    // const [updatedNotifications, setUpdatedNotifications] = useState([]);
+
+
+    // useEffect(() => {
+        // const interval = setInterval(() => {
+        //     setUpdatedNotifications(notifications);
+        // }, 5000);
+        // return () => clearInterval(interval);
+    // }, [notifications]);
+
+
     const userNotifications = useMemo(() => notifications || null, [notifications]);
 
     const itemsZohoData = useMemo(() => items || null, [items]);
@@ -216,16 +227,16 @@ export const DataProvider = ({ children }) => {
     );
 
     const itemsMap = new Map(itemsZohoSenitron?.map(item => [item.itemId, item]));
-    
+
     const filteredLogs = logs
-    ?.filter(log => syncedItemIds.has(log.itemNumber))
-    ?.map(log => {
-        const matchedItem = itemsMap.get(log.itemNumber);
-        return {
-            ...log,
-            sku: matchedItem?.sku
-        };
-    });
+        ?.filter(log => syncedItemIds.has(log.itemNumber))
+        ?.map(log => {
+            const matchedItem = itemsMap.get(log.itemNumber);
+            return {
+                ...log,
+                sku: matchedItem?.sku
+            };
+        });
 
     const objectsGroupedLogs = useMemo(() => {
         const groupedLogs = {};
@@ -252,7 +263,7 @@ export const DataProvider = ({ children }) => {
     }, [filteredLogs]);
 
 
-    const itemsAssetsLogsInfo = useMemo(() => 
+    const itemsAssetsLogsInfo = useMemo(() =>
         objectsGroupedLogs?.map(group => {
             const liveLogs = group.logs.filter(
                 log => log.currentStatusName && log.currentStatusName.toLowerCase().includes('live') && !log.lastStatusName.toLowerCase().includes('live')
@@ -267,7 +278,7 @@ export const DataProvider = ({ children }) => {
             const liveLogsSet = [...new Set(liveLogs.map(log => log.serialNumber))].sort();
             const killedLogsSet = [...new Set(killedLogs.map(log => log.serialNumber))].sort();
             const removedLogsSet = [...new Set(removedLogs.map(log => log.serialNumber))].sort();
-            
+
             const uniqueLiveCount = liveLogsSet.length;
             const uniqueKilledCount = killedLogsSet.length;
             const uniqueRemovedCount = removedLogsSet.length;
@@ -275,7 +286,7 @@ export const DataProvider = ({ children }) => {
             if (uniqueLiveCount === 0 && uniqueKilledCount === 0 && uniqueRemovedCount === 0) {
                 return null;
             }
-    
+
             return {
                 itemNumber: group.itemNumber,
                 sku: group.sku,
@@ -289,10 +300,10 @@ export const DataProvider = ({ children }) => {
                 logs: group.logs,
             };
         })
-    , [objectsGroupedLogs]);
+        , [objectsGroupedLogs]);
 
 
-    
+
 
 
 

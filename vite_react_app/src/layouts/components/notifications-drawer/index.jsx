@@ -1,6 +1,9 @@
 import { m } from 'framer-motion';
-import { useState, useCallback } from 'react';
-
+import { useState, useCallback, useMemo, useEffect } from 'react';
+import axios from 'axios';
+import { CONFIG } from 'src/config-global';
+import { useDataContext } from 'src/auth/context/data/data-context';
+import { LinearProgress } from '@mui/material';
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
@@ -22,12 +25,32 @@ import { CustomTabs } from 'src/components/custom-tabs';
 
 import { NotificationItem } from './notification-item';
 
+
+
+
 // ----------------------------------------------------------------------
 
-export function NotificationsDrawer({ data = [], sx, ...other }) {
+export function NotificationsDrawer({ sx, ...other }) {
+
+  const {
+    userNotifications
+  } = useDataContext();
+
+  const [notifications, setNotifications] = useState(null);
+
+  useEffect(() => {
+    if (userNotifications) {
+      const interval = setInterval(() => {
+        setNotifications(userNotifications);
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+    return () => { };
+  }, [userNotifications]);
+
   const drawer = useBoolean();
 
-  const [notifications, setNotifications] = useState(data);
+  const userLogged = useMemo(() => JSON.parse(localStorage.getItem('userLogged')), []);
 
   const [filteredNotifications, setFilteredNotifications] = useState(notifications);
 
@@ -46,14 +69,15 @@ export function NotificationsDrawer({ data = [], sx, ...other }) {
     }
   }, [notifications]);
 
-  
-
   const totalUnRead = notifications?.filter((item) => item.read === false).length;
 
   const totalRead = notifications?.filter((item) => item.read === true).length;
 
   const handleMarkAllAsRead = () => {
     setNotifications(notifications?.map((notification) => ({ ...notification, read: true })));
+    axios.post(`${CONFIG.apiUrl}/api_senitron/notifications/mark_all_as_read/`, {
+      username: userLogged.data.username
+    });
   };
 
   const TABS = [
@@ -122,6 +146,51 @@ export function NotificationsDrawer({ data = [], sx, ...other }) {
       </Box>
     </Scrollbar>
   );
+
+  // const [dataLoaded, setDataLoaded] = useState(false);
+
+  // useEffect(() => {
+  //   if (
+  //     notifications
+  //   ) {
+  //     setDataLoaded(true);
+  //   } else {
+  //     setDataLoaded(false);
+  //   }
+  // }, [
+  //   notifications
+  // ]);
+
+  // if (!dataLoaded) {
+  //   return (
+  //     <Box
+  //       sx={{
+  //         width: '350px',
+  //         display: 'flex',
+  //         flexDirection: 'column',
+  //         alignItems: 'center',
+  //         justifyContent: 'center',
+  //         height: '80vh',
+  //         margin: 'auto'
+  //       }}
+  //     >
+  //       <Typography variant="body2" sx={{ mb: 1 }}>
+  //         Loading Data...
+  //       </Typography>
+  //       <LinearProgress
+  //         key="error"
+  //         sx={{
+  //           mb: 2,
+  //           width: '100%',
+  //           '& .MuiLinearProgress-bar': {
+  //             backgroundColor: 'black',
+  //           },
+  //           backgroundColor: '#e0e0e0',
+  //         }}
+  //       />
+  //     </Box>
+  //   );
+  // }
 
   return (
     <>

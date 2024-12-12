@@ -44,16 +44,7 @@ export function DashboardLayout({ sx, children, header, data }) {
 
   const {
     countLostItems,
-    userNotifications
   } = useDataContext();
-
-  const [notifications, setNotifications] = useState(null);
-
-  useEffect(() => {
-    if (userNotifications) {
-      setNotifications(userNotifications);
-    }
-  }, [userNotifications]);
 
   // const countLostItems = 11;
 
@@ -72,51 +63,6 @@ export function DashboardLayout({ sx, children, header, data }) {
   const isNavMini = settings.navLayout === 'mini';
   const isNavHorizontal = settings.navLayout === 'horizontal';
   const isNavVertical = isNavMini || settings.navLayout === 'vertical';
-
-  const [dataLoaded, setDataLoaded] = useState(false);
-
-  useEffect(() => {
-    if (
-      userNotifications
-    ) {
-      setDataLoaded(true);
-    } else {
-      setDataLoaded(false);
-    }
-  }, [
-    userNotifications
-  ]);
-
-  if (!dataLoaded) {
-    return (
-      <Box
-            sx={{
-              width: '350px',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: '80vh',
-              margin: 'auto'
-            }}
-          >
-            <Typography variant="body2" sx={{ mb: 1 }}>
-              Loading data...
-            </Typography>
-            <LinearProgress
-              key="error"
-              sx={{
-                mb: 2,
-                width: '100%',
-                '& .MuiLinearProgress-bar': {
-                  backgroundColor: 'black',
-                },
-                backgroundColor: '#e0e0e0',
-              }}
-            />
-          </Box>
-    );
-  }
 
   return (
     <LayoutSection
@@ -181,7 +127,7 @@ export function DashboardLayout({ sx, children, header, data }) {
                 />
                 {/* -- Logo -- */}
                 {isNavHorizontal && (
-                  <Box sx={{ display: 'flex', alignItems: 'center'}}>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
                     <Logo isSingle={false} sx={{ width: '200px', height: 'auto' }} />
                   </Box>
                   // <Logo
@@ -217,7 +163,7 @@ export function DashboardLayout({ sx, children, header, data }) {
                 {/* -- Language popover -- */}
                 {/* <LanguagePopover data={allLangs} /> */}
                 {/* -- Notifications popover -- */}
-                <NotificationsDrawer data={notifications} />
+                <NotificationsDrawer />
                 {/* -- Contacts popover -- */}
                 {/* <ContactsPopover data={_contacts} /> */}
                 {/* -- Settings button -- */}

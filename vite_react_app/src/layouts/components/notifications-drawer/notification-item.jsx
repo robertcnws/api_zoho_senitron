@@ -17,6 +17,7 @@ import { CONFIG } from 'src/config-global';
 import { Label } from 'src/components/label';
 import { FileThumbnail } from 'src/components/file-thumbnail';
 import { useCallback } from 'react';
+import axios from 'axios';
 
 // ----------------------------------------------------------------------
 
@@ -38,8 +39,11 @@ export function NotificationItem({ notification }) {
                         module === 'senitron_item_assets' && element === 'analytics' ? paths.dashboard.general.analytics :
                           module === 'senitron_item_assets_logs' ? paths.dashboard.general.liveMonitor : ''
       );
+      if (!notification.read) {
+        axios.post(`${CONFIG.apiUrl}/api_senitron/notification/mark_as_read/${notification.id}/`);
+      }
     },
-    [router]
+    [router, notification]
   );
 
   const renderAvatar = (
@@ -54,7 +58,7 @@ export function NotificationItem({ notification }) {
           src={`${CONFIG.assetsDir}/assets/icons/notification/${(notification.notification.module === 'zoho_shipment' && 'ic-shipment') ||
             (notification.notification.module === 'zoho_item' && 'ic-item') ||
             (notification.notification.module === 'senitron_item_assets' && 'ic-assets') ||
-            (notification.notification.module === 'system_timeline' && 'ic-new-user') ||
+            (notification.notification.module === 'system_timeline' && 'ic-system-timeline') ||
             (notification.notification.module === 'create_system_user' && 'ic-new-user') ||
             (notification.notification.module === 'update_system_user' && 'ic-update-user') ||
             (notification.notification.module === 'delete_system_user' && 'ic-delete-user') ||

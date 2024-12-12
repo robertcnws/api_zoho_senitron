@@ -62,6 +62,9 @@ const TABLE_HEAD = [
 // ----------------------------------------------------------------------
 
 export function UserListView() {
+
+  const userLogged = useMemo(() => JSON.parse(localStorage.getItem('userLogged')), []);
+
   const table = useTable({ defaultDense: true });
 
   const router = useRouter();
@@ -80,11 +83,11 @@ export function UserListView() {
   //   socket.onopen = () => {
   //     console.log('WebSocket connected');
   //   };
-  
+
   //   socket.onerror = (err) => {
   //     console.error('WebSocket error:', err);
   //   };
-  
+
   //   socket.onclose = (event) => {
   //     console.log('WebSocket closed:', event);
   //   };
@@ -119,26 +122,33 @@ export function UserListView() {
   }, [_userList, loading, error]);
 
   const dataFiltered = useMemo(() => applyFilter({
-      inputData: tableData,
-      comparator: getComparator(table.order, table.orderBy),
-      filters: filters.state,
-    }), [tableData, table.order, table.orderBy, filters.state]);
-  
+    inputData: tableData,
+    comparator: getComparator(table.order, table.orderBy),
+    filters: filters.state,
+  }), [tableData, table.order, table.orderBy, filters.state]);
+
   const dataInPage = useMemo(() => rowInPage(dataFiltered, table.page, table.rowsPerPage), [dataFiltered, table.page, table.rowsPerPage]);
-  
+
   const canReset = useMemo(() => (
-      !!filters.state.name ||
-      filters.state.role.length > 0 ||
-      filters.state.status !== 'all'
-    ), [filters.state]);
-  
+    !!filters.state.name ||
+    filters.state.role.length > 0 ||
+    filters.state.status !== 'all'
+  ), [filters.state]);
+
   const notFound = useMemo(() => (!dataFiltered.length && canReset) || !dataFiltered.length, [dataFiltered.length, canReset]);
 
   const handleDeleteRow = useCallback(
     async (id) => {
       const deleteRow = tableData.filter((row) => row.id !== id);
-      
-      const response = await axios.delete(`${CONFIG.apiUrl}/api_zoho/delete_user/${id}/`);
+
+      const response = await axios.delete(`${CONFIG.apiUrl}/api_zoho/delete_user/${id}/`, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        data: {
+          username: userLogged.data.username,
+        },
+      });
 
       if (response.status === 200) {
         setTableData(deleteRow);
@@ -149,7 +159,7 @@ export function UserListView() {
         toast.error('Delete failed!');
       }
     },
-    [dataInPage.length, table, tableData]
+    [dataInPage.length, table, tableData, userLogged.data.username]
   );
 
   const handleDeleteRows = useCallback(() => {
@@ -164,9 +174,15 @@ export function UserListView() {
 
     const payload = {
       user_ids: table.selected,
+      username: userLogged.data.username,
     }
 
-    const response = axios.post(`${CONFIG.apiUrl}/api_zoho/delete_users/`, payload);
+    const response = axios.delete(`${CONFIG.apiUrl}/api_zoho/delete_users/`, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      data: payload,
+    });
 
     if (response.status === 200) {
       toast.success('Delete success!');
@@ -175,7 +191,7 @@ export function UserListView() {
       toast.error('Delete failed!');
     }
 
-  }, [dataFiltered.length, dataInPage.length, table, tableData]);
+  }, [dataFiltered.length, dataInPage.length, table, tableData, userLogged.data.username]);
 
   const handleEditRow = useCallback(
     (id) => {
@@ -385,14 +401,14 @@ function applyFilter({ inputData, comparator, filters }) {
 
   if (name) {
     inputData = inputData.filter(
-      (user) => user?.name?.toLowerCase().indexOf(name.toLowerCase()) !== -1 || 
-      user?.email?.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
-      user?.phoneNumber?.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
-      user?.zipCode?.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
-      user?.state?.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
-      user?.city?.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
-      user?.address?.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
-      user?.country?.toLowerCase().indexOf(name.toLowerCase()) !== -1
+      (user) => user?.name?.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
+        user?.email?.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
+        user?.phoneNumber?.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
+        user?.zipCode?.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
+        user?.state?.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
+        user?.city?.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
+        user?.address?.toLowerCase().indexOf(name.toLowerCase()) !== -1 ||
+        user?.country?.toLowerCase().indexOf(name.toLowerCase()) !== -1
     );
   }
 

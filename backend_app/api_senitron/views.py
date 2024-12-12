@@ -234,10 +234,11 @@ def load_senitron_inventory_item_assets(request):
             
     JobsUpdatingTimes.objects.create(last_updated=timezone.now())
     
-    module='senitron_item_assets'
-    info='has loaded new info from Senitron Item Assets'
-    type='load'
-    create_notification(module, info, type, username)
+    if username:
+        module='senitron_item_assets'
+        info='has loaded new info from Senitron Item Assets'
+        type='load'
+        create_notification(module, info, type, username)
     
     logger.info(f"Senitron Item Assets loaded successfully")
     
@@ -354,10 +355,11 @@ def load_senitron_inventory_item_assets_logs(request):
             
     JobsUpdatingTimes.objects.create(last_updated=timezone.now())
     
-    module='senitron_item_assets_logs'
-    info='has loaded new info from status logs of Senitron Item Assets'
-    type='load'
-    create_notification(module, info, type, username)
+    if username:
+        module='senitron_item_assets_logs'
+        info='has loaded new info from status logs of Senitron Item Assets'
+        type='load'
+        create_notification(module, info, type, username)
             
     logger.info(f"Senitron Item Assets Logs loaded successfully")
     
@@ -368,9 +370,47 @@ def load_senitron_inventory_item_assets_logs(request):
 @permission_classes([AllowAny])
 def remove_old_senitron_items_assets_logs(request):
     now = timezone.now()
-    three_days_ago = now - timezone.timedelta(days=30)
-    SenitronItemAssetLogs.objects.filter(created_time__lt=three_days_ago).delete()
+    days_ago = now - timezone.timedelta(days=30)
+    SenitronItemAssetLogs.objects.filter(created_time__lt=days_ago).delete()
     return JsonResponse({'message': '30 days old Senitron Items Assets Logs removed successfully'}, status=200)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def notifications_mark_all_as_read(request):
+    now = timezone.now()
+    data = json.loads(request.body) if request.body else {}
+    username = data.get('username', None)
+    if username:
+        user = LoginUser.objects.filter(username=username).first()
+        if user:
+            NotificationUser.objects.filter(user=user).update(read=True, updated_at=now)
+            return JsonResponse({'message': 'All notifications marked as read'}, status=200)
+        return JsonResponse({'message': 'User not found'}, status=404)
+    return JsonResponse({'message': 'Username not provided'}, status=400)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def notification_mark_as_read(request, notification_id):
+    now = timezone.now()
+    notification_user = NotificationUser.objects.filter(id=notification_id).first()
+    if notification_user:
+        notification_user.read = True
+        notification_user.updated_at = now
+        notification_user.save()
+        return JsonResponse({'message': 'Notification marked as read'}, status=200)
+    return JsonResponse({'message': 'Notification not found'}, status=404)
+    
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def remove_old_notifications(request):
+    now = timezone.now()
+    days_ago = now - timezone.timedelta(days=30)
+    NotificationUser.objects.filter(updated_at__lt=days_ago).delete()
+    Notification.objects.filter(updated_at__lt=days_ago).delete()
+    return JsonResponse({'message': '30 days old Notifications removed successfully'}, status=200)
 
 
 # EXTRA FUNCTIONS

@@ -331,12 +331,17 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'api_project_zoho_senitron_async_sequence.tasks.task_sequence_2_min',
         'schedule': crontab(minute=0, hour='*/2', day_of_week='sun'),
     },
-    'run-task-sequence-every-2-hours-sun-15-min': {
-        'task': 'api_project_zoho_senitron_async_sequence.tasks.task_sequence_15_min',
+    'run-task-sequence-every-2-hours-sun-45-min': {
+        'task': 'api_project_zoho_senitron_async_sequence.tasks.task_sequence_45_min',
         'schedule': crontab(minute=0, hour='*/2', day_of_week='sun'),
     },
+    # General Tasks
     'call-task-remove-old-senitron-items-assets-logs-every-day-8am': {
         'task': 'api_senitron.tasks.task_remove_old_senitron_items_assets_logs',
         'schedule': crontab(hour=8, minute=0),
+    },
+    'call-task-remove-old-notifications-every-day-8am': {
+        'task': 'api_senitron.tasks.task_remove_old_notifications',
+        'schedule': crontab(hour=8, minute=30),
     },
 }
