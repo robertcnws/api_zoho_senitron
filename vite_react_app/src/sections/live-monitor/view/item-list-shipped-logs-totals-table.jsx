@@ -67,9 +67,9 @@ export function ItemListShippedLogsTotalsTable({
 
   const TABLE_HEAD_MOBILE = [
     { id: 'sku', label: 'SKU' },
-    { id: 'live', label: 'Received' },
-    { id: 'removed', label: 'Removed' },
-    { id: 'killed', label: 'Killed' },
+    { id: 'live', label: <Iconify icon="mdi:plus-circle" /> },
+    { id: 'removed', label: <Iconify icon="mdi:minus-circle" /> },
+    { id: 'killed', label: <Iconify icon="mdi:close-circle" /> },
     { id: '' },
   ];
 
