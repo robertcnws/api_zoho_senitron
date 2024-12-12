@@ -41,64 +41,90 @@ export function ItemTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
         <TableCell padding="checkbox">
           <Checkbox id={row.itemId} checked={selected} onClick={onSelectRow} />
         </TableCell>
-        {/* <TableCell>
-          <Stack spacing={2} direction="row" alignItems="center">
-            <Avatar alt={row.name} src={row.avatarUrl} />
 
-            <Stack sx={{ typography: 'body2', flex: '1 1 auto', alignItems: 'flex-start' }}>
-              <Link color="inherit" onClick={onEditRow} sx={{ cursor: 'pointer' }}>
-                {row.name}
-              </Link>
-              <Box component="span" sx={{ color: 'text.disabled' }}>
-                {row.email}
-              </Box>
-            </Stack>
-          </Stack>
-        </TableCell> */}
+        {!isMobile ? (
+          <>
+            <TableCell sx={{ whiteSpace: 'nowrap' }} onClick={() => onViewRow(row.itemId)}>{row.sku}</TableCell>
 
-        <TableCell sx={{ whiteSpace: 'nowrap' }} onClick={() => onViewRow(row.itemId)}>{row.sku}</TableCell>
-        
-        {!isMobile && <TableCell sx={{ whiteSpace: 'nowrap' }} onClick={() => onViewRow(row.itemId)}>{row.name}</TableCell>}
+            <TableCell sx={{ whiteSpace: 'nowrap' }} onClick={() => onViewRow(row.itemId)}>{row.name}</TableCell>
 
-        <TableCell onClick={() => onViewRow(row.itemId)}>
-          <Label
-            variant="soft"
-            color={
-              (row.status === 'active' && 'success') ||
-              (row.status === 'confirmation_pending' && 'warning') ||
-              (row.status === 'inactive' && 'error') ||
-              'default'
-            }
-            sx={{ cursor: 'pointer' }}
-          >
-            {row.status}
-          </Label>
-        </TableCell>
+            <TableCell onClick={() => onViewRow(row.itemId)}>
+              <Label
+                variant="soft"
+                color={
+                  (row.status === 'active' && 'success') ||
+                  (row.status === 'confirmation_pending' && 'warning') ||
+                  (row.status === 'inactive' && 'error') ||
+                  'default'
+                }
+                sx={{ cursor: 'pointer' }}
+              >
+                {row.status}
+              </Label>
+            </TableCell>
 
-        <TableCell sx={{ whiteSpace: 'nowrap' }} onClick={() => onViewRow(row.itemId)}>{parseInt(row.stockOnHand, 10)}</TableCell>
-        <TableCell sx={{ whiteSpace: 'nowrap' }} onClick={() => onViewRow(row.itemId)}>{parseInt(row.quantity, 10)}</TableCell>
-        <TableCell onClick={() => onViewRow(row.itemId)}>
-          <Label
-            sx={{ cursor: 'pointer' }}
-            variant="soft"
-            color={
-              (row.difference === 0 ? 'success' : row.difference > 0 ? 'warning' : 'error')
-            }
-          >
-            {row.difference}
-          </Label>
-        </TableCell>
-        <TableCell onClick={() => onViewRow(row.itemId)}>
-          <Label
-            sx={{ cursor: 'pointer' }}
-            variant="soft"
-            color={
-              (row.syncedWithSenitron && 'info' || 'error')
-            }
-          >
-            {row.syncedWithSenitron ? 'Yes' : 'No'}
-          </Label>
-        </TableCell>
+            <TableCell sx={{ whiteSpace: 'nowrap' }} onClick={() => onViewRow(row.itemId)}>{parseInt(row.stockOnHand, 10)}</TableCell>
+            <TableCell sx={{ whiteSpace: 'nowrap' }} onClick={() => onViewRow(row.itemId)}>{parseInt(row.quantity, 10)}</TableCell>
+            <TableCell onClick={() => onViewRow(row.itemId)}>
+              <Label
+                sx={{ cursor: 'pointer' }}
+                variant="soft"
+                color={
+                  (row.difference === 0 ? 'success' : row.difference > 0 ? 'warning' : 'error')
+                }
+              >
+                {row.difference}
+              </Label>
+            </TableCell>
+            <TableCell onClick={() => onViewRow(row.itemId)}>
+              <Label
+                sx={{ cursor: 'pointer' }}
+                variant="soft"
+                color={
+                  (row.syncedWithSenitron && 'info' || 'error')
+                }
+              >
+                {row.syncedWithSenitron ? 'Yes' : 'No'}
+              </Label>
+            </TableCell>
+          </>
+        ) : (
+          <TableCell onClick={() => onViewRow(row.itemId)}>
+            {row.sku || row.name}<br />
+            <Label
+              variant="soft"
+              color={
+                (row.status === 'active' && 'success') ||
+                (row.status === 'confirmation_pending' && 'warning') ||
+                (row.status === 'inactive' && 'error') ||
+                'default'
+              }
+              sx={{ cursor: 'pointer' }}
+            >
+              {row.status}
+            </Label><br />
+            On Hand: {parseInt(row.stockOnHand, 10)}<br />
+            RFID Count: {parseInt(row.quantity, 10)}<br />
+            Difference: <Label
+              sx={{ cursor: 'pointer' }}
+              variant="soft"
+              color={
+                (row.difference === 0 ? 'success' : row.difference > 0 ? 'warning' : 'error')
+              }
+            >
+              {row.difference}
+            </Label><br />
+            Tracked: <Label
+              sx={{ cursor: 'pointer' }}
+              variant="soft"
+              color={
+                (row.syncedWithSenitron && 'info' || 'error')
+              }
+            >
+              {row.syncedWithSenitron ? 'Yes' : 'No'}
+            </Label>
+          </TableCell>
+        )}
         <TableCell align="right" sx={{ px: 1, whiteSpace: 'nowrap' }}>
           <Stack direction="row" alignItems="center">
             {row.assets.length > 0 ? (
@@ -143,28 +169,42 @@ export function ItemTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
                     <TableBody>
                       {row.assets.filter((item) => item.lastSeenAntenna && item.lastZone && item.text3)
                         .map((item, index) => (
-                          <TableRow key={`${item.id}-${index}-${item.serialNumber}`}>
-                            <TableCell>
-                              <Label color='default'>Antenna</Label><br />
-                              {item.lastSeenAntenna}
-                            </TableCell>
-                            <TableCell>
-                              <Label color='default'>Serial</Label><br />
-                              {item.serialNumber}
-                            </TableCell>
-                            <TableCell>
-                              <Label color='default'>Last Zone</Label><br />
-                              {item.lastZone}
-                            </TableCell>
-                            <TableCell>
-                              <Label color='default'>Info</Label><br />
-                              {item.text3}
-                            </TableCell>
-                            <TableCell>
-                              <Label color='default'>Last Seen</Label><br />
-                              {item.lastSeen ? fDateTime(item.lastSeen) : `Updated:  ${fDateTime(item.updatedAt)}`}
-                            </TableCell>
-                          </TableRow>
+                          <React.Fragment key={`${item.id}-${index}-${item.serialNumber}`}>
+                            {!isMobile ? (
+                            <TableRow key={`${item.id}-${index}-${item.serialNumber}`}>
+                              <TableCell>
+                                <Label color='default'>Antenna</Label><br />
+                                {item.lastSeenAntenna}
+                              </TableCell>
+                              <TableCell>
+                                <Label color='default'>Serial</Label><br />
+                                {item.serialNumber}
+                              </TableCell>
+                              <TableCell>
+                                <Label color='default'>Last Zone</Label><br />
+                                {item.lastZone}
+                              </TableCell>
+                              <TableCell>
+                                <Label color='default'>Info</Label><br />
+                                {item.text3}
+                              </TableCell>
+                              <TableCell>
+                                <Label color='default'>Last Seen</Label><br />
+                                {item.lastSeen ? fDateTime(item.lastSeen) : `Updated:  ${fDateTime(item.updatedAt)}`}
+                              </TableCell>
+                            </TableRow>
+                            ) : (
+                              <TableRow key={`${item.id}-${index}-${item.serialNumber}`}>
+                                <TableCell>
+                                  <Label color='default'>Antenna:</Label> {item.lastSeenAntenna}<br/>
+                                  <Label color='default'>Serial:</Label> {item.serialNumber}<br/>
+                                  <Label color='default'>Last Zone:</Label> {item.lastZone}<br/>
+                                  <Label color='default'>Info:</Label> {item.text3}<br/>
+                                  <Label color='default'>Last Seen:</Label> {item.lastSeen ? fDateTime(item.lastSeen) : `Updated:  ${fDateTime(item.updatedAt)}`}
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </React.Fragment>
                         ))}
                     </TableBody>
                   </Table>

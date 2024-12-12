@@ -106,6 +106,11 @@ export function ShipmentListBySkuView() {
     { id: '', width: isMobile ? 30 : 68 },
   ];
 
+  const TABLE_HEAD_MOBILE = [
+    { id: 'info', label: 'INFO' },
+    { id: '' },
+  ];
+
 
   const table = useTable({ defaultOrderBy: 'sku', defaultDense: true });
 
@@ -377,11 +382,11 @@ export function ShipmentListBySkuView() {
 
             <Scrollbar sx={{ minHeight: 444 }}>
               <TableContainer sx={{ maxHeight: 440 }}>
-                <Table size={table.dense ? 'small' : 'medium'} sx={{ minWidth: 960 }} stickyHeader>
+                <Table size={table.dense ? 'small' : 'medium'} sx={{ minWidth: !isMobile ? 960 : 380 }} stickyHeader>
                   <TableHeadCustom
                     order={table.order}
                     orderBy={table.orderBy}
-                    headLabel={TABLE_HEAD}
+                    headLabel={!isMobile ? TABLE_HEAD : TABLE_HEAD_MOBILE}
                     rowCount={dataFiltered?.length}
                     numSelected={table.selected.length}
                     onSort={table.onSort}

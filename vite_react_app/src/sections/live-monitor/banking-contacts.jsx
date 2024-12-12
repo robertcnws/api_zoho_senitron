@@ -64,6 +64,14 @@ export function BankingContacts({
     { id: '' },
   ];
 
+  const TABLE_HEAD_MOBILE = [
+    { id: 'sku', label: 'SKU' },
+    { id: 'live', label: <Iconify icon="mdi:plus-circle" /> },
+    { id: 'removed', label: <Iconify icon="mdi:minus-circle" /> },
+    { id: 'killed', label: <Iconify icon="mdi:close-circle" /> },
+    { id: '' },
+  ];
+
   const [modalDataFiltered, setModalDataFiltered] = useState(null);
   const modalItemSerialsDetailsTitle = 'Item Serials Details';
   const modalListItemsSerialsTitle = 'List Items Serials';
@@ -130,27 +138,37 @@ export function BankingContacts({
                     },
                   }}
                 >
-                  {/* <ListItemText>{item.serialNumber?.trim()}<br /></ListItemText>
-                  <ListItemText>{item.currentStatusName?.trim()}</ListItemText>
-                  <ListItemText>{fDateTime(item.lastSeen)}</ListItemText>
-                  <ListItemText>{row.lastZone?.trim()}</ListItemText>
-                  <ListItemText>{item.reason?.trim()}</ListItemText> */}
                   <TableContainer sx={{ width: '100%' }}>
                     <Table size="small">
-                      <TableBody>
-                        <TableRow>
-                          <TableCell sx={{ width: 200 }}><Label variant='soft'>{row.sku}</Label></TableCell>
-                          <TableCell sx={{ width: 100 }}>
-                            <Label align='center' variant='soft' color={item.currentStatusName.toLowerCase().includes('remove') ? 'error' :
-                              item.currentStatusName.toLowerCase().includes('kill') ? 'warning' : 'success'}>
-                              {item.currentStatusName}
-                            </Label>
-                          </TableCell>
-                          <TableCell sx={{ width: 100 }}>Serial<br/><Label variant='soft'>{item.serialNumber}</Label></TableCell>
-                          <TableCell sx={{ width: 100 }}>Created<br/><Label variant='soft'>{fDateTime(item.createdAt)}</Label></TableCell>
-                          <TableCell sx={{ width: 200 }}>Last Zone<br/><Label variant='soft'>{item.lastZone}</Label></TableCell>
-                          <TableCell sx={{ width: 200 }}>Reason<br/><Label variant='soft'>{item.reason.substring(0, 25)}</Label></TableCell>
-                        </TableRow>
+                    <TableBody>
+                        {!isMobile ? (
+                          <TableRow>
+                            <TableCell sx={{ width: 200, fontSize: '9px' }}><Label variant='soft' sx={{ fontSize: '9px' }}>{row.sku}</Label></TableCell>
+                            <TableCell sx={{ width: 100, fontSize: '9px' }}>
+                              <Label sx={{ fontSize: '9px' }} align='center' variant='soft' color={item.currentStatusName.toLowerCase().includes('remove') ? 'error' :
+                                item.currentStatusName.toLowerCase().includes('kill') ? 'warning' : 'success'}>
+                                {item.currentStatusName}
+                              </Label>
+                            </TableCell>
+                            <TableCell sx={{ width: 100, fontSize: '9px' }}><Label sx={{ fontSize: '9px' }} variant='soft'>{item.serialNumber}</Label></TableCell>
+                            <TableCell sx={{ width: 100, fontSize: '9px' }}><Label sx={{ fontSize: '9px' }} variant='soft'>{fDateTime(item.createdAt)}</Label></TableCell>
+                            <TableCell sx={{ width: 200, fontSize: '9px' }}><Label sx={{ fontSize: '9px' }} variant='soft'>{item.lastZone}</Label></TableCell>
+                            {/* <TableCell sx={{ width: 200, fontSize: '9px' }}><Label sx={{ fontSize: '9px' }} variant='soft'>{item.reason.substring(0, 25)}</Label></TableCell> */}
+                          </TableRow>
+                        ) : (
+                          <TableRow>
+                            <TableCell sx={{ width: 200, fontSize: '9px' }}>
+                              <Label variant='soft' sx={{ fontSize: '9px' }}>{row.sku}</Label>
+                              <Label sx={{ fontSize: '9px' }} align='center' variant='soft' color={item.currentStatusName.toLowerCase().includes('remove') ? 'error' :
+                                item.currentStatusName.toLowerCase().includes('kill') ? 'warning' : 'success'}>
+                                {item.currentStatusName}
+                              </Label><br />
+                              Serial: <Label sx={{ fontSize: '9px' }} variant='soft'>{item.serialNumber}</Label><br/>
+                              Date: <Label sx={{ fontSize: '9px' }} variant='soft'>{fDateTime(item.createdAt)}</Label><br/>
+                              Zone: <Label sx={{ fontSize: '9px' }} variant='soft'>{item.lastZone}</Label>
+                            </TableCell>
+                          </TableRow>
+                        )}
                       </TableBody>
                     </Table>
                   </TableContainer>
@@ -187,9 +205,6 @@ export function BankingContacts({
           }
         />
         {isItemTable && (
-          // <IconButton onClick={popover.onOpen}>
-          //   <Iconify icon="eva:more-vertical-fill" />
-          // </IconButton>
           <BankingContactsToolbar
             filters={filters}
             onResetPage={table.onResetPage}
@@ -207,7 +222,7 @@ export function BankingContacts({
                 gap: 3,
                 display: 'flex',
                 flexDirection: 'column',
-                minWidth: 360,
+                minWidth: !isMobile ? 360 : 280,
               }}
             >
               {!isItemTable ? listFilteredByState.map((item, index) => (
@@ -244,11 +259,11 @@ export function BankingContacts({
                             maxHeight: !canReset ? 320 : 220,
                             minHeight: !canReset ? 320 : 220,
                           }}>
-                            <Table size={table.dense ? 'small' : 'medium'} sx={{ minWidth: 960 }} stickyHeader>
+                            <Table size={table.dense ? 'small' : 'medium'} sx={{ minWidth: !isMobile ? 960 : 280 }} stickyHeader>
                               <TableHeadCustom
                                 order={table.order}
                                 orderBy={table.orderBy}
-                                headLabel={TABLE_HEAD}
+                                headLabel={!isMobile ? TABLE_HEAD : TABLE_HEAD_MOBILE}
                                 rowCount={dataFiltered.length}
                                 // numSelected={table.selected.length}
                                 onSort={table.onSort}

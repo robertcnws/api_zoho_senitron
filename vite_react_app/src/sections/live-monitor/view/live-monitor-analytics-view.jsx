@@ -387,7 +387,7 @@ export function LiveMonitorAnalyticsView() {
         <>
           <DashboardContent maxWidth="xl">
             <Grid container spacing={3}>
-              <Grid xs={!isMobile ? 10 : 6} sm={!isMobile ? 10 : 6} md={!isMobile ? 10 : 6}>
+              <Grid xs={countLostItems > 0 ? 8 : 12} sm={countLostItems > 0 ? 8 : 12} md={countLostItems > 0 ? 8 : 12}>
                 <WelcomeTypography
                   userLogged={userLogged}
                   manualUpdatingJobsData={manualUpdatingJobsData}
@@ -401,13 +401,13 @@ export function LiveMonitorAnalyticsView() {
                 />
               </Grid >
               {countLostItems > 0 && (
-                <Grid xs={!isMobile ? 2 : 6} sm={!isMobile ? 2 : 6} md={!isMobile ? 2 : 6}>
+                <Grid xs={4} sm={4} md={4}>
                   <Alert
                     severity="error"
                     icon={<AnimatedIcon icon="mdi:error" color="error" width="25px" />}
                     sx={{ mb: 2, cursor: 'pointer', p: 1 }}>
                     <Typography variant="body2" sx={{ fontSize: '14px' }}>
-                      <b>{countLostItems}</b> Items lost today
+                      <b>{countLostItems}</b> {`${!isMobile && `Items`} lost today`}
                     </Typography>
                   </Alert>
                 </Grid>
@@ -626,7 +626,8 @@ export function LiveMonitorAnalyticsView() {
 
 
         </>
-      )}
+      )
+      }
     </>
   );
 }

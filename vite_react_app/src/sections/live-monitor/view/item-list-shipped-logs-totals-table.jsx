@@ -65,6 +65,14 @@ export function ItemListShippedLogsTotalsTable({
     { id: '' },
   ];
 
+  const TABLE_HEAD_MOBILE = [
+    { id: 'sku', label: 'SKU' },
+    { id: 'live', label: 'Received' },
+    { id: 'removed', label: 'Removed' },
+    { id: 'killed', label: 'Killed' },
+    { id: '' },
+  ];
+
   const popover = usePopover();
 
 
@@ -120,19 +128,34 @@ export function ItemListShippedLogsTotalsTable({
                   <TableContainer sx={{ width: '100%' }}>
                     <Table size="small">
                       <TableBody>
-                        <TableRow>
-                          <TableCell sx={{ width: 200, fontSize: '9px' }}><Label variant='soft' sx={{ fontSize: '9px' }}>{row.sku}</Label></TableCell>
-                          <TableCell sx={{ width: 100, fontSize: '9px' }}>
-                            <Label sx={{ fontSize: '9px' }} align='center' variant='soft' color={item.currentStatusName.toLowerCase().includes('remove') ? 'error' :
-                              item.currentStatusName.toLowerCase().includes('kill') ? 'warning' : 'success'}>
-                              {item.currentStatusName}
-                            </Label>
-                          </TableCell>
-                          <TableCell sx={{ width: 100, fontSize: '9px' }}><Label sx={{ fontSize: '9px' }} variant='soft'>{item.serialNumber}</Label></TableCell>
-                          <TableCell sx={{ width: 100, fontSize: '9px' }}><Label sx={{ fontSize: '9px' }} variant='soft'>{fDateTime(item.createdAt)}</Label></TableCell>
-                          <TableCell sx={{ width: 200, fontSize: '9px' }}><Label sx={{ fontSize: '9px' }} variant='soft'>{item.lastZone}</Label></TableCell>
-                          {/* <TableCell sx={{ width: 200, fontSize: '9px' }}><Label sx={{ fontSize: '9px' }} variant='soft'>{item.reason.substring(0, 25)}</Label></TableCell> */}
-                        </TableRow>
+                        {!isMobile ? (
+                          <TableRow>
+                            <TableCell sx={{ width: 200, fontSize: '9px' }}><Label variant='soft' sx={{ fontSize: '9px' }}>{row.sku}</Label></TableCell>
+                            <TableCell sx={{ width: 100, fontSize: '9px' }}>
+                              <Label sx={{ fontSize: '9px' }} align='center' variant='soft' color={item.currentStatusName.toLowerCase().includes('remove') ? 'error' :
+                                item.currentStatusName.toLowerCase().includes('kill') ? 'warning' : 'success'}>
+                                {item.currentStatusName}
+                              </Label>
+                            </TableCell>
+                            <TableCell sx={{ width: 100, fontSize: '9px' }}><Label sx={{ fontSize: '9px' }} variant='soft'>{item.serialNumber}</Label></TableCell>
+                            <TableCell sx={{ width: 100, fontSize: '9px' }}><Label sx={{ fontSize: '9px' }} variant='soft'>{fDateTime(item.createdAt)}</Label></TableCell>
+                            <TableCell sx={{ width: 200, fontSize: '9px' }}><Label sx={{ fontSize: '9px' }} variant='soft'>{item.lastZone}</Label></TableCell>
+                            {/* <TableCell sx={{ width: 200, fontSize: '9px' }}><Label sx={{ fontSize: '9px' }} variant='soft'>{item.reason.substring(0, 25)}</Label></TableCell> */}
+                          </TableRow>
+                        ) : (
+                          <TableRow>
+                            <TableCell sx={{ width: 200, fontSize: '9px' }}>
+                              <Label variant='soft' sx={{ fontSize: '9px' }}>{row.sku}</Label>
+                              <Label sx={{ fontSize: '9px' }} align='center' variant='soft' color={item.currentStatusName.toLowerCase().includes('remove') ? 'error' :
+                                item.currentStatusName.toLowerCase().includes('kill') ? 'warning' : 'success'}>
+                                {item.currentStatusName}
+                              </Label><br />
+                              Serial: <Label sx={{ fontSize: '9px' }} variant='soft'>{item.serialNumber}</Label><br/>
+                              Date: <Label sx={{ fontSize: '9px' }} variant='soft'>{fDateTime(item.createdAt)}</Label><br/>
+                              Zone: <Label sx={{ fontSize: '9px' }} variant='soft'>{item.lastZone}</Label>
+                            </TableCell>
+                          </TableRow>
+                        )}
                       </TableBody>
                     </Table>
                   </TableContainer>
@@ -191,11 +214,11 @@ export function ItemListShippedLogsTotalsTable({
                         maxHeight: !canReset ? 220 : 120,
                         minHeight: !canReset ? 220 : 120,
                       }}>
-                        <Table size={table.dense ? 'small' : 'medium'} sx={{ minWidth: 400 }} stickyHeader>
+                        <Table size={table.dense ? 'small' : 'medium'} sx={{ minWidth: !isMobile ? 400 : 380 }} stickyHeader>
                           <TableHeadCustom
                             order={table.order}
                             orderBy={table.orderBy}
-                            headLabel={TABLE_HEAD}
+                            headLabel={!isMobile ? TABLE_HEAD : TABLE_HEAD_MOBILE}
                             rowCount={dataFiltered.length}
                             onSort={table.onSort}
                           />
@@ -206,7 +229,7 @@ export function ItemListShippedLogsTotalsTable({
                                 table.page * table.rowsPerPage + table.rowsPerPage
                               ).map((item, index) => (
                                 <React.Fragment key={`${item.itemNumber}-${index}`}>
-                                  <TableRow key={`${item.itemNumber}-${index}`} sx={{ p: 1}}>
+                                  <TableRow key={`${item.itemNumber}-${index}`} sx={{ p: 1 }}>
                                     <TableCell sx={{ width: isMobile ? 200 : 650, fontSize: '11px' }}>{item.sku}</TableCell>
                                     <TableCell sx={{ width: isMobile ? 100 : 200, fontSize: '10px' }}>
                                       <Label sx={{ fontSize: '10px' }} variant="soft" color='success'>{calculateTotalStatus({ date, item, status: 'live' })}</Label>
@@ -244,7 +267,7 @@ export function ItemListShippedLogsTotalsTable({
                               emptyRows={emptyRows(table.page, table.rowsPerPage, dataFiltered.length)}
                             />
 
-                            <TableNoData notFound={dataFiltered?.length === 0} sx={{ maxHeight: 20 }}/>
+                            <TableNoData notFound={dataFiltered?.length === 0} sx={{ maxHeight: 20 }} />
                           </TableBody>
                         </Table>
                       </TableContainer>

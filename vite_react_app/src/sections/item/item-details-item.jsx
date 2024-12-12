@@ -18,7 +18,7 @@ import { CONFIG } from 'src/config-global';
 
 // ----------------------------------------------------------------------
 
-export function ItemDetailsItems({ item, senitronItem, setItem, setSenitronItem, setUpdating }) {
+export function ItemDetailsItems({ item, senitronItem, setItem, setSenitronItem, setUpdating, isMobile }) {
   const { setLoading, setError, setComponent } = useContext(LoadingContext);
   const [currentItem, setCurrentItem] = useState(null);
   const [currentSenitronItem, setCurrentSenitronItem] = useState(null);
@@ -29,7 +29,7 @@ export function ItemDetailsItems({ item, senitronItem, setItem, setSenitronItem,
   useEffect(() => {
     if (item) setCurrentItem(item);
     if (senitronItem) setCurrentSenitronItem(senitronItem);
-    
+
   }, [item, senitronItem]);
 
 
@@ -69,15 +69,15 @@ export function ItemDetailsItems({ item, senitronItem, setItem, setSenitronItem,
             </Grid>
           </>
         )}
-        {currentItem && currentItem?.sku && (
+        {currentItem && currentItem?.name && (
           <>
             <Grid container item xs={12}>
               <Grid item xs={3}>
-                <Box sx={{ color: 'text.secondary' }}>SKU: </Box>
+                <Box sx={{ color: 'text.secondary' }}>Name: </Box>
               </Grid>
               <Grid item xs={9}>
                 <Box sx={{ typography: 'subtitle2' }}>
-                  <Label color="default">{currentItem.sku || '-'} </Label>
+                  <Label color="default">{currentItem.name || '-'} </Label>
                 </Box>
               </Grid>
             </Grid>
@@ -154,34 +154,60 @@ export function ItemDetailsItems({ item, senitronItem, setItem, setSenitronItem,
                 <TableContainer sx={{ height: '400px' }}>
                   <Table stickyHeader>
                     <TableHead>
-                      <TableRow sx={{ p: 0 }}>
-                        <TableCell>Antenna</TableCell>
-                        <TableCell>Serial</TableCell>
-                        <TableCell>Last Zone</TableCell>
-                        <TableCell>Info</TableCell>
-                        <TableCell>Last Seen</TableCell>
-                      </TableRow>
+                      {!isMobile ? (
+                        <TableRow sx={{ p: 0 }}>
+                          <TableCell>Antenna</TableCell>
+                          <TableCell>Serial</TableCell>
+                          <TableCell>Last Zone</TableCell>
+                          <TableCell>Info</TableCell>
+                          <TableCell>Last Seen</TableCell>
+                        </TableRow>
+                      ) : (
+                        <TableRow sx={{ p: 0 }}>
+                          <TableCell>INFO</TableCell>
+                        </TableRow>
+                      )}
                     </TableHead>
                     <TableBody>
                       {currentSenitronItem?.assets.filter((asset) => asset.lastSeenAntenna && asset.lastZone && asset.text3)
                         .map((asset, index) => (
-                          <TableRow key={`${asset.id}-${index}-${asset.serialNumber}`}>
-                            <TableCell>
-                              {asset.lastSeenAntenna}
-                            </TableCell>
-                            <TableCell>
-                              {asset.serialNumber}
-                            </TableCell>
-                            <TableCell>
-                              {asset.lastZone}
-                            </TableCell>
-                            <TableCell>
-                              {asset.text3}
-                            </TableCell>
-                            <TableCell>
-                              {asset.lastSeen ? fDateTime(asset.lastSeen) : `Updated:  ${fDateTime(asset.updatedAt)}`}
-                            </TableCell>
-                          </TableRow>
+                          !isMobile ? (
+                            <TableRow key={`${asset.id}-${index}-${asset.serialNumber}`}>
+                              <TableCell>
+                                {asset.lastSeenAntenna}
+                              </TableCell>
+                              <TableCell>
+                                {asset.serialNumber}
+                              </TableCell>
+                              <TableCell>
+                                {asset.lastZone}
+                              </TableCell>
+                              <TableCell>
+                                {asset.text3}
+                              </TableCell>
+                              <TableCell>
+                                {asset.lastSeen ? fDateTime(asset.lastSeen) : `Updated:  ${fDateTime(asset.updatedAt)}`}
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            <TableRow key={`${asset.id}-${index}-${asset.serialNumber}`}>
+                              <TableCell>
+                                <TextareaAutosize
+                                  aria-label="minimum height"
+                                  minRows={3}
+                                  placeholder="Minimum 3 rows"
+                                  value={
+                                    `Antenna: ${asset.lastSeenAntenna}
+                                    Serial: ${asset.serialNumber}
+                                    Last Zone: ${asset.lastZone}
+                                    Description: ${asset.text3}
+                                    Last Seen: ${asset.lastSeen ? fDateTime(asset.lastSeen) : `Updated:  ${fDateTime(asset.updatedAt)}`}`
+                                  }
+                                  style={{ width: '100%', fontSize: '0.75rem' }}
+                                />
+                              </TableCell>
+                            </TableRow>
+                          )
                         ))}
                     </TableBody>
                   </Table>

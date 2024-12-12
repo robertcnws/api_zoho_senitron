@@ -38,6 +38,13 @@ export function ModalItemSerialsDetails({
     { id: 'killed', label: 'Killed (Serials)', width: 300 },
   ];
 
+  const TABLE_HEAD_MOBILE = [
+    { id: 'createdTime', label: 'Date' },
+    { id: 'news', label: <Iconify icon="mdi:plus-circle" /> },
+    { id: 'removed', label: <Iconify icon="mdi:minus-circle" /> },
+    { id: 'killed', label: <Iconify icon="mdi:close-circle" /> },
+  ];
+
   const handleClose = (modalId) => {
     setOpenModal((prev) => ({ ...prev, [modalId]: false }));
   };
@@ -165,11 +172,11 @@ export function ModalItemSerialsDetails({
                 <br />
 
                 <TableContainer sx={{ maxHeight: 440 }}>
-                  <Table size={table?.dense ? 'small' : 'medium'} sx={{ minWidth: 500 }} stickyHeader>
+                  <Table size={table?.dense ? 'small' : 'medium'} sx={{ minWidth: !isMobile ? 500 : 280 }} stickyHeader>
                     <TableHeadCustom
                       order={table?.order}
                       orderBy={table?.orderBy}
-                      headLabel={TABLE_HEAD}
+                      headLabel={!isMobile ? TABLE_HEAD : TABLE_HEAD_MOBILE}
                       rowCount={mapList?.length}
                       onSort={table?.onSort}
                     />

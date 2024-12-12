@@ -98,7 +98,15 @@ export function ShipmentTableRowListBySku({ row, selected, onViewRow, onSelectRo
     [router]
   );
 
-  const renderPrimary = (
+  const handleViewShipment = useCallback(
+    (id) => {
+        localStorage.setItem('routeShipmentByLiveMonitor', id);
+        router.push(paths.dashboard.shipment.details(id));
+    },
+    [router]
+);
+
+  const renderPrimary = !isMobile ? (
     <TableRow hover selected={selected}>
       <TableCell padding="checkbox">
         <Checkbox
@@ -117,13 +125,7 @@ export function ShipmentTableRowListBySku({ row, selected, onViewRow, onSelectRo
       <TableCell>
         <ListItemText
           primary={fDate(row.date)}
-          // secondary={fTime(row.date)}
           primaryTypographyProps={{ variant: 'body2', noWrap: true }}
-        // secondaryTypographyProps={{
-        //   mt: 0.5,
-        //   component: 'span',
-        //   variant: 'caption',
-        // }}
         />
       </TableCell>
 
@@ -134,6 +136,51 @@ export function ShipmentTableRowListBySku({ row, selected, onViewRow, onSelectRo
         />
       </TableCell>
 
+      <TableCell align="right" sx={{ px: 1, whiteSpace: 'nowrap' }}>
+        {row.linePackages?.length > 0 ? (
+          <IconButton
+            color={collapse.value ? 'inherit' : 'default'}
+            onClick={collapse.onToggle}
+            sx={{ ...(collapse.value && { bgcolor: 'action.hover' }) }}
+          >
+            <Iconify icon={collapse.value ? "eva:arrow-ios-upward-fill" : "eva:arrow-ios-downward-fill"} />
+          </IconButton>
+        ) : (
+          <Label
+            variant="soft"
+            color="warning"
+          >
+            No Data
+          </Label>
+        )}
+
+        <IconButton color={popover.open ? 'inherit' : 'default'} onClick={popover.onOpen}>
+          <Iconify icon="eva:more-vertical-fill" />
+        </IconButton>
+      </TableCell>
+    </TableRow>
+  ) : (
+    <TableRow hover selected={selected}>
+      <TableCell padding="checkbox">
+        <Checkbox
+          checked={selected}
+          onClick={onSelectRow}
+          inputProps={{ id: `row-checkbox-${row.itemId}`, 'aria-label': `Row checkbox` }}
+        />
+      </TableCell>
+      <TableCell>
+        <Link color="inherit" onClick={onViewRow} underline="always" sx={{ cursor: 'pointer' }}>
+          {row.sku}
+        </Link>
+        <ListItemText
+          primary={`Date: ${fDate(row.date)}`}
+          primaryTypographyProps={{ variant: 'body2', noWrap: true }}
+        />
+        <ListItemText
+          primary={`Qty: ${row.itemTotalQty}`}
+          primaryTypographyProps={{ variant: 'body2', noWrap: true }}
+        />
+      </TableCell>
       <TableCell align="right" sx={{ px: 1, whiteSpace: 'nowrap' }}>
         {row.linePackages?.length > 0 ? (
           <IconButton
@@ -188,19 +235,20 @@ export function ShipmentTableRowListBySku({ row, selected, onViewRow, onSelectRo
                         secondary={
                           <>
                             <Grid container spacing={1}>
-                              <Grid item xs={4}>
+                              <Grid item xs={!isMobile ? 3 : 7.9}>
+                                # Shipment: <strong> </strong>
+                                <Link color="inherit" onClick={() => handleViewShipment(item.shipmentId)} underline="always" sx={{ cursor: 'pointer' }}>
+                                  <strong>{item.shipmentNumber}</strong>
+                                </Link>
+                              </Grid>
+                              <Grid item xs={!isMobile ? 3 : 3.1}>
                                 <Typography variant="body2">
                                   # Pkg: <strong>{item.packageNumber}</strong>
                                 </Typography>
                               </Grid>
-                              <Grid item xs={4}>
+                              <Grid item xs={!isMobile ? 2 : 1}>
                                 <Typography variant="body2">
-                                  # Shipment: <strong>{item.shipmentNumber}</strong>
-                                </Typography>
-                              </Grid>
-                              <Grid item xs={4}>
-                                <Typography variant="body2">
-                                  Pkg Qty: <strong>{parseInt(item.quantity, 10)}</strong>
+                                  PkgQty: <strong>{parseInt(item.quantity, 10)}</strong>
                                 </Typography>
                               </Grid>
                             </Grid>

@@ -85,6 +85,11 @@ export function ItemListShortView({ updating, setUpdating, setTitleLinearProgres
         { id: '', width: 50 },
     ];
 
+    const TABLE_HEAD_MOBILE = [
+        { id: 'info', label: 'INFO'},
+        { id: ''},
+    ];
+
     const table = useTable({ defaultDense: true });
 
     const router = useRouter();
@@ -386,11 +391,11 @@ export function ItemListShortView({ updating, setUpdating, setTitleLinearProgres
 
                     <Scrollbar>
                         <TableContainer sx={{ maxHeight: 440 }}>
-                            <Table size={table.dense ? 'small' : 'medium'} sx={{ minWidth: 960 }} stickyHeader>
+                            <Table size={table.dense ? 'small' : 'medium'} sx={{ minWidth: !isMobile ? 960 : 380 }} stickyHeader>
                                 <TableHeadCustom
                                     order={table.order}
                                     orderBy={table.orderBy}
-                                    headLabel={TABLE_HEAD}
+                                    headLabel={!isMobile ? TABLE_HEAD : TABLE_HEAD_MOBILE}
                                     rowCount={dataFiltered.length}
                                     numSelected={table.selected.length}
                                     onSort={table.onSort}

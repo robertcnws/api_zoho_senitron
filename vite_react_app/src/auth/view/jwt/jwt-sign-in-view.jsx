@@ -134,7 +134,7 @@ export function JwtSignInView() {
 
   return (
     <>
-      <Box sx={{ mt: isMobile ? 10 : 0}}>
+      <Box sx={{ mt: isMobile ? 25 : 0}}>
         <FormHead
           title="Sign in to your account"
           // description={

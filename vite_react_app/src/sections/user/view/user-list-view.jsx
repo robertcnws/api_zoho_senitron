@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useContext } from 'react';
 
 import axios from 'axios';
 
@@ -43,9 +43,12 @@ import {
   TablePaginationCustom,
 } from 'src/components/table';
 
+import { LoadingContext } from 'src/auth/context/loading-context';
+
 import { UserTableRow } from '../user-table-row';
 import { UserTableToolbar } from '../user-table-toolbar';
 import { UserTableFiltersResult } from '../user-table-filters-result';
+
 
 // ----------------------------------------------------------------------
 
@@ -59,9 +62,16 @@ const TABLE_HEAD = [
   { id: '', width: 88 },
 ];
 
+const TABLE_HEAD_MOBILE = [
+  { id: 'info', label: 'INFO' },
+  { id: '' },
+];
+
 // ----------------------------------------------------------------------
 
 export function UserListView() {
+
+  const { isMobile } = useContext(LoadingContext);
 
   const userLogged = useMemo(() => JSON.parse(localStorage.getItem('userLogged')), []);
 
@@ -304,11 +314,11 @@ export function UserListView() {
             />
 
             <Scrollbar>
-              <Table size={table.dense ? 'small' : 'medium'} sx={{ minWidth: 960 }}>
+              <Table size={table.dense ? 'small' : 'medium'} sx={{ minWidth: !isMobile ? 960 : 380 }}>
                 <TableHeadCustom
                   order={table.order}
                   orderBy={table.orderBy}
-                  headLabel={TABLE_HEAD}
+                  headLabel={!isMobile ? TABLE_HEAD : TABLE_HEAD_MOBILE}
                   rowCount={dataFiltered.length}
                   numSelected={table.selected.length}
                   onSort={table.onSort}

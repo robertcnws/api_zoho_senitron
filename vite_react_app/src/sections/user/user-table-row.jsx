@@ -1,3 +1,4 @@
+import { useContext } from 'react';
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
@@ -12,6 +13,7 @@ import TableCell from '@mui/material/TableCell';
 import IconButton from '@mui/material/IconButton';
 
 import { useBoolean } from 'src/hooks/use-boolean';
+import { LoadingContext } from 'src/auth/context/loading-context';
 
 import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
@@ -23,6 +25,9 @@ import { UserQuickEditForm } from './user-quick-edit-form';
 // ----------------------------------------------------------------------
 
 export function UserTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRow }) {
+
+  const { isMobile } = useContext(LoadingContext)
+
   const confirm = useBoolean();
 
   const popover = usePopover();
@@ -33,60 +38,108 @@ export function UserTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
 
   return (
     <>
-      <TableRow hover selected={selected} aria-checked={selected} tabIndex={-1}>
-        <TableCell padding="checkbox">
-          <Checkbox id={row.id} checked={selected} onClick={onSelectRow} />
-        </TableCell>
+      {!isMobile ? (
+        <TableRow hover selected={selected} aria-checked={selected} tabIndex={-1}>
+          <TableCell padding="checkbox">
+            <Checkbox id={row.id} checked={selected} onClick={onSelectRow} />
+          </TableCell>
 
-        <TableCell sx={{ cursor: 'pointer' }}>
-          <Stack spacing={2} direction="row" alignItems="center">
-            <Avatar alt={row.username} src={row.avatarUrl} />
+          <TableCell sx={{ cursor: 'pointer' }}>
+            <Stack spacing={2} direction="row" alignItems="center">
+              <Avatar alt={row.username} src={row.avatarUrl} />
 
-            <Stack sx={{ typography: 'body2', flex: '1 1 auto', alignItems: 'flex-start' }}>
-              <Link color="inherit" onClick={quickEdit.onTrue} sx={{ cursor: 'pointer' }}>
-                {row.username}
-              </Link>
-              <Box component="span" sx={{ color: 'text.disabled' }}>
-                {row.email}
-              </Box>
+              <Stack sx={{ typography: 'body2', flex: '1 1 auto', alignItems: 'flex-start' }}>
+                <Link color="inherit" onClick={quickEdit.onTrue} sx={{ cursor: 'pointer' }}>
+                  {row.username}
+                </Link>
+                <Box component="span" sx={{ color: 'text.disabled' }}>
+                  {row.email}
+                </Box>
+              </Stack>
             </Stack>
-          </Stack>
-        </TableCell>
+          </TableCell>
 
-        <TableCell sx={{ whiteSpace: 'nowrap', cursor: 'pointer' }} onClick={quickEdit.onTrue}>{row.phoneNumber}</TableCell>
+          <TableCell sx={{ whiteSpace: 'nowrap', cursor: 'pointer' }} onClick={quickEdit.onTrue}>{row.phoneNumber}</TableCell>
 
-        <TableCell sx={{ whiteSpace: 'nowrap', cursor: 'pointer' }} onClick={quickEdit.onTrue}>{row.role}</TableCell>
+          <TableCell sx={{ whiteSpace: 'nowrap', cursor: 'pointer' }} onClick={quickEdit.onTrue}>{row.role}</TableCell>
 
-        <TableCell sx={{ cursor: 'pointer' }} onClick={quickEdit.onTrue}>
-          <Label
-            variant="soft"
-            color={
-              (row.status === 'active' && 'success') ||
-              (row.status === 'inactive' && 'error') ||
-              'default'
-            }
-          >
-            {row.status}
-          </Label>
-        </TableCell>
+          <TableCell sx={{ cursor: 'pointer' }} onClick={quickEdit.onTrue}>
+            <Label
+              variant="soft"
+              color={
+                (row.status === 'active' && 'success') ||
+                (row.status === 'inactive' && 'error') ||
+                'default'
+              }
+            >
+              {row.status}
+            </Label>
+          </TableCell>
 
-        <TableCell>
-          <Stack direction="row" alignItems="center">
-            <Tooltip title="Quick Edit" placement="top" arrow>
-              <IconButton
-                color={quickEdit.value ? 'inherit' : 'default'}
-                onClick={quickEdit.onTrue}
-              >
-                <Iconify icon="solar:pen-bold" />
+          <TableCell>
+            <Stack direction="row" alignItems="center">
+              <Tooltip title="Quick Edit" placement="top" arrow>
+                <IconButton
+                  color={quickEdit.value ? 'inherit' : 'default'}
+                  onClick={quickEdit.onTrue}
+                >
+                  <Iconify icon="solar:pen-bold" />
+                </IconButton>
+              </Tooltip>
+
+              <IconButton color={popover.open ? 'inherit' : 'default'} onClick={popover.onOpen}>
+                <Iconify icon="eva:more-vertical-fill" />
               </IconButton>
-            </Tooltip>
+            </Stack>
+          </TableCell>
+        </TableRow>
+      ) : (
+        <TableRow hover selected={selected} aria-checked={selected} tabIndex={-1}>
+          <TableCell padding="checkbox">
+            <Checkbox id={row.id} checked={selected} onClick={onSelectRow} />
+          </TableCell>
 
-            <IconButton color={popover.open ? 'inherit' : 'default'} onClick={popover.onOpen}>
-              <Iconify icon="eva:more-vertical-fill" />
-            </IconButton>
-          </Stack>
-        </TableCell>
-      </TableRow>
+          <TableCell sx={{ cursor: 'pointer' }}>
+            <Stack spacing={2} direction="row" alignItems="center">
+              <Avatar alt={row.username} src={row.avatarUrl} />
+
+              <Stack sx={{ typography: 'body2', flex: '0 0 auto', alignItems: 'flex-start' }}>
+                <Link color="inherit" onClick={quickEdit.onTrue} sx={{ cursor: 'pointer' }}>
+                  {row.username}
+                </Link>
+                <Box component="span" sx={{ color: 'text.disabled' }}>
+                  {row.email}
+                </Box>
+              </Stack>
+            </Stack><br/>
+            Phone: {row.phoneNumber}<br/>
+            Role: {row.role}<br/>
+            Status: <Label
+              variant="soft"
+              color={
+                (row.status === 'active' && 'success') ||
+                (row.status === 'inactive' && 'error') ||
+                'default'
+              }
+            >
+              {row.status}
+            </Label>
+          </TableCell>
+
+          <TableCell>
+            <Stack direction="row" alignItems="center">
+              <Tooltip title="Quick Edit" placement="top" arrow>
+                <IconButton
+                  color={quickEdit.value ? 'inherit' : 'default'}
+                  onClick={quickEdit.onTrue}
+                >
+                  <Iconify icon="solar:pen-bold" />
+                </IconButton>
+              </Tooltip>
+            </Stack>
+          </TableCell>
+        </TableRow>
+      )}
 
       <UserQuickEditForm currentUser={row} open={quickEdit.value} onClose={quickEdit.onFalse} />
 

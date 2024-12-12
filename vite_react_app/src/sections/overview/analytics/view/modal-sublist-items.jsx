@@ -82,6 +82,37 @@ export function ModalSublistItems({
     { id: '', label: 'Actions', width: 200 },
   ];
 
+  const TABLE_HEAD_MOBILE = [
+    { id: 'no', label: '#'},
+    ...(userLogged?.data.is_staff && hasIgnoredErrors ? [
+      {
+        id: 'ignoreErrors',
+        label: (
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={ignoreErrorsSelected.length === modalDataFiltered.length && modalDataFiltered.length > 0}
+                indeterminate={ignoreErrorsSelected.length > 0 && ignoreErrorsSelected.length < modalDataFiltered.length}
+                onChange={(event) => {
+                  if (event.target.checked) {
+                    const allItemIds = modalDataFiltered.map((item) => item.itemId);
+                    setIgnoreErrorsSelected(allItemIds);
+                  } else {
+                    setIgnoreErrorsSelected([]);
+                  }
+                }}
+              />
+            }
+            // label={isIgnore ? "?" : "Restore?"}
+            sx={{ m: 0 }}
+          />
+        ),
+        disableSorting: true,
+      },
+    ] : []),
+    { id: 'info', label: 'INFO' },
+  ];
+
   const handleClose = (modalId) => {
     setOpenModal((prev) => ({ ...prev, [modalId]: false }));
   };
@@ -139,11 +170,11 @@ export function ModalSublistItems({
               {modalDataFiltered?.length > 0 ? (
 
                 <TableContainer sx={{ maxHeight: 440, minHeight: 440 }}>
-                  <Table size={table?.dense ? 'small' : 'medium'} sx={{ minWidth: 960 }} stickyHeader>
+                  <Table size={table?.dense ? 'small' : 'medium'} sx={{ minWidth: !isMobile ? 960 : 280 }} stickyHeader>
                     <TableHeadCustom
                       order={table?.order}
                       orderBy={table?.orderBy}
-                      headLabel={TABLE_HEAD}
+                      headLabel={!isMobile ? TABLE_HEAD : TABLE_HEAD_MOBILE}
                       rowCount={modalDataFiltered?.length}
                       onSort={table?.onSort}
                     />
@@ -160,51 +191,87 @@ export function ModalSublistItems({
                 </TableHead> */}
                     <TableBody>
                       {modalDataFiltered?.map((item, index) => (
-                        <TableRow key={`${item.itemId}-${index}`}>
-                          <TableCell sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }}>
-                            {index + 1}
-                          </TableCell>
-                          <TableCell colSpan={!item.sku ? 2 : 0} sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }}>
-                            {item.sku || (item.itemNumber ? `Item ID: ${item.itemNumber}` : `Item Name: ${item.name}`)}
-                          </TableCell>
-                          {!isMobile && item.sku &&
-                            <TableCell>{item.name}</TableCell>
-                          }
-                          <TableCell sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }}>
-                            <Label color='default'>
-                              {item.stockOnHand}
-                            </Label>
-                          </TableCell>
-                          <TableCell sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }}>
-                            <Label color='default'>
-                              {item.quantity}
-                            </Label>
-                          </TableCell>
-                          <TableCell sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }}>
-                            <Label color={item.difference === 0 ? 'success' : item.difference > 0 ? 'warning' : 'error'}>
-                              {item.difference}
-                            </Label>
-                          </TableCell>
-                          {userLogged?.data.is_staff && hasIgnoredErrors && (
-                            <TableCell padding="checkbox" sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }}>
-                              <Checkbox
-                                checked={ignoreErrorsSelected.includes(item.itemId)}
-                                onChange={(event) => handleCheckboxChange(event, item.itemId)}
-                                inputProps={{ id: `row-checkbox-${item.itemId}`, 'aria-label': `Row checkbox` }}
-                              />
+                        !isMobile ? (
+                          <TableRow key={`${item.itemId}-${index}`}>
+                            <TableCell sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }}>
+                              {index + 1}
                             </TableCell>
-                          )}
-                          <TableCell sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }}>
-                            <Button
-                              onClick={() => {
-                                handleViewRow(item.itemId);
-                              }}
-                              sx={{ color: modalButtonColor }}
-                            >
-                              <Iconify icon="solar:eye-bold" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
+                            <TableCell colSpan={!item.sku ? 2 : 0} sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }}>
+                              {item.sku || (item.itemNumber ? `Item ID: ${item.itemNumber}` : `Item Name: ${item.name}`)}
+                            </TableCell>
+                            {!isMobile && item.sku &&
+                              <TableCell>{item.name}</TableCell>
+                            }
+                            <TableCell sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }}>
+                              <Label color='default'>
+                                {item.stockOnHand}
+                              </Label>
+                            </TableCell>
+                            <TableCell sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }}>
+                              <Label color='default'>
+                                {item.quantity}
+                              </Label>
+                            </TableCell>
+                            <TableCell sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }}>
+                              <Label color={item.difference === 0 ? 'success' : item.difference > 0 ? 'warning' : 'error'}>
+                                {item.difference}
+                              </Label>
+                            </TableCell>
+                            {userLogged?.data.is_staff && hasIgnoredErrors && (
+                              <TableCell padding="checkbox" sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }}>
+                                <Checkbox
+                                  checked={ignoreErrorsSelected.includes(item.itemId)}
+                                  onChange={(event) => handleCheckboxChange(event, item.itemId)}
+                                  inputProps={{ id: `row-checkbox-${item.itemId}`, 'aria-label': `Row checkbox` }}
+                                />
+                              </TableCell>
+                            )}
+                            <TableCell sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }}>
+                              <Button
+                                onClick={() => {
+                                  handleViewRow(item.itemId);
+                                }}
+                                sx={{ color: modalButtonColor }}
+                              >
+                                <Iconify icon="solar:eye-bold" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          <TableRow key={`${item.itemId}-${index}`}>
+                            <TableCell sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }} onClick={() => {
+                              handleViewRow(item.itemId);
+                            }}>
+                              {index + 1}
+                            </TableCell>
+                            {userLogged?.data.is_staff && hasIgnoredErrors && (
+                              <TableCell padding="checkbox" sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }}>
+                                <Checkbox
+                                  checked={ignoreErrorsSelected.includes(item.itemId)}
+                                  onChange={(event) => handleCheckboxChange(event, item.itemId)}
+                                  inputProps={{ id: `row-checkbox-${item.itemId}`, 'aria-label': `Row checkbox` }}
+                                />
+                              </TableCell>
+                            )}
+                            <TableCell sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }} onClick={() => {
+                              handleViewRow(item.itemId);
+                            }}>
+                              <Label color='default'>
+                                {item.sku || (item.itemNumber ? `Item ID: ${item.itemNumber}` : `Item Name: ${item.name}`)}
+                              </Label><br/>
+                              On Hand: <Label color='default'>
+                                {item.stockOnHand}
+                              </Label><br/>
+                              RFID Count: <Label color='default'>
+                                {item.quantity}
+                              </Label><br/>
+                              Difference: <Label color={item.difference === 0 ? 'success' : item.difference > 0 ? 'warning' : 'error'}>
+                                {item.difference}
+                              </Label>
+                            </TableCell>
+                            
+                          </TableRow>
+                        )
                       ))}
                     </TableBody>
                   </Table>

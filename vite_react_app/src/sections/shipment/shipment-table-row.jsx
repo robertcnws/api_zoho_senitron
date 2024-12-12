@@ -98,7 +98,7 @@ export function ShipmentTableRow({ row, selected, onViewRow, onSelectRow, onDele
     [router]
   );
 
-  const renderPrimary = (
+  const renderPrimary = !isMobile ? (
     <TableRow hover selected={selected}>
       <TableCell padding="checkbox">
         <Checkbox
@@ -117,13 +117,7 @@ export function ShipmentTableRow({ row, selected, onViewRow, onSelectRow, onDele
       <TableCell>
         <ListItemText
           primary={fDate(row.date)}
-          // secondary={fTime(row.date)}
           primaryTypographyProps={{ variant: 'body2', noWrap: true }}
-        // secondaryTypographyProps={{
-        //   mt: 0.5,
-        //   component: 'span',
-        //   variant: 'caption',
-        // }}
         />
       </TableCell>
 
@@ -180,6 +174,75 @@ export function ShipmentTableRow({ row, selected, onViewRow, onSelectRow, onDele
         </IconButton>
       </TableCell>
     </TableRow>
+  ) : (
+    <TableRow hover selected={selected}>
+      <TableCell padding="checkbox">
+        <Checkbox
+          checked={selected}
+          onClick={onSelectRow}
+          inputProps={{ id: `row-checkbox-${row.id}`, 'aria-label': `Row checkbox` }}
+        />
+      </TableCell>
+
+      <TableCell>
+        <Link color="inherit" onClick={onViewRow} underline="always" sx={{ cursor: 'pointer' }}>
+          {row.shipmentNumber}
+        </Link>
+        <ListItemText
+          primary={`Date: ${fDate(row.date)}`}
+          primaryTypographyProps={{ variant: 'body2', noWrap: true }}
+        />
+        <Label
+          variant="soft"
+          color={
+            (row.status === 'delivered' && 'success') ||
+            (row.status === 'partially_shipped' && 'warning') ||
+            'default'
+          }
+        >
+          {row.status}
+        </Label>
+      </TableCell>
+      <TableCell>
+        <ListItemText
+          primary={dataRow.length}
+          primaryTypographyProps={{ variant: 'body2', noWrap: true }}
+        />
+      </TableCell>
+
+      <TableCell>
+        <ListItemText
+          primary={parseInt(dataRow.reduce((acc, current) => {
+            const quantity = Number(current.package_quantity) || 0;
+            return acc + quantity;
+          }, 0), 10)}
+          primaryTypographyProps={{ variant: 'body2', noWrap: true }}
+        />
+      </TableCell>
+
+      <TableCell align="right" sx={{ px: 1, whiteSpace: 'nowrap' }}>
+        {dataRow.length > 0 ? (
+          <IconButton
+            color={collapse.value ? 'inherit' : 'default'}
+            onClick={collapse.onToggle}
+            sx={{ ...(collapse.value && { bgcolor: 'action.hover' }) }}
+          >
+            <Iconify icon={collapse.value ? "eva:arrow-ios-upward-fill" : "eva:arrow-ios-downward-fill"} />
+          </IconButton>
+        ) : (
+          <Label
+            variant="soft"
+            color="warning"
+          >
+            No Packages
+          </Label>
+        )}
+
+        <IconButton color={popover.open ? 'inherit' : 'default'} onClick={popover.onOpen}>
+          <Iconify icon="eva:more-vertical-fill" />
+        </IconButton>
+      </TableCell>
+    </TableRow>
   );
 
   const renderSecondary = (
@@ -192,7 +255,7 @@ export function ShipmentTableRow({ row, selected, onViewRow, onSelectRow, onDele
           sx={{ bgcolor: 'background.neutral' }}
           key={`${row.id}-collapse`}
         >
-          <Paper sx={{ m: 1.5 }} key='renderSecondary'>
+          <Paper sx={{ m: 1.5, xs: 1 }} key='renderSecondary'>
             {dataRow.map((item, index) => (
               <React.Fragment key={`${item.package_id}-${index}`}>
                 <Stack
@@ -208,12 +271,13 @@ export function ShipmentTableRow({ row, selected, onViewRow, onSelectRow, onDele
                   <Grid container spacing={2} alignItems="center">
                     <Grid item xs={11}>
                       <ListItemText
+                        sx={{ cursor: 'pointer' }}
                         primary={
                           <b>#: {item.package_number}</b>
                         }
                         secondary={
                           <>
-                            Shipment: <b>{row.shipmentNumber}</b><br/>
+                            Shipment: <b>{row.shipmentNumber}</b><br />
                             Pkg Qty: <b>{parseInt(item.package_quantity, 10)}</b>
                           </>
                         }
@@ -224,6 +288,7 @@ export function ShipmentTableRow({ row, selected, onViewRow, onSelectRow, onDele
                           mt: 0.5,
                           ml: 0.5,
                         }}
+                        onClick={collapseChild.onToggle}
                       />
                     </Grid>
 
@@ -253,23 +318,45 @@ export function ShipmentTableRow({ row, selected, onViewRow, onSelectRow, onDele
                           <TableBody>
                             {dataRowChild?.filter(it => it.package_id === item.package_id).map((it, index2) => (
                               it.items.map((it2, index3) => (
-                                <TableRow key={`${it.package_id}-${index2}-${it2.sku}-${index3}`}>
-                                  <TableCell>SKU: <b>{it2.sku}</b></TableCell>
-                                  <TableCell>Qty: <b>{it2.quantity}</b></TableCell>
-                                  <TableCell>Pkg #: <b>{item.package_number}</b></TableCell>
-                                  <TableCell>Shipment: <b>{row.shipmentNumber}</b></TableCell>
-                                  <TableCell>
-                                    <IconButton
-                                      color={popoverChild.open ? 'inherit' : 'default'}
-                                      onClick={(e) => {
-                                        popoverChild.onOpen(e);
-                                        handleSelectItemRow(it2.item_id)
-                                      }}
-                                    >
-                                      <Iconify icon="eva:more-vertical-fill" />
-                                    </IconButton>
-                                  </TableCell>
-                                </TableRow>
+                                !isMobile ? (
+                                  <TableRow key={`${it.package_id}-${index2}-${it2.sku}-${index3}`}>
+                                    <TableCell>SKU: <b>{it2.sku}</b></TableCell>
+                                    <TableCell>Qty: <b>{it2.quantity}</b></TableCell>
+                                    <TableCell>Pkg #: <b>{item.package_number}</b></TableCell>
+                                    <TableCell>Shipment: <b>{row.shipmentNumber}</b></TableCell>
+                                    <TableCell>
+                                      <IconButton
+                                        color={popoverChild.open ? 'inherit' : 'default'}
+                                        onClick={(e) => {
+                                          popoverChild.onOpen(e);
+                                          handleSelectItemRow(it2.item_id)
+                                        }}
+                                      >
+                                        <Iconify icon="eva:more-vertical-fill" />
+                                      </IconButton>
+                                    </TableCell>
+                                  </TableRow>
+                                ) : (
+                                  <TableRow key={`${it.package_id}-${index2}-${it2.sku}-${index3}`}>
+                                    <TableCell>
+                                      SKU: <b>{it2.sku}</b><br/>
+                                      Qty: <b>{it2.quantity}</b><br/>
+                                      Pkg #: <b>{item.package_number}</b><br/>
+                                      Shipment: <b>{row.shipmentNumber}</b>
+                                    </TableCell>
+                                    <TableCell>
+                                      <IconButton
+                                        color={popoverChild.open ? 'inherit' : 'default'}
+                                        onClick={(e) => {
+                                          popoverChild.onOpen(e);
+                                          handleSelectItemRow(it2.item_id)
+                                        }}
+                                      >
+                                        <Iconify icon="eva:more-vertical-fill" />
+                                      </IconButton>
+                                    </TableCell>
+                                  </TableRow>
+                                )
                               ))
                             ))}
                           </TableBody>

@@ -139,7 +139,7 @@ export function ModalSublistItems({
               {modalDataFiltered?.length > 0 ? (
 
                 <TableContainer sx={{ maxHeight: 440, minHeight: 440 }}>
-                  <Table size={table?.dense ? 'small' : 'medium'} sx={{ minWidth: 960 }} stickyHeader>
+                  <Table size={table?.dense ? 'small' : 'medium'} sx={{ minWidth: !isMobile ? 960 : 380 }} stickyHeader>
                     <TableHeadCustom
                       order={table?.order}
                       orderBy={table?.orderBy}

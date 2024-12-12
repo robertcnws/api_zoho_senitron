@@ -18,6 +18,7 @@ export function ItemDetailsToolbar({
   senitronItem,
   backLink,
   status,
+  isMobile,
 }) {
 
   return (
@@ -29,9 +30,9 @@ export function ItemDetailsToolbar({
           </IconButton>
 
           <Stack spacing={0.5}>
-            <Stack spacing={1} direction="row" alignItems="center">
+            <Stack spacing={1} direction='row' alignItems="center">
               <Typography variant="h5"> Item </Typography>
-              <Label variant="soft" color="default">{item.name}</Label>
+              <Label variant="soft" color="default">{item.sku || item.name}</Label>
               <Label
                 variant="soft"
                 color={
@@ -57,19 +58,10 @@ export function ItemDetailsToolbar({
         <Stack
           flexGrow={1}
           spacing={1.5}
-          direction="row"
+          direction='row'
           alignItems="center"
           justifyContent="flex-end"
         >
-          {/* <Button
-            color="inherit"
-            variant="outlined"
-            endIcon={<Iconify icon="eva:arrow-ios-downward-fill" />}
-            onClick={popover.onOpen}
-            sx={{ textTransform: 'capitalize' }}
-          >
-            {status}
-          </Button> */}
 
           <Button
             color="inherit"

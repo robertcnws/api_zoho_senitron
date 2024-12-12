@@ -424,7 +424,7 @@ export function OverviewAnalyticsView() {
       ) : (
         <>
           <DashboardContent maxWidth="xl">
-            {!isMobile && (
+            {!isMobile ? (
               <Grid container spacing={2}>
                 <Grid 
                 xs={
@@ -483,6 +483,70 @@ export function OverviewAnalyticsView() {
                       sx={{ mb: 2, cursor: 'pointer', p: 1 }}>
                       <Typography variant="body2" sx={{ fontSize: '14px' }}>
                         <b>{updatedCountLostItems}</b> {itemsIgnoreErrors.length === 0 ? `Items lost today ( ${fDateTime(new Date(), 'YYYY-MM-DD HH:mm')} ) ` : `Items lost today`} 
+                      </Typography>
+                    </Alert>
+                  </Grid>
+                )}
+              </Grid >
+            ) : (
+              <Grid container spacing={2}>
+                <Grid 
+                xs={
+                  countLostItems === 0 && itemsIgnoreErrors.length === 0 ? 12 : 
+                  (countLostItems === 0 && itemsIgnoreErrors.length > 0) || (countLostItems > 0 && itemsIgnoreErrors.length === 0) ? 6 : 4
+                } 
+                sm={
+                  countLostItems === 0 && itemsIgnoreErrors.length === 0 ? 12 : 
+                  (countLostItems === 0 && itemsIgnoreErrors.length > 0) || (countLostItems > 0 && itemsIgnoreErrors.length === 0) ? 6 : 4
+                }
+                md={
+                  countLostItems === 0 && itemsIgnoreErrors.length === 0 ? 12 : 
+                  (countLostItems === 0 && itemsIgnoreErrors.length > 0) || (countLostItems > 0 && itemsIgnoreErrors.length === 0) ? 6 : 4
+                }
+                >
+                  <WelcomeTypography
+                    userLogged={userLogged}
+                    manualUpdatingJobsData={manualUpdatingJobsData}
+                    jobsUpdatingTimeData={jobsUpdatingTimeData}
+                    itemsZohoSenitron={itemsZohoSenitron}
+                    setUpdating={setUpdating}
+                    setError={setError}
+                    handleSetManualUpdatingJobs={handleSetManualUpdatingJobs}
+                    setTitleLinearProgress={setTitleLinearProgress}
+                    isMobile={isMobile}
+                  />
+                </Grid >
+                {itemsIgnoreErrors.length > 0 && (
+                  <Grid xs={countLostItems === 0 ? 6 : 4} sm={countLostItems === 0 ? 6 : 4} md={countLostItems === 0 ? 6 : 4}>
+                    <Alert
+                      severity="warning"
+                      icon={<AnimatedIcon icon="mdi:alert" color="warning" width="25px" />}
+                      sx={{ mb: 2, cursor: 'pointer', p: 1 }}
+                      onClick={
+                        () => {
+                          handleOpenModal('subListItems')
+                          setModalListItems(itemsIgnoreErrors)
+                          setModalTitle(`SKUs with errors ignored`)
+                          setModalButtonColor('warning.main')
+                          setHasIgnoredErrors(true)
+                          setValueIgnoreErrors(false)
+                          setIsIgnore(false)
+                        }
+                      }>
+                      <Typography variant="body2" sx={{ fontSize: '14px' }}>
+                        <b>{itemsIgnoreErrors.length}</b> ignored
+                      </Typography>
+                    </Alert>
+                  </Grid>
+                )}
+                {updatedCountLostItems > 0 && (
+                  <Grid xs={itemsIgnoreErrors.length === 0 ? 6 : 4} sm={itemsIgnoreErrors.length === 0 ? 6 : 4} md={itemsIgnoreErrors.length === 0 ? 6 : 4}>
+                    <Alert
+                      severity="error"
+                      icon={<AnimatedIcon icon="mdi:error" color="error" width="25px" />}
+                      sx={{ mb: 2, cursor: 'pointer', p: 1 }}>
+                      <Typography variant="body2" sx={{ fontSize: '14px' }}>
+                        <b>{updatedCountLostItems}</b> {itemsIgnoreErrors.length === 0 ? ` lost today ( ${fDateTime(new Date(), 'YYYY-MM-DD HH:mm')} ) ` : ` lost today`} 
                       </Typography>
                     </Alert>
                   </Grid>
