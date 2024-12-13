@@ -546,7 +546,7 @@ export function OverviewAnalyticsView() {
                       icon={<AnimatedIcon icon="mdi:error" color="error" width="25px" />}
                       sx={{ mb: 2, cursor: 'pointer', p: 1 }}>
                       <Typography variant="body2" sx={{ fontSize: '14px' }}>
-                        <b>{updatedCountLostItems}</b> {itemsIgnoreErrors.length === 0 ? ` lost today ( ${fDateTime(new Date(), 'YYYY-MM-DD HH:mm')} ) ` : ` lost today`} 
+                        <b>{updatedCountLostItems}</b> {itemsIgnoreErrors.length === 0 ? ` lost today at ${fDateTime(new Date(), 'YYYY-MM-DD HH:mm')} ` : ` lost today`} 
                       </Typography>
                     </Alert>
                   </Grid>

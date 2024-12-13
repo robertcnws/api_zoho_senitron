@@ -407,7 +407,7 @@ export function LiveMonitorAnalyticsView() {
                     icon={<AnimatedIcon icon="mdi:error" color="error" width="25px" />}
                     sx={{ mb: 2, cursor: 'pointer', p: 1 }}>
                     <Typography variant="body2" sx={{ fontSize: '14px' }}>
-                      <b>{countLostItems}</b> {`${!isMobile && `Items`} lost today`}
+                      <b>{countLostItems}</b> {`${!isMobile ? `Items` : ``} lost today`}
                     </Typography>
                   </Alert>
                 </Grid>

@@ -18,7 +18,7 @@ import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
 import { ConfirmDialog } from 'src/components/custom-dialog';
 import { usePopover, CustomPopover } from 'src/components/custom-popover';
-import { Collapse, Paper, Table, TableBody, TableContainer, TableHead } from '@mui/material';
+import { Collapse, ListItemText, Paper, Table, TableBody, TableContainer, TableHead } from '@mui/material';
 
 // ----------------------------------------------------------------------
 
@@ -89,8 +89,15 @@ export function ItemTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
             </TableCell>
           </>
         ) : (
-          <TableCell onClick={() => onViewRow(row.itemId)}>
-            {row.sku || row.name}<br />
+          <TableCell >
+            <Label
+              variant="soft"
+              color='default'
+              sx={{ cursor: 'pointer' }}
+              onClick={() => onViewRow(row.itemId)}
+            >
+              <u>{row.sku || row.name}</u>
+            </Label><br />
             <Label
               variant="soft"
               color={
@@ -100,58 +107,90 @@ export function ItemTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
                 'default'
               }
               sx={{ cursor: 'pointer' }}
+              onClick={() => onViewRow(row.itemId)}
             >
               {row.status}
-            </Label><br />
-            On Hand: {parseInt(row.stockOnHand, 10)}<br />
-            RFID Count: {parseInt(row.quantity, 10)}<br />
-            Difference: <Label
-              sx={{ cursor: 'pointer' }}
-              variant="soft"
-              color={
-                (row.difference === 0 ? 'success' : row.difference > 0 ? 'warning' : 'error')
-              }
-            >
-              {row.difference}
-            </Label><br />
+            </Label>
             Tracked: <Label
               sx={{ cursor: 'pointer' }}
               variant="soft"
               color={
                 (row.syncedWithSenitron && 'info' || 'error')
               }
+              onClick={() => onViewRow(row.itemId)}
             >
               {row.syncedWithSenitron ? 'Yes' : 'No'}
+            </Label><br />
+            On Hand: <b>{parseInt(row.stockOnHand, 10)}</b>,
+            RFID Count: <b>{parseInt(row.quantity, 10)}</b><br />
+            Difference: <Label
+              sx={{ cursor: 'pointer' }}
+              variant="soft"
+              color={
+                (row.difference === 0 ? 'success' : row.difference > 0 ? 'warning' : 'error')
+              }
+              onClick={() => onViewRow(row.itemId)}
+            >
+              {row.difference}
             </Label>
+            <ListItemText
+              secondary={
+                <>
+                  {row.assets.length > 0 ? (
+                    <IconButton
+                      color={collapse.value ? 'inherit' : 'default'}
+                      onClick={collapse.onToggle}
+                      sx={{
+                        ...(collapse.value && { bgcolor: 'action.hover' }),
+                        fontSize: 'small',
+                      }}
+                    >
+                      Details <Iconify icon={collapse.value ? "eva:arrow-ios-upward-fill" : "eva:arrow-ios-downward-fill"} />
+                    </IconButton>
+                  ) : (
+                    <Label
+                      variant="soft"
+                      color="warning"
+                      sx={{ cursor: 'pointer' }}
+                      onClick={() => onViewRow(row.itemId)}
+                    >
+                      No items
+                    </Label>
+                  )}
+                </>
+              }
+            />
           </TableCell>
         )}
-        <TableCell align="right" sx={{ px: 1, whiteSpace: 'nowrap' }}>
-          <Stack direction="row" alignItems="center">
-            {row.assets.length > 0 ? (
-              <IconButton
-                color={collapse.value ? 'inherit' : 'default'}
-                onClick={collapse.onToggle}
-                sx={{ ...(collapse.value && { bgcolor: 'action.hover' }) }}
-              >
-                <Iconify icon={collapse.value ? "eva:arrow-ios-upward-fill" : "eva:arrow-ios-downward-fill"} />
-              </IconButton>
-            ) : (
-              <Label
-                variant="soft"
-                color="warning"
-                sx={{ cursor: 'pointer' }}
-                onClick={() => onViewRow(row.itemId)}
-              >
-                No items
-              </Label>
-            )}
-            {!isMobile && (
-              <IconButton color={popover.open ? 'inherit' : 'default'} onClick={popover.onOpen}>
-                <Iconify icon="eva:more-vertical-fill" />
-              </IconButton>
-            )}
-          </Stack>
-        </TableCell>
+        {!isMobile && (
+          <TableCell align="right" sx={{ px: 1, whiteSpace: 'nowrap' }}>
+            <Stack direction="row" alignItems="center">
+              {row.assets.length > 0 ? (
+                <IconButton
+                  color={collapse.value ? 'inherit' : 'default'}
+                  onClick={collapse.onToggle}
+                  sx={{ ...(collapse.value && { bgcolor: 'action.hover' }) }}
+                >
+                  <Iconify icon={collapse.value ? "eva:arrow-ios-upward-fill" : "eva:arrow-ios-downward-fill"} />
+                </IconButton>
+              ) : (
+                <Label
+                  variant="soft"
+                  color="warning"
+                  sx={{ cursor: 'pointer' }}
+                  onClick={() => onViewRow(row.itemId)}
+                >
+                  No items
+                </Label>
+              )}
+              {!isMobile && (
+                <IconButton color={popover.open ? 'inherit' : 'default'} onClick={popover.onOpen}>
+                  <Iconify icon="eva:more-vertical-fill" />
+                </IconButton>
+              )}
+            </Stack>
+          </TableCell>
+        )}
       </TableRow>
 
       <TableRow key='collapse-assets'>

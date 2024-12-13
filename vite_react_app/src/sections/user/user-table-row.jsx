@@ -1,4 +1,5 @@
 import { useContext } from 'react';
+import { ListItemText } from '@mui/material';
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
@@ -21,6 +22,7 @@ import { ConfirmDialog } from 'src/components/custom-dialog';
 import { usePopover, CustomPopover } from 'src/components/custom-popover';
 
 import { UserQuickEditForm } from './user-quick-edit-form';
+
 
 // ----------------------------------------------------------------------
 
@@ -111,9 +113,9 @@ export function UserTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
                   {row.email}
                 </Box>
               </Stack>
-            </Stack><br/>
-            Phone: {row.phoneNumber}<br/>
-            Role: {row.role}<br/>
+            </Stack><br />
+            Phone: {row.phoneNumber}<br />
+            Role: {row.role}<br />
             Status: <Label
               variant="soft"
               color={
@@ -124,19 +126,19 @@ export function UserTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
             >
               {row.status}
             </Label>
-          </TableCell>
-
-          <TableCell>
-            <Stack direction="row" alignItems="center">
-              <Tooltip title="Quick Edit" placement="top" arrow>
-                <IconButton
-                  color={quickEdit.value ? 'inherit' : 'default'}
-                  onClick={quickEdit.onTrue}
-                >
-                  <Iconify icon="solar:pen-bold" />
-                </IconButton>
-              </Tooltip>
-            </Stack>
+            <ListItemText
+              secondary={
+                <>
+                  <IconButton
+                    color={quickEdit.value ? 'inherit' : 'info'}
+                    onClick={quickEdit.onTrue}
+                    sx={{ fontSize: '1rem' }}
+                  >
+                    Edit <Iconify icon="solar:pen-bold" />
+                  </IconButton>
+                </>
+              }
+            />
           </TableCell>
         </TableRow>
       )}

@@ -89,7 +89,7 @@ export function ItemListShortView({ updating, setUpdating, setTitleLinearProgres
     ];
 
     const TABLE_HEAD_MOBILE = [
-        { id: 'info', label: 'INFO' },
+        { id: 'info', label: 'SKUs' },
         { id: '' },
     ];
 

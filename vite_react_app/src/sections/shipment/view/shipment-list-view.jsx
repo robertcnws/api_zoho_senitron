@@ -81,10 +81,9 @@ export function ShipmentListView() {
   ];
 
   const TABLE_HEAD_MOBILE = [
-    { id: 'info', label: 'INFO' },
+    { id: 'info', label: 'Shipments' },
     { id: 'package_total', label: 'Pkg Total' },
     { id: 'package_quantity', label: 'Pkg Qty' },
-    { id: '' },
   ];
 
 
@@ -334,7 +333,7 @@ export function ShipmentListView() {
 
             <Scrollbar sx={{ minHeight: 444 }}>
               <TableContainer sx={{ maxHeight: 440 }}>
-                <Table size={table.dense ? 'small' : 'medium'} sx={{ minWidth: !isMobile ? 960 : 380 }} stickyHeader>
+                <Table size={table.dense ? 'small' : 'medium'} sx={{ minWidth: !isMobile ? 960 : 280 }} stickyHeader>
                   <TableHeadCustom
                     order={table.order}
                     orderBy={table.orderBy}

@@ -39,8 +39,7 @@ export function ModalItemSerialsDetails({
   ];
 
   const TABLE_HEAD_MOBILE = [
-    { id: 'createdTime', label: 'Date' },
-    { id: 'news', label: <Iconify icon="mdi:plus-circle" /> },
+    { id: 'news', label: <Iconify icon="mdi:plus-circle" />  },
     { id: 'removed', label: <Iconify icon="mdi:minus-circle" /> },
     { id: 'killed', label: <Iconify icon="mdi:close-circle" /> },
   ];
@@ -198,7 +197,9 @@ export function ModalItemSerialsDetails({
                         </TableRow>
                       ))} */}
                       <TableRow key='unique_key'>
-                        <TableCell>{date}</TableCell>
+                        {!isMobile && (
+                          <TableCell>{date}</TableCell>
+                        )}
                         <TableCell sx={{ color: 'success.main' }}>
                           <div style={{ whiteSpace: 'pre-line', fontFamily: 'monospace' }}>
                             {modalDataFiltered?.liveLogsSet.join('\n')}

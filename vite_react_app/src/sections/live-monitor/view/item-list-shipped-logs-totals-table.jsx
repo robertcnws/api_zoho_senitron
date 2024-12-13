@@ -72,7 +72,6 @@ export function ItemListShippedLogsTotalsTable({
     { id: 'live', label: <Iconify icon="mdi:plus-circle" /> },
     { id: 'removed', label: <Iconify icon="mdi:minus-circle" /> },
     { id: 'killed', label: <Iconify icon="mdi:close-circle" /> },
-    { id: '' },
   ];
 
   const popover = usePopover();
@@ -232,7 +231,37 @@ export function ItemListShippedLogsTotalsTable({
                               ).map((item, index) => (
                                 <React.Fragment key={`${item.itemNumber}-${index}`}>
                                   <TableRow key={`${item.itemNumber}-${index}`} sx={{ p: 1 }}>
-                                    <TableCell sx={{ width: isMobile ? 200 : 650, fontSize: '11px' }}>{item.sku}</TableCell>
+                                    <TableCell sx={{ width: isMobile ? 200 : 650, fontSize: '11px' }}>
+                                      {item.sku}
+                                      {isMobile && (
+                                        <ListItemText
+                                          secondary={
+                                            <>
+                                              {item.logs?.length > 0 ? (
+                                                <IconButton
+                                                  color={openRowIds.has(item.itemNumber) ? 'inherit' : 'default'}
+                                                  onClick={() => toggleRow(item.itemNumber)}
+                                                  sx={{
+                                                    ...(openRowIds.has(item.itemNumber) && { bgcolor: 'action.hover' }),
+                                                    fontSize: 'small'
+                                                  }}
+                                                >
+                                                  Details <Iconify icon={openRowIds.has(item.itemNumber) ? "eva:arrow-ios-upward-fill" : "eva:arrow-ios-downward-fill"} />
+                                                </IconButton>
+                                              ) : (
+                                                <Label
+                                                  variant="soft"
+                                                  color="warning"
+                                                >
+                                                  No Data
+                                                </Label>
+                                              )}
+                                            </>
+                                          }
+                                          primaryTypographyProps={{ variant: 'body2', noWrap: true }}
+                                        />
+                                      )}
+                                    </TableCell>
                                     <TableCell sx={{ width: isMobile ? 100 : 200, fontSize: '10px' }}>
                                       <Label sx={{ fontSize: '10px' }} variant="soft" color='success'>{calculateTotalStatus({ date, item, status: 'live' })}</Label>
                                     </TableCell>
@@ -242,24 +271,26 @@ export function ItemListShippedLogsTotalsTable({
                                     <TableCell sx={{ width: isMobile ? 100 : 200, fontSize: '10px' }}>
                                       <Label sx={{ fontSize: '10px' }} variant="soft" color='warning'>{calculateTotalStatus({ date, item, status: 'kill' })}</Label>
                                     </TableCell>
-                                    <TableCell align="right" sx={{ px: 1, whiteSpace: 'nowrap' }}>
-                                      {item.logs?.length > 0 ? (
-                                        <IconButton
-                                          color={openRowIds.has(item.itemNumber) ? 'inherit' : 'default'}
-                                          onClick={() => toggleRow(item.itemNumber)}
-                                          sx={{ ...(openRowIds.has(item.itemNumber) && { bgcolor: 'action.hover', width: '20px' }) }}
-                                        >
-                                          <Iconify icon={openRowIds.has(item.itemNumber) ? "eva:arrow-ios-upward-fill" : "eva:arrow-ios-downward-fill"} />
-                                        </IconButton>
-                                      ) : (
-                                        <Label
-                                          variant="soft"
-                                          color="warning"
-                                        >
-                                          No Data
-                                        </Label>
-                                      )}
-                                    </TableCell>
+                                    {!isMobile && (
+                                      <TableCell align="right" sx={{ px: 1, whiteSpace: 'nowrap' }}>
+                                        {item.logs?.length > 0 ? (
+                                          <IconButton
+                                            color={openRowIds.has(item.itemNumber) ? 'inherit' : 'default'}
+                                            onClick={() => toggleRow(item.itemNumber)}
+                                            sx={{ ...(openRowIds.has(item.itemNumber) && { bgcolor: 'action.hover', width: '20px' }) }}
+                                          >
+                                            <Iconify icon={openRowIds.has(item.itemNumber) ? "eva:arrow-ios-upward-fill" : "eva:arrow-ios-downward-fill"} />
+                                          </IconButton>
+                                        ) : (
+                                          <Label
+                                            variant="soft"
+                                            color="warning"
+                                          >
+                                            No Data
+                                          </Label>
+                                        )}
+                                      </TableCell>
+                                    )}
                                   </TableRow>
                                   {openRowIds.has(item.itemNumber) && renderSecondary(item)}
                                 </React.Fragment>

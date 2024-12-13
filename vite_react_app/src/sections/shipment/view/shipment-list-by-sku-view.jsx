@@ -110,8 +110,7 @@ export function ShipmentListBySkuView() {
   ];
 
   const TABLE_HEAD_MOBILE = [
-    { id: 'info', label: 'INFO' },
-    { id: '' },
+    { id: 'info', label: 'SKUs in Shipments' },
   ];
 
 

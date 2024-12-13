@@ -65,8 +65,7 @@ const TABLE_HEAD = [
 ];
 
 const TABLE_HEAD_MOBILE = [
-  { id: 'info', label: 'INFO' },
-  { id: '' },
+  { id: 'info', label: 'Users' },
 ];
 
 // ----------------------------------------------------------------------

@@ -100,11 +100,11 @@ export function ShipmentTableRowListBySku({ row, selected, onViewRow, onSelectRo
 
   const handleViewShipment = useCallback(
     (id) => {
-        localStorage.setItem('routeShipmentByLiveMonitor', id);
-        router.push(paths.dashboard.shipment.details(id));
+      localStorage.setItem('routeShipmentByLiveMonitor', id);
+      router.push(paths.dashboard.shipment.details(id));
     },
     [router]
-);
+  );
 
   const renderPrimary = !isMobile ? (
     <TableRow hover selected={selected}>
@@ -180,28 +180,28 @@ export function ShipmentTableRowListBySku({ row, selected, onViewRow, onSelectRo
           primary={`Qty: ${row.itemTotalQty}`}
           primaryTypographyProps={{ variant: 'body2', noWrap: true }}
         />
-      </TableCell>
-      <TableCell align="right" sx={{ px: 1, whiteSpace: 'nowrap' }}>
-        {row.linePackages?.length > 0 ? (
-          <IconButton
-            color={collapse.value ? 'inherit' : 'default'}
-            onClick={collapse.onToggle}
-            sx={{ ...(collapse.value && { bgcolor: 'action.hover' }) }}
-          >
-            <Iconify icon={collapse.value ? "eva:arrow-ios-upward-fill" : "eva:arrow-ios-downward-fill"} />
-          </IconButton>
-        ) : (
-          <Label
-            variant="soft"
-            color="warning"
-          >
-            No Data
-          </Label>
-        )}
-
-        <IconButton color={popover.open ? 'inherit' : 'default'} onClick={popover.onOpen}>
-          <Iconify icon="eva:more-vertical-fill" />
-        </IconButton>
+        <ListItemText
+          secondary={
+            <>
+              {row.linePackages?.length > 0 ? (
+                <IconButton
+                  color={collapse.value ? 'inherit' : 'default'}
+                  onClick={collapse.onToggle}
+                  sx={{ ...(collapse.value && { bgcolor: 'action.hover' }), fontSize: 'small' }}
+                >
+                  Details <Iconify icon={collapse.value ? "eva:arrow-ios-upward-fill" : "eva:arrow-ios-downward-fill"} />
+                </IconButton>
+              ) : (
+                <Label
+                  variant="soft"
+                  color="warning"
+                >
+                  No Data
+                </Label>
+              )}
+            </>
+          }
+        />
       </TableCell>
     </TableRow>
   );

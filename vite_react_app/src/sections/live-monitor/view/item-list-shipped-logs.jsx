@@ -112,8 +112,7 @@ export function ItemListShippedLogsView({
     ];
 
     const TABLE_HEAD_MOBILE = [
-        { id: 'info', label: 'INFO' },
-        { id: '' },
+        { id: 'info', label: 'Shipped Logs' },
     ];
 
     const table = useTable({ defaultDense: true });
@@ -660,24 +659,33 @@ export function ItemListShippedLogsView({
                                                                     }
                                                                     primaryTypographyProps={{ variant: 'body2', noWrap: true }}
                                                                 />
-                                                            </TableCell>
-                                                            <TableCell align="right" sx={{ px: 1, whiteSpace: 'nowrap' }}>
-                                                                {row.linePackages?.length > 0 ? (
-                                                                    <IconButton
-                                                                        color={openRowIds.has(row.itemId) ? 'inherit' : 'default'}
-                                                                        onClick={() => toggleRow(row.itemId)}
-                                                                        sx={{ ...(openRowIds.has(row.itemId) && { bgcolor: 'action.hover' }) }}
-                                                                    >
-                                                                        <Iconify icon={openRowIds.has(row.itemId) ? "eva:arrow-ios-upward-fill" : "eva:arrow-ios-downward-fill"} />
-                                                                    </IconButton>
-                                                                ) : (
-                                                                    <Label
-                                                                        variant="soft"
-                                                                        color="warning"
-                                                                    >
-                                                                        No Data Shipment
-                                                                    </Label>
-                                                                )}
+                                                                <ListItemText
+                                                                    secondary={
+                                                                        <>
+                                                                            {row.linePackages?.length > 0 ? (
+                                                                                <IconButton
+                                                                                    color={openRowIds.has(row.itemId) ? 'inherit' : 'default'}
+                                                                                    onClick={() => toggleRow(row.itemId)}
+                                                                                    sx={{ 
+                                                                                        ...(openRowIds.has(row.itemId) && { bgcolor: 'action.hover' }), 
+                                                                                        fontSize: 'small'
+                                                                                    }}
+                                                                                >
+                                                                                    Shipment Details <Iconify icon={openRowIds.has(row.itemId) ? "eva:arrow-ios-upward-fill" : "eva:arrow-ios-downward-fill"} />
+                                                                                </IconButton>
+                                                                            ) : (
+                                                                                <Label
+                                                                                    variant="soft"
+                                                                                    color="warning"
+                                                                                >
+                                                                                    No Data Shipment
+                                                                                </Label>
+                                                                            )}
+                                                                        </>
+                                                                    }
+                                                                    primaryTypographyProps={{ variant: 'body2', noWrap: true }}
+                                                                />
+
                                                             </TableCell>
                                                         </TableRow>
                                                     )}

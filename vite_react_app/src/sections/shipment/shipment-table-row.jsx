@@ -202,6 +202,28 @@ export function ShipmentTableRow({ row, selected, onViewRow, onSelectRow, onDele
         >
           {row.status}
         </Label>
+        <ListItemText
+          secondary={
+            <>
+              {dataRow.length > 0 ? (
+                <IconButton
+                  color={collapse.value ? 'inherit' : 'default'}
+                  onClick={collapse.onToggle}
+                  sx={{ ...(collapse.value && { bgcolor: 'action.hover' }), fontSize: 'small' }}
+                >
+                  Details <Iconify icon={collapse.value ? "eva:arrow-ios-upward-fill" : "eva:arrow-ios-downward-fill"} />
+                </IconButton>
+              ) : (
+                <Label
+                  variant="soft"
+                  color="warning"
+                >
+                  No Packages
+                </Label>
+              )}
+            </>
+          }
+        />
       </TableCell>
       <TableCell>
         <ListItemText
@@ -218,29 +240,6 @@ export function ShipmentTableRow({ row, selected, onViewRow, onSelectRow, onDele
           }, 0), 10)}
           primaryTypographyProps={{ variant: 'body2', noWrap: true }}
         />
-      </TableCell>
-
-      <TableCell align="right" sx={{ px: 1, whiteSpace: 'nowrap' }}>
-        {dataRow.length > 0 ? (
-          <IconButton
-            color={collapse.value ? 'inherit' : 'default'}
-            onClick={collapse.onToggle}
-            sx={{ ...(collapse.value && { bgcolor: 'action.hover' }) }}
-          >
-            <Iconify icon={collapse.value ? "eva:arrow-ios-upward-fill" : "eva:arrow-ios-downward-fill"} />
-          </IconButton>
-        ) : (
-          <Label
-            variant="soft"
-            color="warning"
-          >
-            No Packages
-          </Label>
-        )}
-
-        <IconButton color={popover.open ? 'inherit' : 'default'} onClick={popover.onOpen}>
-          <Iconify icon="eva:more-vertical-fill" />
-        </IconButton>
       </TableCell>
     </TableRow>
   );
@@ -290,17 +289,34 @@ export function ShipmentTableRow({ row, selected, onViewRow, onSelectRow, onDele
                         }}
                         onClick={collapseChild.onToggle}
                       />
+                      {isMobile && (
+                        <ListItemText
+                          secondary={
+                            <>
+                              <IconButton
+                                color={collapseChild.value ? 'inherit' : 'default'}
+                                onClick={collapseChild.onToggle}
+                                value={item.package_id}
+                                sx={{ fontSize: 'small' }}
+                              >
+                                More Details <Iconify icon={collapseChild.value ? "eva:arrow-ios-upward-fill" : "eva:arrow-ios-downward-fill"} />
+                              </IconButton>
+                            </>
+                          }
+                        />
+                      )}
                     </Grid>
-
-                    <Grid item xs={1} textAlign="right">
-                      <IconButton
-                        color={collapseChild.value ? 'inherit' : 'default'}
-                        onClick={collapseChild.onToggle}
-                        value={item.package_id}
-                      >
-                        <Iconify icon={collapseChild.value ? "eva:arrow-ios-upward-fill" : "eva:arrow-ios-downward-fill"} />
-                      </IconButton>
-                    </Grid>
+                    {!isMobile && (
+                      <Grid item xs={1} textAlign="left">
+                        <IconButton
+                          color={collapseChild.value ? 'inherit' : 'default'}
+                          onClick={collapseChild.onToggle}
+                          value={item.package_id}
+                        >
+                          <Iconify icon={collapseChild.value ? "eva:arrow-ios-upward-fill" : "eva:arrow-ios-downward-fill"} />
+                        </IconButton>
+                      </Grid>
+                    )}
                   </Grid>
                 </Stack>
 
@@ -339,9 +355,9 @@ export function ShipmentTableRow({ row, selected, onViewRow, onSelectRow, onDele
                                 ) : (
                                   <TableRow key={`${it.package_id}-${index2}-${it2.sku}-${index3}`}>
                                     <TableCell>
-                                      SKU: <b>{it2.sku}</b><br/>
-                                      Qty: <b>{it2.quantity}</b><br/>
-                                      Pkg #: <b>{item.package_number}</b><br/>
+                                      SKU: <b>{it2.sku}</b><br />
+                                      Qty: <b>{it2.quantity}</b><br />
+                                      Pkg #: <b>{item.package_number}</b><br />
                                       Shipment: <b>{row.shipmentNumber}</b>
                                     </TableCell>
                                     <TableCell>
