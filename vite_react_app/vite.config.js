@@ -26,7 +26,7 @@ export default defineConfig({
       includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
       manifest: {
         name: 'WMS App',
-        short_name: 'App',
+        short_name: 'WMS App',
         description: 'WMS APP',
         theme_color: '#ffffff',
         icons: [
