@@ -486,20 +486,23 @@ export function LiveMonitorAnalyticsView() {
                       gridTemplateColumns: { xs: 'repeat(1, 1fr)', md: 'repeat(2, 1fr)' },
                     }}
                   >
-                    <BookingTotalIncomes
-                      title="Items read on"
-                      // total={finalGroupedArray.filter((item) => item.date === startDate).reduce((acc, item) => acc + item.itemTotalQty, 0)}
-                      total={totalsNewsTrack + totalsLostsTrack}
-                      percent={2.6}
-                      // chart={{
-                      //   categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'],
-                      //   series: [{ data: [10, 41, 80, 100, 60, 120, 69, 91, 160] }],
-                      // }}
-                      chart={{
-                        categories: [],
-                        series: [{ data: [] }],
-                      }}
-                    />
+                    {!isMobile && (
+                      <BookingTotalIncomes
+                        title="Items read on"
+                        // total={finalGroupedArray.filter((item) => item.date === startDate).reduce((acc, item) => acc + item.itemTotalQty, 0)}
+                        total={totalsNewsTrack + totalsLostsTrack}
+                        percent={2.6}
+                        // chart={{
+                        //   categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'],
+                        //   series: [{ data: [10, 41, 80, 100, 60, 120, 69, 91, 160] }],
+                        // }}
+                        chart={{
+                          categories: [],
+                          series: [{ data: [] }],
+                        }}
+                        isMobile={isMobile}
+                      />
+                    )}
 
                     <BookingBooked
                       title="Items Totals"

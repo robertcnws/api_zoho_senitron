@@ -52,9 +52,15 @@ export function NotificationsDrawer({ sx, ...other }) {
 
   const userLogged = useMemo(() => JSON.parse(localStorage.getItem('userLogged')), []);
 
-  const [filteredNotifications, setFilteredNotifications] = useState(notifications);
+  const [filteredNotifications, setFilteredNotifications] = useState(null);
 
   const [currentTab, setCurrentTab] = useState('all');
+
+  useEffect(() => {
+    if (currentTab === 'all') {
+      setFilteredNotifications(notifications);
+    }
+  }, [notifications, currentTab]);
 
   const handleChangeTab = useCallback((event, newValue) => {
     setCurrentTab(newValue);
@@ -140,7 +146,7 @@ export function NotificationsDrawer({ sx, ...other }) {
       <Box component="ul">
         {filteredNotifications?.map((notification) => (
           <Box component="li" key={notification.id} sx={{ display: 'flex' }}>
-            <NotificationItem notification={notification} />
+            <NotificationItem notification={notification} drawer={drawer}/>
           </Box>
         ))}
       </Box>

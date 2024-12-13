@@ -13,7 +13,7 @@ import { fDate } from 'src/utils/format-time';
 
 // ----------------------------------------------------------------------
 
-export function BookingTotalIncomes({ title, total, percent, chart, sx, ...other }) {
+export function BookingTotalIncomes({ title, total, percent, chart, sx, isMobile, ...other }) {
   const theme = useTheme();
 
   const chartColors = chart.colors ?? [hexAlpha(theme.palette.primary.lighter, 0.64)];
@@ -52,7 +52,7 @@ export function BookingTotalIncomes({ title, total, percent, chart, sx, ...other
     </Box>
   );
 
-  return (
+  return !isMobile ? (
     <Card
       sx={{
         p: 3,
@@ -90,6 +90,11 @@ export function BookingTotalIncomes({ title, total, percent, chart, sx, ...other
           transform: 'rotate(90deg)',
         }}
       />
+    </Card>
+  ) : (
+    <Card>
+
+      <Chart type="line" series={chart.series} options={chartOptions} height={120} />
     </Card>
   );
 }

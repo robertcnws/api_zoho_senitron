@@ -21,7 +21,7 @@ import axios from 'axios';
 
 // ----------------------------------------------------------------------
 
-export function NotificationItem({ notification }) {
+export function NotificationItem({ notification, drawer }) {
 
   const router = useRouter();
 
@@ -42,8 +42,9 @@ export function NotificationItem({ notification }) {
       if (!notification.read) {
         axios.post(`${CONFIG.apiUrl}/api_senitron/notification/mark_as_read/${notification.id}/`);
       }
+      drawer.onFalse();
     },
-    [router, notification]
+    [router, notification, drawer]
   );
 
   const renderAvatar = (
