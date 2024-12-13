@@ -112,15 +112,17 @@ export function LiveMonitorAnalyticsView() {
   const filteredData = useMemo(() => {
     if (itemsAssetsLogsInfo && itemsAssetsLogsInfo.length > 0) {
       return itemsAssetsLogsInfo?.map(item => {
-        const filteredLogs = item.logs?.filter(log => fDate(log.createdAt, 'YYYY-MM-DD') === date);
+        const filteredLogs = item?.logs?.filter(log => fDate(log.createdAt, 'YYYY-MM-DD') === date);
         return {
           ...item,
           logs: filteredLogs,
         };
-      }).filter(item => item.logs.length > 0);
+      }).filter(item => item?.logs?.length > 0);
     }
     return null;
   }, [itemsAssetsLogsInfo, date]);
+
+  // console.log('filteredData', filteredData);
 
 
   const lastLog = filteredData?.length > 0 ? filteredData[0].logs[filteredData[0].logs.length - 1] : 0;
@@ -129,7 +131,10 @@ export function LiveMonitorAnalyticsView() {
   const totalsNewsTrack = useMemo(() => {
     if (filteredData) {
       return filteredData?.filter(item => fDate(item.date, 'YYYY-MM-DD') === date).reduce(
-        (acc, item) => acc + item.totalLive, 0
+        (acc, item) => acc + item.logs.filter(
+          log => fDate(log.createdAt, 'YYYY-MM-DD') === date).reduce(
+            (acl, log) => acl + (log.currentStatusName.toLowerCase().includes('live') ? 1 : 0), 0
+          ), 0
       );
     }
     return 0;
@@ -139,7 +144,10 @@ export function LiveMonitorAnalyticsView() {
   const totalsRemovedTrack = useMemo(() => {
     if (filteredData) {
       return filteredData?.filter(item => fDate(item.date, 'YYYY-MM-DD') === date).reduce(
-        (acc, item) => acc + item.totalRemoved, 0
+        (acc, item) => acc + item.logs.filter(
+          log => fDate(log.createdAt, 'YYYY-MM-DD') === date).reduce(
+            (acl, log) => acl + (log.currentStatusName.toLowerCase().includes('remove') ? 1 : 0), 0
+          ), 0
       );
     }
     return 0;
@@ -149,7 +157,10 @@ export function LiveMonitorAnalyticsView() {
   const totalsKilledTrack = useMemo(() => {
     if (filteredData) {
       return filteredData?.filter(item => fDate(item.date, 'YYYY-MM-DD') === date).reduce(
-        (acc, item) => acc + item.totalKilled, 0
+        (acc, item) => acc + item.logs.filter(
+          log => fDate(log.createdAt, 'YYYY-MM-DD') === date).reduce(
+            (acl, log) => acl + (log.currentStatusName.toLowerCase().includes('kill') ? 1 : 0), 0
+          ), 0
       );
     }
     return 0;

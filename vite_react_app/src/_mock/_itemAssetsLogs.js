@@ -29,9 +29,9 @@ const GET_SENITRON_ITEMS_ASSETS_LOGS = gql`
   }
 `;
 
-export const useSenitronAssetsLogsQuery = (startDate, endDate) => {
+export const useSenitronAssetsLogsQuery = (startDate) => {
   const { loading, error, data, startPolling, stopPolling } = useQuery(GET_SENITRON_ITEMS_ASSETS_LOGS, {
-    variables: { startDate, endDate },
+    variables: { startDate },
   });
 
   useEffect(() => {

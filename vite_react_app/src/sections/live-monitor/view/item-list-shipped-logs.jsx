@@ -172,12 +172,12 @@ export function ItemListShippedLogsView({
 
 
     const listSerials = useMemo(
-        () => itemsAssetsLogsInfo?.filter((item) => item.date === fDate(filters.state.endDate, 'YYYY-MM-DD')),
+        () => itemsAssetsLogsInfo?.filter((item) => item?.date === fDate(filters.state.endDate, 'YYYY-MM-DD')),
         [itemsAssetsLogsInfo, filters.state.endDate]);
 
 
     const listShipments = useMemo(
-        () => finalGroupedArray?.filter((item) => item.date === fDate(filters.state.endDate, 'YYYY-MM-DD')),
+        () => finalGroupedArray?.filter((item) => item?.date === fDate(filters.state.endDate, 'YYYY-MM-DD')),
         [finalGroupedArray, filters.state.endDate]);
 
     // const listShipments = useMemo(() => finalGroupedArray, [finalGroupedArray]);

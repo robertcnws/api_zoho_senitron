@@ -11,6 +11,7 @@ import { useManualUpdatingJobsQuery } from 'src/_mock/_manualUpdatingJobs';
 import { useTimelineItemsQuery } from 'src/_mock/_timelineItems';
 import { useSenitronAssetsLogsQuery } from 'src/_mock/_itemAssetsLogs';
 import { useNotificationsQuery } from 'src/_mock/_notification';
+import { fDate } from 'src/utils/format-time';
 
 const DataContext = createContext();
 
@@ -56,10 +57,10 @@ export const DataProvider = ({ children }) => {
 
 
     // useEffect(() => {
-        // const interval = setInterval(() => {
-        //     setUpdatedNotifications(notifications);
-        // }, 5000);
-        // return () => clearInterval(interval);
+    // const interval = setInterval(() => {
+    //     setUpdatedNotifications(notifications);
+    // }, 5000);
+    // return () => clearInterval(interval);
     // }, [notifications]);
 
 
@@ -265,14 +266,24 @@ export const DataProvider = ({ children }) => {
 
     const itemsAssetsLogsInfo = useMemo(() =>
         objectsGroupedLogs?.map(group => {
-            const liveLogs = group.logs.filter(
-                log => log.currentStatusName && log.currentStatusName.toLowerCase().includes('live') && !log.lastStatusName.toLowerCase().includes('live')
+            const date = group.date;
+            const liveLogs = group?.logs?.filter(
+                log => log.currentStatusName && log.currentStatusName.toLowerCase().includes('live') && 
+                !log.lastStatusName.toLowerCase().includes('live') && 
+                log.createdAt && 
+                fDate(log.createdAt, 'YYYY-MM-DD') === date
             );
             const killedLogs = group.logs.filter(
-                log => log.currentStatusName && log.currentStatusName.toLowerCase().includes('kill') && !log.lastStatusName.toLowerCase().includes('kill')
+                log => log.currentStatusName && log.currentStatusName.toLowerCase().includes('kill') && 
+                !log.lastStatusName.toLowerCase().includes('kill') && 
+                log.createdAt && 
+                fDate(log.createdAt, 'YYYY-MM-DD') === date
             );
             const removedLogs = group.logs.filter(
-                log => log.currentStatusName && log.currentStatusName.toLowerCase().includes('removed') && !log.lastStatusName.toLowerCase().includes('removed')
+                log => log.currentStatusName && log.currentStatusName.toLowerCase().includes('removed') && 
+                !log.lastStatusName.toLowerCase().includes('removed') && 
+                log.createdAt && 
+                fDate(log.createdAt, 'YYYY-MM-DD') === date
             );
 
             const liveLogsSet = [...new Set(liveLogs.map(log => log.serialNumber))].sort();
@@ -287,6 +298,14 @@ export const DataProvider = ({ children }) => {
                 return null;
             }
 
+            const seen = new Set();
+            const newGroupLogs = group.logs.filter(log => {
+                const key = `${log.serialNumber}-${log.currentStatusId}-${log.lastStatusId}-${log.createdAt}`;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+
             return {
                 itemNumber: group.itemNumber,
                 sku: group.sku,
@@ -297,15 +316,10 @@ export const DataProvider = ({ children }) => {
                 liveLogsSet,
                 killedLogsSet,
                 removedLogsSet,
-                logs: group.logs,
+                logs: newGroupLogs,
             };
         })
         , [objectsGroupedLogs]);
-
-
-
-
-
 
     const value = useMemo(
         () => ({
