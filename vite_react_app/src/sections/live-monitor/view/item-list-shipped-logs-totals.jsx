@@ -172,6 +172,7 @@ function Item({ item, sx, setModalDataFiltered, handleOpenModal, date, isLive, .
                                         }</b> Received
                                     </span>
                                 </Box>
+                                <br />
                                 <Box
                                     component="span"
                                     sx={{ display: 'inline-flex', alignItems: 'center', typography: 'body2', color: 'error.main', gap: 1 }}
@@ -181,12 +182,18 @@ function Item({ item, sx, setModalDataFiltered, handleOpenModal, date, isLive, .
                                         <b>{
                                             calculateTotalStatus({ date, item, status: 'remove' }) + calculateTotalStatus({ date, item, status: 'kill' })
                                         }</b> Shipped <span style={{ color: 'orange', fontSize: 'smaller' }}> </span>
-                                        <span style={{ color: 'orange', fontSize: 'smaller' }}>
-                                            (Removed: <b>{
-                                                calculateTotalStatus({ date, item, status: 'remove' })
-                                            }</b>, Kill: <b>{
-                                                calculateTotalStatus({ date, item, status: 'kill' })
-                                            }</b>)</span>
+                                        <span style={{ fontSize: 'smaller' }}>
+                                            <span style={{ color: 'error' }}>
+                                                ( Removed: <b>{
+                                                    calculateTotalStatus({ date, item, status: 'remove' })
+                                                }</b>
+                                            </span>,
+                                            <span style={{ color: 'darkorange' }}>
+                                                 Kill: <b>{
+                                                    calculateTotalStatus({ date, item, status: 'kill' })
+                                                }</b>
+                                            </span> )
+                                        </span>
                                     </span>
                                 </Box>
                             </>

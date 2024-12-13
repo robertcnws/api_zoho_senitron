@@ -514,23 +514,25 @@ function Item({ item, sx, setModalDataFiltered, handleOpenModal, date, isLive, .
               </Box>
             )}
             {item.logs.length > 0 && !isLive && (
-              <Box
-                component="span"
-                sx={{ display: 'inline-flex', alignItems: 'center', typography: 'body2', color: 'error.main', gap: 1 }}
-              >
-                <Iconify icon="eva:arrow-ios-downward-fill" width={16} height={16} />
-                <span>
-                  <b>{
-                    calculateTotalStatus({ date, item, status: 'remove' }) + calculateTotalStatus({ date, item, status: 'kill' })
-                  }</b> Shipped <span style={{ color: 'orange', fontSize: 'smaller' }}> </span>
-                  <span style={{ color: 'orange', fontSize: 'smaller' }}>
-                    (Removed: <b>{
-                      calculateTotalStatus({ date, item, status: 'remove' })
-                    }</b>, Kill: <b>{
-                      calculateTotalStatus({ date, item, status: 'kill' })
-                    }</b>)</span>
-                </span>
-              </Box>
+              <>
+                <Box
+                  component="span"
+                  sx={{ display: 'inline-flex', alignItems: 'center', typography: 'body2', color: 'error.main', gap: 1 }}
+                >
+                  <Iconify icon="eva:arrow-ios-downward-fill" width={16} height={16} />
+                  <span>
+                    <b>{
+                      calculateTotalStatus({ date, item, status: 'remove' }) + calculateTotalStatus({ date, item, status: 'kill' })
+                    }</b> Shipped <span style={{ color: 'orange', fontSize: 'smaller' }}> </span>
+                    <span style={{ color: 'orange', fontSize: 'smaller' }}>
+                      (Removed: <b>{
+                        calculateTotalStatus({ date, item, status: 'remove' })
+                      }</b>, Kill: <b>{
+                        calculateTotalStatus({ date, item, status: 'kill' })
+                      }</b>)</span>
+                  </span>
+                </Box>
+              </>
             )}
           </>
         }
