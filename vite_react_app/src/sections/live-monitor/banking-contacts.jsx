@@ -14,11 +14,13 @@ import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
 import { Collapse, MenuItem, MenuList, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableRow } from '@mui/material';
+import { TableCustomPaginationZohoStyleRow } from 'src/components/table/table-pagination-custom-zoho-style-row';
 import { emptyRows, getComparator, TableEmptyRows, TableHeadCustom, TableNoData, TablePaginationCustom } from 'src/components/table';
 import { ModalItemSerialsDetails } from './view/modal-item-serials-details';
 import { ModalSublistItemsSerials } from './view/modal-sublist-items-serials';
 import { BankingContactsToolbar } from './banking-contacts-toolbar';
 import { ItemTableFiltersResult } from '../item/item-table-filters-result';
+
 
 
 
@@ -116,7 +118,7 @@ export function BankingContacts({
   };
 
   const renderSecondary = (row) => (
-    <TableRow sx={{ borderColor: 'red'}}>
+    <TableRow sx={{ borderColor: 'red' }}>
       <TableCell sx={{ p: 0, border: 'none' }} colSpan={5}>
         <Collapse
           in={openRowIds.has(row.itemNumber)}
@@ -140,7 +142,7 @@ export function BankingContacts({
                 >
                   <TableContainer sx={{ width: '100%' }}>
                     <Table size="small">
-                    <TableBody>
+                      <TableBody>
                         {!isMobile ? (
                           <TableRow>
                             <TableCell sx={{ width: 200, fontSize: '9px' }}><Label variant='soft' sx={{ fontSize: '9px' }}>{row.sku}</Label></TableCell>
@@ -163,8 +165,8 @@ export function BankingContacts({
                                 item.currentStatusName.toLowerCase().includes('kill') ? 'warning' : 'success'}>
                                 {item.currentStatusName}
                               </Label><br />
-                              Serial: <Label sx={{ fontSize: '9px' }} variant='soft'>{item.serialNumber}</Label><br/>
-                              Date: <Label sx={{ fontSize: '9px' }} variant='soft'>{fDateTime(item.createdAt)}</Label><br/>
+                              Serial: <Label sx={{ fontSize: '9px' }} variant='soft'>{item.serialNumber}</Label><br />
+                              Date: <Label sx={{ fontSize: '9px' }} variant='soft'>{fDateTime(item.createdAt)}</Label><br />
                               Zone: <Label sx={{ fontSize: '9px' }} variant='soft'>{item.lastZone}</Label>
                             </TableCell>
                           </TableRow>
@@ -238,9 +240,6 @@ export function BankingContacts({
                 <>
 
                   <Card>
-
-
-
                     {canReset && (
                       <ItemTableFiltersResult
                         filters={filters}
@@ -256,8 +255,8 @@ export function BankingContacts({
                       <Scrollbar>
                         {dataFiltered?.length > 0 ? (
                           <TableContainer sx={{
-                            maxHeight: !canReset ? 320 : 220,
-                            minHeight: !canReset ? 320 : 220,
+                            maxHeight: !canReset ? 375 : !isMobile ? 275 : 300,
+                            minHeight: !canReset ? 375 : !isMobile ? 275 : 300,
                           }}>
                             <Table size={table.dense ? 'small' : 'medium'} sx={{ minWidth: !isMobile ? 960 : 280 }} stickyHeader>
                               <TableHeadCustom
@@ -308,10 +307,24 @@ export function BankingContacts({
                                       {openRowIds.has(item.itemNumber) && renderSecondary(item)}
                                     </React.Fragment>
                                   ))}
-                                <TableEmptyRows
-                                  height={table.dense ? 56 : 56 + 20}
-                                  emptyRows={emptyRows(table.page, table.rowsPerPage, dataFiltered.length)}
-                                />
+                                {dataFiltered.length > 0 && (
+                                  <TableCustomPaginationZohoStyleRow
+                                    columnsLength={isMobile ? TABLE_HEAD_MOBILE.length : TABLE_HEAD.length}
+                                    data={dataFiltered}
+                                    page={table.page}
+                                    rowsPerPage={table.rowsPerPage}
+                                    handleChangePage={(event, newPage) => {
+                                      localStorage.setItem('itemPage', newPage);
+                                      table.onChangePage(event, newPage);
+                                    }}
+                                    handleChangeRowsPerPage={(event) => {
+                                      localStorage.setItem('itemRowsPerPage', event.target.value);
+                                      table.onChangeRowsPerPage(event);
+                                    }}
+                                    dense={table.dense}
+                                    onChangeDense={table.onChangeDense}
+                                  />
+                                )}
 
                                 <TableNoData notFound={dataFiltered?.length === 0} />
                               </TableBody>
@@ -329,7 +342,7 @@ export function BankingContacts({
                       </Scrollbar>
                     </Box>
 
-                    <TablePaginationCustom
+                    {/* <TablePaginationCustom
                       page={table.page}
                       dense={table.dense}
                       count={dataFiltered.length}
@@ -343,7 +356,7 @@ export function BankingContacts({
                         // localStorage.setItem('itemRowsPerPage', event.target.value);
                         table.onChangeRowsPerPage(event);
                       }}
-                    />
+                    /> */}
                   </Card>
 
                   {/* <TableContainer sx={{ height: 350 }}>

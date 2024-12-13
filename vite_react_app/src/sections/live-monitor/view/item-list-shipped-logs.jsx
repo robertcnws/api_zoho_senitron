@@ -36,6 +36,7 @@ import { ConfirmDialog } from 'src/components/custom-dialog';
 import { LoadingContext } from 'src/auth/context/loading-context';
 import { useDataContext } from 'src/auth/context/data/data-context';
 import { fDate, fIsBetween } from 'src/utils/format-time';
+import { TableCustomPaginationZohoStyleRow } from 'src/components/table/table-pagination-custom-zoho-style-row';
 import {
     useTable,
     emptyRows,
@@ -52,6 +53,7 @@ import { ItemTableRow } from '../../item/item-table-row';
 import { ItemTableToolbar } from '../../item/item-table-toolbar';
 import { ItemTableFiltersResult } from '../../item/item-table-filters-result';
 import { ItemTableShippedLogsToolbar } from '../item-table-shipped-logs-toolbar';
+
 
 
 
@@ -683,10 +685,24 @@ export function ItemListShippedLogsView({
                                                 </React.Fragment>
                                             ))}
 
-                                        <TableEmptyRows
-                                            height={table.dense ? 56 : 56 + 20}
-                                            emptyRows={emptyRows(table.page, table.rowsPerPage, dataFiltered.length)}
-                                        />
+                                        {dataFiltered.length > 0 && (
+                                            <TableCustomPaginationZohoStyleRow
+                                                columnsLength={isMobile ? TABLE_HEAD_MOBILE.length : TABLE_HEAD.length}
+                                                data={dataFiltered}
+                                                page={table.page}
+                                                rowsPerPage={table.rowsPerPage}
+                                                handleChangePage={(event, newPage) => {
+                                                    localStorage.setItem('itemPage', newPage);
+                                                    table.onChangePage(event, newPage);
+                                                }}
+                                                handleChangeRowsPerPage={(event) => {
+                                                    localStorage.setItem('itemRowsPerPage', event.target.value);
+                                                    table.onChangeRowsPerPage(event);
+                                                }}
+                                                dense={table.dense}
+                                                onChangeDense={table.onChangeDense}
+                                            />
+                                        )}
 
                                         <TableNoData notFound={notFound} sx={{ height: 80 }} />
                                     </TableBody>
@@ -704,7 +720,7 @@ export function ItemListShippedLogsView({
                     </Scrollbar>
                 </Box>
 
-                <TablePaginationCustom
+                {/* <TablePaginationCustom
                     page={table.page}
                     dense={table.dense}
                     count={dataFiltered.length}
@@ -718,7 +734,7 @@ export function ItemListShippedLogsView({
                         localStorage.setItem('itemRowsPerPage', event.target.value);
                         table.onChangeRowsPerPage(event);
                     }}
-                />
+                /> */}
             </Card>
         </>
     );

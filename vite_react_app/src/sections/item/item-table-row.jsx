@@ -145,10 +145,11 @@ export function ItemTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
                 No items
               </Label>
             )}
-
-            <IconButton color={popover.open ? 'inherit' : 'default'} onClick={popover.onOpen}>
-              <Iconify icon="eva:more-vertical-fill" />
-            </IconButton>
+            {!isMobile && (
+              <IconButton color={popover.open ? 'inherit' : 'default'} onClick={popover.onOpen}>
+                <Iconify icon="eva:more-vertical-fill" />
+              </IconButton>
+            )}
           </Stack>
         </TableCell>
       </TableRow>
@@ -171,35 +172,35 @@ export function ItemTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
                         .map((item, index) => (
                           <React.Fragment key={`${item.id}-${index}-${item.serialNumber}`}>
                             {!isMobile ? (
-                            <TableRow key={`${item.id}-${index}-${item.serialNumber}`}>
-                              <TableCell>
-                                <Label color='default'>Antenna</Label><br />
-                                {item.lastSeenAntenna}
-                              </TableCell>
-                              <TableCell>
-                                <Label color='default'>Serial</Label><br />
-                                {item.serialNumber}
-                              </TableCell>
-                              <TableCell>
-                                <Label color='default'>Last Zone</Label><br />
-                                {item.lastZone}
-                              </TableCell>
-                              <TableCell>
-                                <Label color='default'>Info</Label><br />
-                                {item.text3}
-                              </TableCell>
-                              <TableCell>
-                                <Label color='default'>Last Seen</Label><br />
-                                {item.lastSeen ? fDateTime(item.lastSeen) : `Updated:  ${fDateTime(item.updatedAt)}`}
-                              </TableCell>
-                            </TableRow>
+                              <TableRow key={`${item.id}-${index}-${item.serialNumber}`}>
+                                <TableCell>
+                                  <Label color='default'>Antenna</Label><br />
+                                  {item.lastSeenAntenna}
+                                </TableCell>
+                                <TableCell>
+                                  <Label color='default'>Serial</Label><br />
+                                  {item.serialNumber}
+                                </TableCell>
+                                <TableCell>
+                                  <Label color='default'>Last Zone</Label><br />
+                                  {item.lastZone}
+                                </TableCell>
+                                <TableCell>
+                                  <Label color='default'>Info</Label><br />
+                                  {item.text3}
+                                </TableCell>
+                                <TableCell>
+                                  <Label color='default'>Last Seen</Label><br />
+                                  {item.lastSeen ? fDateTime(item.lastSeen) : `Updated:  ${fDateTime(item.updatedAt)}`}
+                                </TableCell>
+                              </TableRow>
                             ) : (
                               <TableRow key={`${item.id}-${index}-${item.serialNumber}`}>
                                 <TableCell>
-                                  <Label color='default'>Antenna:</Label> {item.lastSeenAntenna}<br/>
-                                  <Label color='default'>Serial:</Label> {item.serialNumber}<br/>
-                                  <Label color='default'>Last Zone:</Label> {item.lastZone}<br/>
-                                  <Label color='default'>Info:</Label> {item.text3}<br/>
+                                  <Label color='default'>Antenna:</Label> {item.lastSeenAntenna}<br />
+                                  <Label color='default'>Serial:</Label> {item.serialNumber}<br />
+                                  <Label color='default'>Last Zone:</Label> {item.lastZone}<br />
+                                  <Label color='default'>Info:</Label> {item.text3}<br />
                                   <Label color='default'>Last Seen:</Label> {item.lastSeen ? fDateTime(item.lastSeen) : `Updated:  ${fDateTime(item.updatedAt)}`}
                                 </TableCell>
                               </TableRow>

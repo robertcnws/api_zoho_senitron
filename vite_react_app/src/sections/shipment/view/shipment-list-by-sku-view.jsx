@@ -32,6 +32,8 @@ import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
 import { LoadingContext } from 'src/auth/context/loading-context';
 
+import { TableCustomPaginationZohoStyleRow } from 'src/components/table/table-pagination-custom-zoho-style-row';
+
 import {
   useTable,
   emptyRows,
@@ -47,6 +49,7 @@ import {
 import { ShipmentTableRowListBySku } from '../shipment-table-row-list-by-sku';
 import { ShipmentTableToolbarListBySku } from '../shipment-table-toolbar-list-by-sku';
 import { ShipmentTableFiltersResultListBySku } from '../shipment-table-filters-result-list-by-sku';
+
 
 
 // ----------------------------------------------------------------------
@@ -82,7 +85,7 @@ export function ShipmentListBySkuView() {
       try {
         const parsedPackages = JSON.parse(packages)
           .filter(pkg => pkg.package_id)
-          .map(pkg => ({ ...pkg, date })); 
+          .map(pkg => ({ ...pkg, date }));
         return parsedPackages;
       } catch (err) {
         console.error('Error al parsear packages:', err);
@@ -201,7 +204,7 @@ export function ShipmentListBySkuView() {
     }
     return [];
   }, [allShipments, allPackages, allLinePackages, dataItems]);
-  
+
   const groupedItems = mergeItems.reduce((acc, currentItem) => {
     const { itemId, name, sku, packageId, quantity, shipmentId, shipmentNumber, packageNumber, date } = currentItem;
     const key = `${itemId}-${date}`;
@@ -341,7 +344,7 @@ export function ShipmentListBySkuView() {
         />
 
         <Card>
-          
+
           <ShipmentTableToolbarListBySku
             filters={filters}
             onResetPage={table.onResetPage}
@@ -400,9 +403,9 @@ export function ShipmentListBySkuView() {
 
                   <TableBody>
                     {dataFiltered?.slice(
-                        table.page * table.rowsPerPage,
-                        table.page * table.rowsPerPage + table.rowsPerPage
-                      )
+                      table.page * table.rowsPerPage,
+                      table.page * table.rowsPerPage + table.rowsPerPage
+                    )
                       .map((row, index) => (
                         <ShipmentTableRowListBySku
                           key={`${row.itemId}-${index}`}
@@ -414,10 +417,24 @@ export function ShipmentListBySkuView() {
                         />
                       ))}
 
-                    <TableEmptyRows
-                      height={table.dense ? 56 : 56 + 20}
-                      emptyRows={emptyRows(table.page, table.rowsPerPage, dataFiltered?.length)}
-                    />
+                    {dataFiltered?.length > 0 && (
+                      <TableCustomPaginationZohoStyleRow
+                        columnsLength={isMobile ? TABLE_HEAD_MOBILE.length : TABLE_HEAD.length}
+                        data={dataFiltered}
+                        page={table.page}
+                        rowsPerPage={table.rowsPerPage}
+                        handleChangePage={(event, newPage) => {
+                          localStorage.setItem('itemPage', newPage);
+                          table.onChangePage(event, newPage);
+                        }}
+                        handleChangeRowsPerPage={(event) => {
+                          localStorage.setItem('itemRowsPerPage', event.target.value);
+                          table.onChangeRowsPerPage(event);
+                        }}
+                        dense={table.dense}
+                        onChangeDense={table.onChangeDense}
+                      />
+                    )}
 
                     <TableNoData notFound={notFound} />
                   </TableBody>
@@ -426,7 +443,7 @@ export function ShipmentListBySkuView() {
             </Scrollbar>
           </Box>
 
-          <TablePaginationCustom
+          {/* <TablePaginationCustom
             page={table.page}
             dense={table.dense}
             count={dataFiltered?.length || 0}
@@ -440,7 +457,9 @@ export function ShipmentListBySkuView() {
               localStorage.setItem('orderRowsPerPage', event.target.value);
               table.onChangeRowsPerPage(event);
             }}
-          />
+          /> */}
+
+
         </Card>
       </DashboardContent>
 

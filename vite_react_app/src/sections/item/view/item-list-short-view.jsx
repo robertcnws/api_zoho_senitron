@@ -34,6 +34,8 @@ import { ConfirmDialog } from 'src/components/custom-dialog';
 
 import { LoadingContext } from 'src/auth/context/loading-context';
 
+import { TableCustomPaginationZohoStyleRow } from 'src/components/table/table-pagination-custom-zoho-style-row';
+
 import {
     useTable,
     emptyRows,
@@ -49,6 +51,7 @@ import {
 import { ItemTableRow } from '../item-table-row';
 import { ItemTableToolbar } from '../item-table-toolbar';
 import { ItemTableFiltersResult } from '../item-table-filters-result';
+
 
 
 // ----------------------------------------------------------------------
@@ -86,8 +89,8 @@ export function ItemListShortView({ updating, setUpdating, setTitleLinearProgres
     ];
 
     const TABLE_HEAD_MOBILE = [
-        { id: 'info', label: 'INFO'},
-        { id: ''},
+        { id: 'info', label: 'INFO' },
+        { id: '' },
     ];
 
     const table = useTable({ defaultDense: true });
@@ -391,7 +394,7 @@ export function ItemListShortView({ updating, setUpdating, setTitleLinearProgres
 
                     <Scrollbar>
                         <TableContainer sx={{ maxHeight: 440 }}>
-                            <Table size={table.dense ? 'small' : 'medium'} sx={{ minWidth: !isMobile ? 960 : 380 }} stickyHeader>
+                            <Table size={table.dense ? 'small' : 'medium'} sx={{ minWidth: !isMobile ? 960 : 280 }} stickyHeader>
                                 <TableHeadCustom
                                     order={table.order}
                                     orderBy={table.orderBy}
@@ -425,10 +428,29 @@ export function ItemListShortView({ updating, setUpdating, setTitleLinearProgres
                                             />
                                         ))}
 
-                                    <TableEmptyRows
+                                    {dataFiltered.length > 0 && (
+                                        <TableCustomPaginationZohoStyleRow
+                                            columnsLength={isMobile ? TABLE_HEAD_MOBILE.length : TABLE_HEAD.length}
+                                            data={dataFiltered}
+                                            page={table.page}
+                                            rowsPerPage={table.rowsPerPage}
+                                            handleChangePage={(event, newPage) => {
+                                                localStorage.setItem('itemPage', newPage);
+                                                table.onChangePage(event, newPage);
+                                            }}
+                                            handleChangeRowsPerPage={(event) => {
+                                                localStorage.setItem('itemRowsPerPage', event.target.value);
+                                                table.onChangeRowsPerPage(event);
+                                            }}
+                                            dense={table.dense}
+                                            onChangeDense={table.onChangeDense}
+                                        />
+                                    )}
+
+                                    {/* <TableEmptyRows
                                         height={table.dense ? 56 : 56 + 20}
                                         emptyRows={emptyRows(table.page, table.rowsPerPage, dataFiltered.length)}
-                                    />
+                                    /> */}
 
                                     <TableNoData notFound={notFound} />
                                 </TableBody>
@@ -437,7 +459,9 @@ export function ItemListShortView({ updating, setUpdating, setTitleLinearProgres
                     </Scrollbar>
                 </Box>
 
-                <TablePaginationCustom
+
+
+                {/* <TablePaginationCustom
                     page={table.page}
                     dense={table.dense}
                     count={dataFiltered.length}
@@ -451,7 +475,7 @@ export function ItemListShortView({ updating, setUpdating, setTitleLinearProgres
                         localStorage.setItem('itemRowsPerPage', event.target.value);
                         table.onChangeRowsPerPage(event);
                     }}
-                />
+                /> */}
             </Card>
 
             <ConfirmDialog

@@ -10,6 +10,7 @@ export function TablePaginationCustom({
   dense,
   onChangeDense,
   rowsPerPageOptions = [5, 10, 25],
+  columnsLength,
   ...other
 }) {
   return (

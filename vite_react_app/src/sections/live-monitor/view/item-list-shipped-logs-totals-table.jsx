@@ -14,11 +14,13 @@ import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
 import { Collapse, MenuItem, MenuList, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableRow } from '@mui/material';
+import { TableCustomPaginationZohoStyleRow } from 'src/components/table/table-pagination-custom-zoho-style-row';
 import { emptyRows, getComparator, TableEmptyRows, TableHeadCustom, TableNoData, TablePaginationCustom } from 'src/components/table';
 import { ModalItemSerialsDetails } from 'src/sections/live-monitor/view/modal-item-serials-details';
 import { ItemTableFiltersResult } from 'src/sections/item/item-table-filters-result';
 import { ModalSublistItemsSerials } from './modal-sublist-items-serials';
 import { BankingContactsToolbar } from '../banking-contacts-toolbar';
+
 
 
 
@@ -150,8 +152,8 @@ export function ItemListShippedLogsTotalsTable({
                                 item.currentStatusName.toLowerCase().includes('kill') ? 'warning' : 'success'}>
                                 {item.currentStatusName}
                               </Label><br />
-                              Serial: <Label sx={{ fontSize: '9px' }} variant='soft'>{item.serialNumber}</Label><br/>
-                              Date: <Label sx={{ fontSize: '9px' }} variant='soft'>{fDateTime(item.createdAt)}</Label><br/>
+                              Serial: <Label sx={{ fontSize: '9px' }} variant='soft'>{item.serialNumber}</Label><br />
+                              Date: <Label sx={{ fontSize: '9px' }} variant='soft'>{fDateTime(item.createdAt)}</Label><br />
                               Zone: <Label sx={{ fontSize: '9px' }} variant='soft'>{item.lastZone}</Label>
                             </TableCell>
                           </TableRow>
@@ -183,7 +185,7 @@ export function ItemListShippedLogsTotalsTable({
           title='All SKUs'
         />
 
-        <Scrollbar sx={{ maxHeight: 394, minHeight: 294 }}>
+        <Scrollbar sx={{ maxHeight: 340, minHeight: 340 }}>
           {dataFiltered?.length > 0 ? (
             <Box
               sx={{
@@ -211,8 +213,8 @@ export function ItemListShippedLogsTotalsTable({
                   <Scrollbar>
                     {dataFiltered?.length > 0 ? (
                       <TableContainer sx={{
-                        maxHeight: !canReset ? 220 : 120,
-                        minHeight: !canReset ? 220 : 120,
+                        maxHeight: !canReset ? 320 : 220,
+                        minHeight: !canReset ? 320 : 220,
                       }}>
                         <Table size={table.dense ? 'small' : 'medium'} sx={{ minWidth: !isMobile ? 400 : 380 }} stickyHeader>
                           <TableHeadCustom
@@ -262,10 +264,24 @@ export function ItemListShippedLogsTotalsTable({
                                   {openRowIds.has(item.itemNumber) && renderSecondary(item)}
                                 </React.Fragment>
                               ))}
-                            <TableEmptyRows
-                              height={table.dense ? 56 : 56 + 20}
-                              emptyRows={emptyRows(table.page, table.rowsPerPage, dataFiltered.length)}
-                            />
+                            {dataFiltered.length > 0 && (
+                              <TableCustomPaginationZohoStyleRow
+                                columnsLength={isMobile ? TABLE_HEAD_MOBILE.length : TABLE_HEAD.length}
+                                data={dataFiltered}
+                                page={table.page}
+                                rowsPerPage={table.rowsPerPage}
+                                handleChangePage={(event, newPage) => {
+                                  localStorage.setItem('itemPage', newPage);
+                                  table.onChangePage(event, newPage);
+                                }}
+                                handleChangeRowsPerPage={(event) => {
+                                  localStorage.setItem('itemRowsPerPage', event.target.value);
+                                  table.onChangeRowsPerPage(event);
+                                }}
+                                dense={table.dense}
+                                onChangeDense={table.onChangeDense}
+                              />
+                            )}
 
                             <TableNoData notFound={dataFiltered?.length === 0} sx={{ maxHeight: 20 }} />
                           </TableBody>
@@ -283,7 +299,7 @@ export function ItemListShippedLogsTotalsTable({
                   </Scrollbar>
                 </Box>
 
-                <TablePaginationCustom
+                {/* <TablePaginationCustom
                   page={table.page}
                   dense={table.dense}
                   count={dataFiltered.length}
@@ -297,7 +313,7 @@ export function ItemListShippedLogsTotalsTable({
                     // localStorage.setItem('itemRowsPerPage', event.target.value);
                     table.onChangeRowsPerPage(event);
                   }}
-                />
+                /> */}
               </Card>
             </Box>
           ) : (

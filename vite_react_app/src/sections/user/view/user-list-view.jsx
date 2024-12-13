@@ -31,6 +31,7 @@ import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
 import { ConfirmDialog } from 'src/components/custom-dialog';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
+import { TableCustomPaginationZohoStyleRow } from 'src/components/table/table-pagination-custom-zoho-style-row';
 import {
   useTable,
   emptyRows,
@@ -48,6 +49,7 @@ import { LoadingContext } from 'src/auth/context/loading-context';
 import { UserTableRow } from '../user-table-row';
 import { UserTableToolbar } from '../user-table-toolbar';
 import { UserTableFiltersResult } from '../user-table-filters-result';
+
 
 
 // ----------------------------------------------------------------------
@@ -347,10 +349,24 @@ export function UserListView() {
                       />
                     ))}
 
-                  <TableEmptyRows
-                    height={table.dense ? 56 : 56 + 20}
-                    emptyRows={emptyRows(table.page, table.rowsPerPage, dataFiltered.length)}
-                  />
+                  {dataFiltered?.length > 0 && (
+                    <TableCustomPaginationZohoStyleRow
+                      columnsLength={isMobile ? TABLE_HEAD_MOBILE.length : TABLE_HEAD.length}
+                      data={dataFiltered}
+                      page={table.page}
+                      rowsPerPage={table.rowsPerPage}
+                      handleChangePage={(event, newPage) => {
+                        localStorage.setItem('itemPage', newPage);
+                        table.onChangePage(event, newPage);
+                      }}
+                      handleChangeRowsPerPage={(event) => {
+                        localStorage.setItem('itemRowsPerPage', event.target.value);
+                        table.onChangeRowsPerPage(event);
+                      }}
+                      dense={table.dense}
+                      onChangeDense={table.onChangeDense}
+                    />
+                  )}
 
                   <TableNoData notFound={notFound} />
                 </TableBody>
@@ -358,7 +374,7 @@ export function UserListView() {
             </Scrollbar>
           </Box>
 
-          <TablePaginationCustom
+          {/* <TablePaginationCustom
             page={table.page}
             dense={table.dense}
             count={dataFiltered.length}
@@ -366,7 +382,7 @@ export function UserListView() {
             onPageChange={table.onChangePage}
             onChangeDense={table.onChangeDense}
             onRowsPerPageChange={table.onChangeRowsPerPage}
-          />
+          /> */}
         </Card>
       </DashboardContent>
 

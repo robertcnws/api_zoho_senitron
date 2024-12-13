@@ -35,6 +35,8 @@ import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
 import { LoadingContext } from 'src/auth/context/loading-context';
 
+import { TableCustomPaginationZohoStyleRow } from 'src/components/table/table-pagination-custom-zoho-style-row';
+
 import {
   useTable,
   emptyRows,
@@ -50,6 +52,7 @@ import {
 import { OrderTableRow } from '../order-table-row';
 import { OrderTableToolbar } from '../order-table-toolbar';
 import { OrderTableFiltersResult } from '../order-table-filters-result';
+
 
 // ----------------------------------------------------------------------
 
@@ -67,6 +70,11 @@ export function OrderListView() {
     { id: 'date', label: 'Date', width: isMobile ? 50 : 140 },
     { id: 'status', label: 'Status', width: isMobile ? 50 : 110 },
     { id: '', width: isMobile ? 30 : 68 },
+  ];
+
+  const TABLE_HEAD_MOBILE = [
+    { id: 'info', label: 'INFO' },
+    { id: '' },
   ];
 
 
@@ -312,10 +320,24 @@ export function OrderListView() {
                         />
                       ))}
 
-                    <TableEmptyRows
-                      height={table.dense ? 56 : 56 + 20}
-                      emptyRows={emptyRows(table.page, table.rowsPerPage, dataFiltered.length)}
-                    />
+                    {dataFiltered.length > 0 && (
+                      <TableCustomPaginationZohoStyleRow
+                        columnsLength={isMobile ? TABLE_HEAD_MOBILE.length : TABLE_HEAD.length}
+                        data={dataFiltered}
+                        page={table.page}
+                        rowsPerPage={table.rowsPerPage}
+                        handleChangePage={(event, newPage) => {
+                          localStorage.setItem('itemPage', newPage);
+                          table.onChangePage(event, newPage);
+                        }}
+                        handleChangeRowsPerPage={(event) => {
+                          localStorage.setItem('itemRowsPerPage', event.target.value);
+                          table.onChangeRowsPerPage(event);
+                        }}
+                        dense={table.dense}
+                        onChangeDense={table.onChangeDense}
+                      />
+                    )}
 
                     <TableNoData notFound={notFound} />
                   </TableBody>
@@ -324,7 +346,7 @@ export function OrderListView() {
             </Scrollbar>
           </Box>
 
-          <TablePaginationCustom
+          {/* <TablePaginationCustom
             page={table.page}
             dense={table.dense}
             count={dataFiltered.length}
@@ -338,7 +360,7 @@ export function OrderListView() {
               localStorage.setItem('orderRowsPerPage', event.target.value);
               table.onChangeRowsPerPage(event);
             }}
-          />
+          /> */}
         </Card>
       </DashboardContent>
 

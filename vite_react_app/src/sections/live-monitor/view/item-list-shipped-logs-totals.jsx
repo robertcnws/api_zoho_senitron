@@ -76,7 +76,7 @@ export function ItemListShippedLogsTotals({
                     title={title}
                     subheader={subheader}
                 />
-                <Scrollbar sx={{ maxHeight: 394, minHeight: 394 }}>
+                <Scrollbar sx={{ maxHeight: 430, minHeight: 430 }}>
                     {list?.length > 0 ? (
                         <Box
                             sx={{
