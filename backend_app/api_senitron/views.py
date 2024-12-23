@@ -407,10 +407,10 @@ def notification_mark_as_read(request, notification_id):
 @permission_classes([AllowAny])
 def remove_old_notifications(request):
     now = timezone.now()
-    days_ago = now - timezone.timedelta(days=30)
+    days_ago = now - timezone.timedelta(days=7)
     NotificationUser.objects.filter(updated_at__lt=days_ago).delete()
     Notification.objects.filter(updated_at__lt=days_ago).delete()
-    return JsonResponse({'message': '30 days old Notifications removed successfully'}, status=200)
+    return JsonResponse({'message': '7 days old Notifications removed successfully'}, status=200)
 
 
 # EXTRA FUNCTIONS

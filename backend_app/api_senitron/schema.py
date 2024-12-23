@@ -284,6 +284,7 @@ class Query(graphene.ObjectType):
         qs = NotificationUser.objects.select_related('notification', 'user').order_by('-created_at')
         if username:
             qs = qs.filter(user__username=username)
+        qs = qs[:100]
         return qs
 
 schema = graphene.Schema(query=Query)
