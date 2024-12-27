@@ -305,6 +305,10 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50 MB en bytes
 # Celery
 
 CELERY_BROKER_URL = 'redis://redis-api-zoho-senitron:6379/0'
+CELERY_TASK_DEFAULT_QUEUE = 'api_project_zoho_senitron_queue'
+CELERY_TASK_ROUTES = {
+    'api_project_zoho_senitron.*': {'queue': 'api_project_zoho_senitron_queue'},
+}
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_RESULT_BACKEND = 'redis://redis-api-zoho-senitron:6379/0'
 CELERY_ACCEPT_CONTENT = ['json']

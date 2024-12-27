@@ -10,7 +10,7 @@
 # wsgi_app = 'api_project_zoho_senitron.asgi:application'
 
 bind = '0.0.0.0:8000'
-workers = 3
+workers = 2
 threads = 2
 timeout = 512
 graceful_timeout = 512

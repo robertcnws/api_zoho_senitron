@@ -33,6 +33,7 @@
 
 /.vscode
 *.env
+*venv
 
 *.crt
 *.pem   
