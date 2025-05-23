@@ -245,7 +245,6 @@ pipeline {
         )
       }
     }
-
   } 
 
   post {
@@ -259,5 +258,4 @@ pipeline {
       )
     }
   }
-
 }    
