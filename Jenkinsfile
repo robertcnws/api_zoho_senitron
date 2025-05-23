@@ -12,8 +12,8 @@ pipeline {
 
   environment {
     AWS_ECR_REGISTRY         = "324037323031.dkr.ecr.us-east-2.amazonaws.com/nws"
-    BACKEND_IMAGE            = "${AWS_ECR_REGISTRY}/api_zoho_senitron_backend"
-    FRONTEND_IMAGE           = "${AWS_ECR_REGISTRY}/api_zoho_senitron_frontend"
+    BACKEND_IMAGE            = "${AWS_ECR_REGISTRY}/api-zoho-senitron-backend"
+    FRONTEND_IMAGE           = "${AWS_ECR_REGISTRY}/api-zoho-senitron-frontend"
     AWS_DEFAULT_REGION       = "us-east-2"
     AWS_FRONTEND_ENV_CRED_ID = "AWS_FRONTEND_ENV_CRED_ID"
     AWS_CLUSTER              = "api-dealerportal-cluster"
