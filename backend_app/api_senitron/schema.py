@@ -251,7 +251,7 @@ class Query(graphene.ObjectType):
                     F('date_actual_quantity'),
                     F('date_actual_status_senitron')
                 )
-            ).order_by('-order_date')
+            ).order_by('-order_date')[:100]
             
             
     def resolve_all_jobs_updating_times(self, info, **kwargs):

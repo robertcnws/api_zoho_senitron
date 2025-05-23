@@ -1,15 +1,9 @@
-import { lazy, Suspense, useContext } from 'react';
+import { lazy, Suspense } from 'react';
 import { Navigate, useRoutes } from 'react-router-dom';
 
-import { Backdrop, CircularProgress, Typography, Button } from '@mui/material';
-
-import { LoadingContext } from 'src/auth/context/loading-context';
-
-import { MainLayout } from 'src/layouts/main';
+import { AuthSplitLayout } from 'src/layouts/auth-split';
 
 import { SplashScreen } from 'src/components/loading-screen';
-
-import { AuthSplitLayout } from 'src/layouts/auth-split';
 
 import { GuestGuard } from 'src/auth/guard';
 

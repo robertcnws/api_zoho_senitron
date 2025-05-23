@@ -1,8 +1,7 @@
+import axios from 'axios';
 import { z as zod } from 'zod';
 import { useMemo } from 'react';
 import { useForm } from 'react-hook-form';
-import axios from 'axios';
-import { CONFIG } from 'src/config-global';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { isValidPhoneNumber } from 'react-phone-number-input/input';
 
@@ -16,11 +15,12 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 
+import { CONFIG } from 'src/config-global';
 import { USER_STATUS_OPTIONS } from 'src/_mock';
 
+import { Label } from 'src/components/label';
 import { toast } from 'src/components/snackbar';
 import { Form, Field, schemaHelper } from 'src/components/hook-form';
-import { Label } from 'src/components/label';
 
 // ----------------------------------------------------------------------
 
@@ -85,7 +85,7 @@ export function UserQuickEditForm({ currentUser, open, onClose }) {
   } = methods;
 
   const onSubmit = handleSubmit(async (data) => {
-    const id = currentUser.id;
+    const {id} = currentUser;
     data = { 
       ...data, 
       username: currentUser.username, 

@@ -1,41 +1,36 @@
-import React, { useState, useEffect, useCallback, useContext, useRef, useMemo } from 'react';
-import Typography from '@mui/material/Typography';
-import Grid from '@mui/material/Unstable_Grid2';
 import axios from 'axios';
-import AnimatedIcon from 'src/components/animate/animated-icon';
-import { fDateTime } from 'src/utils/format-time';
-import { LoadingContext } from 'src/auth/context/loading-context';
-import { Label } from 'src/components/label';
-import { Box, Card, CardHeader, Stack, Table, TableBody, TableCell, TableContainer, TableRow, LinearProgress, Alert } from '@mui/material';
+import React, { useRef, useMemo, useState, useEffect, useContext, useCallback } from 'react';
+
+import Grid from '@mui/material/Unstable_Grid2';
+import Typography from '@mui/material/Typography';
+import { Box, Card, Stack, Table, Alert, TableRow, TableBody, TableCell, CardHeader, TableContainer, LinearProgress } from '@mui/material';
+
 import { paths } from 'src/routes/paths';
 import { useRouter } from 'src/routes/hooks';
+
 import { useSetState } from 'src/hooks/use-set-state';
-import MatchGauge from 'src/components/chart/gauge-chart';
-import { TableNoData, useTable, getComparator } from 'src/components/table';
+
+import { fDateTime } from 'src/utils/format-time';
+
 import { CONFIG } from 'src/config-global';
-import { useDataContext } from 'src/auth/context/data/data-context';
 import { DashboardContent } from 'src/layouts/dashboard';
-import {
-  _analyticTasks,
-  _analyticPosts,
-  _analyticTraffic,
-  _analyticOrderTimeline,
-  _bookingReview,
-  _bookingsOverview,
-  _bankingContacts,
-} from 'src/_mock';
 
-import { WelcomeTypography } from 'src/sections/welcome-typography/welcome-typography';
-
+import { Label } from 'src/components/label';
+import MatchGauge from 'src/components/chart/gauge-chart';
+import AnimatedIcon from 'src/components/animate/animated-icon';
+import { useTable, TableNoData, getComparator } from 'src/components/table';
 
 import { ItemListShortView } from 'src/sections/item/view';
+import { WelcomeTypography } from 'src/sections/welcome-typography/welcome-typography';
 
+import { LoadingContext } from 'src/auth/context/loading-context';
+import { useDataContext } from 'src/auth/context/data/data-context';
+
+import { ModalSublistItems } from './modal-sublist-items';
+import { ModalListItemsSerials } from './modal-list-items-serials';
 import { AnalyticsOrderTimeline } from '../analytics-order-timeline';
 import { AnalyticsWidgetSummary } from '../analytics-widget-summary';
-import { ModalSublistItems } from './modal-sublist-items';
 import { AnalyticsCurrentVisits } from '../analytics-current-visits';
-import { ModalListItemsSerials } from './modal-list-items-serials';
-import { CourseWidgetSummary } from '../../course/course-widget-summary';
 
 
 const headersCSV = [
@@ -393,8 +388,7 @@ export function OverviewAnalyticsView() {
       {!itemsZohoSenitron || !itemsSenitronZoho || !itemsTimelineData ||
         !itemsZohoData || !seriesPieChart || totalZohoQty === null ||
         totalSenitronQty === null || totalErrors === null || updating ? (
-        <>
-          <Box
+        <Box
             sx={{
               width: '350px',
               display: 'flex',
@@ -420,7 +414,6 @@ export function OverviewAnalyticsView() {
               }}
             />
           </Box>
-        </>
       ) : (
         <>
           <DashboardContent maxWidth="xl">

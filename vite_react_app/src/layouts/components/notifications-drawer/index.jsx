@@ -1,9 +1,7 @@
-import { m } from 'framer-motion';
-import { useState, useCallback, useMemo, useEffect } from 'react';
 import axios from 'axios';
-import { CONFIG } from 'src/config-global';
-import { useDataContext } from 'src/auth/context/data/data-context';
-import { LinearProgress } from '@mui/material';
+import { m } from 'framer-motion';
+import { useMemo, useState, useEffect, useCallback } from 'react';
+
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
@@ -17,11 +15,15 @@ import IconButton from '@mui/material/IconButton';
 
 import { useBoolean } from 'src/hooks/use-boolean';
 
+import { CONFIG } from 'src/config-global';
+
 import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
 import { varHover } from 'src/components/animate';
 import { Scrollbar } from 'src/components/scrollbar';
 import { CustomTabs } from 'src/components/custom-tabs';
+
+import { useDataContext } from 'src/auth/context/data/data-context';
 
 import { NotificationItem } from './notification-item';
 

@@ -1,10 +1,8 @@
 import {
   ApolloClient,
   InMemoryCache,
-  ApolloProvider,
-  HttpLink,
-  split,
 } from '@apollo/client';
+
 import { CONFIG } from '../config-global';
 
 

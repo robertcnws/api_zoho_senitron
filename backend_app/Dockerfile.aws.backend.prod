@@ -1,0 +1,37 @@
+FROM python:3.12
+
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app
+
+ENV TZ=America/New_York
+
+RUN ln -fs /usr/share/zoneinfo/$TZ /etc/localtime && \
+    dpkg-reconfigure -f noninteractive tzdata
+
+WORKDIR /app
+
+COPY requirements.txt /app/
+
+RUN pip install --upgrade pip
+RUN pip install gunicorn
+RUN pip install uvicorn
+RUN pip install -r requirements.txt
+
+RUN apt-get update && apt-get install -y wget gnupg2 lsb-release
+
+RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
+RUN echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list
+
+RUN apt-get update && apt-get install -y postgresql-client-16
+
+COPY . /app/
+
+EXPOSE 8000
+
+CMD ["sh", "-c", "python manage.py makemigrations && \
+                  python manage.py migrate && \
+                  python manage.py collectstatic --no-input && \
+                  python init_scripts.py && \
+                  celery -A api_project_zoho_senitron worker --loglevel=info -E & \
+                  celery -A api_project_zoho_senitron beat --loglevel=info & \
+                  gunicorn api_project_zoho_senitron.asgi:application -w 3 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000"]

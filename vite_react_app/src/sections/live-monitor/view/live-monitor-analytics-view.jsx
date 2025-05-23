@@ -1,39 +1,29 @@
-import React, { useState, useEffect, useCallback, useContext, useRef, useMemo } from 'react';
-import { useTheme } from '@mui/material/styles';
-import Typography from '@mui/material/Typography';
-import Grid from '@mui/material/Unstable_Grid2';
 import axios from 'axios';
-import { fDate, fDateTime } from 'src/utils/format-time';
-import { LoadingContext } from 'src/auth/context/loading-context';
-import { Iconify } from 'src/components/iconify';
-import { Label } from 'src/components/label';
-import { Box, Stack, LinearProgress, Button, Alert } from '@mui/material';
-import { paths } from 'src/routes/paths';
-import { useRouter } from 'src/routes/hooks';
-import { useSetState } from 'src/hooks/use-set-state';
-import { useTable, getComparator } from 'src/components/table';
-import { CONFIG } from 'src/config-global';
-import { useDataContext } from 'src/auth/context/data/data-context';
-import { DashboardContent } from 'src/layouts/dashboard';
-import {
-  _analyticTasks,
-  _analyticPosts,
-  _analyticTraffic,
-  _analyticOrderTimeline,
-  _bookingReview,
-  _bookingsOverview,
-  _bankingContacts,
-} from 'src/_mock';
+import React, { useRef, useMemo, useState, useEffect, useContext, useCallback } from 'react';
 
-import { WelcomeTypography } from 'src/sections/welcome-typography/welcome-typography';
+import Grid from '@mui/material/Unstable_Grid2';
+import Typography from '@mui/material/Typography';
+import { Box, Alert, LinearProgress } from '@mui/material';
+
+import { useSetState } from 'src/hooks/use-set-state';
+
+import { fDate } from 'src/utils/format-time';
+
+import { CONFIG } from 'src/config-global';
+import { DashboardContent } from 'src/layouts/dashboard';
+
+import { useTable } from 'src/components/table';
 import AnimatedIcon from 'src/components/animate/animated-icon';
 
-
-import { ItemListShippedLogsView } from 'src/sections/live-monitor/view/item-list-shipped-logs';
-
-import { BookingCheckInWidgets } from 'src/sections/live-monitor/booking/booking-check-in-widgets';
 import { BookingBooked } from 'src/sections/live-monitor/booking/booking-booked';
+import { WelcomeTypography } from 'src/sections/welcome-typography/welcome-typography';
 import { BookingTotalIncomes } from 'src/sections/live-monitor/booking/booking-total-incomes';
+import { ItemListShippedLogsView } from 'src/sections/live-monitor/view/item-list-shipped-logs';
+import { BookingCheckInWidgets } from 'src/sections/live-monitor/booking/booking-check-in-widgets';
+
+import { LoadingContext } from 'src/auth/context/loading-context';
+import { useDataContext } from 'src/auth/context/data/data-context';
+
 import { ModalListItemsSerials } from './modal-list-items-serials';
 import { ItemListShippedLogsTotals } from './item-list-shipped-logs-totals';
 import { ItemListShippedLogsTotalsTable } from './item-list-shipped-logs-totals-table';
@@ -366,8 +356,7 @@ export function LiveMonitorAnalyticsView() {
     <>
       {!itemsZohoSenitron || !itemsSenitronZoho || !itemsZohoData || filteredData === null ||
         totalZohoQty === null || totalSenitronQty === null || totalErrors === null || updating ? (
-        <>
-          <Box
+        <Box
             sx={{
               width: '350px',
               display: 'flex',
@@ -393,7 +382,6 @@ export function LiveMonitorAnalyticsView() {
               }}
             />
           </Box>
-        </>
       ) : (
         <>
           <DashboardContent maxWidth="xl">

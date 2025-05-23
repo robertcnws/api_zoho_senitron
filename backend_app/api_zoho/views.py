@@ -56,6 +56,17 @@ logger = logging.getLogger(__name__)
 # GENERATE AUTH URL
 #############################################
 
+@api_view(['GET'])
+@permission_classes([AllowAny])
+@csrf_exempt
+def health_check(request):
+    logger.info('Health check endpoint called')
+    return JsonResponse({'status': 'ok'}, status=200)
+
+#############################################
+# LOGIN
+#############################################
+
 @csrf_exempt
 def login(request):
     if request.method == 'POST':

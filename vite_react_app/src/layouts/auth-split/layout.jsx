@@ -11,10 +11,10 @@ import { Logo } from 'src/components/logo';
 
 import { Section } from './section';
 import { Main, Content } from './main';
+import { CustomFooter } from '../main/footer';
 import { HeaderSection } from '../core/header-section';
 import { LayoutSection } from '../core/layout-section';
 import { SettingsButton } from '../components/settings-button';
-import { CustomFooter, Footer, HomeFooter } from '../main/footer';
 
 // ----------------------------------------------------------------------
 

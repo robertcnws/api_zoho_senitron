@@ -1,20 +1,19 @@
-import { useState, useCallback, useContext } from 'react';
+import { useState, useContext, useCallback } from 'react';
 
-import Stack from '@mui/material/Stack';
-import Grid from '@mui/material/Unstable_Grid2';
 import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
+import { LinearProgress } from '@mui/material';
+import Grid from '@mui/material/Unstable_Grid2';
 
 import { paths } from 'src/routes/paths';
-import { LoadingContext } from 'src/auth/context/loading-context';
-
-import { LinearProgress } from '@mui/material';
 
 import { DashboardContent } from 'src/layouts/dashboard';
+
+import { LoadingContext } from 'src/auth/context/loading-context';
 
 import { ItemDetailsInfo } from '../item-details-info';
 import { ItemDetailsItems } from '../item-details-item';
 import { ItemDetailsToolbar } from '../item-details-toolbar';
-import { ItemDetailsSenitronItems } from '../item-details-senitron-item';
 
 
 

@@ -11,8 +11,10 @@ def create_superuser():
     username = os.getenv('DJANGO_SUPERUSER_USERNAME')
     email = os.getenv('DJANGO_SUPERUSER_EMAIL')
     password = os.getenv('DJANGO_SUPERUSER_PASSWORD')
+    
+    super_user = LoginUser.objects.filter(username=username).first()
 
-    if not LoginUser.objects.filter(username=username).exists():
+    if super_user is None:
         print("Creating superuser...")
         call_command('createsuperuser', '--noinput', '--username', username)
         user = LoginUser.objects.get(username=username)
@@ -25,8 +27,10 @@ def create_loginuser():
     username = os.getenv('LOGINUSER_USERNAME')
     email = os.getenv('LOGINUSER_EMAIL')
     password = os.getenv('LOGINUSER_PASSWORD')
+    
+    login_user = LoginUser.objects.filter(username=username).first()
 
-    if not LoginUser.objects.filter(username=username).exists():
+    if login_user is None:
         print("Creating LoginUser...")
         LoginUser.objects.create_user(username=username, email=email, password=password, is_staff=True)
         print("LoginUser created!")

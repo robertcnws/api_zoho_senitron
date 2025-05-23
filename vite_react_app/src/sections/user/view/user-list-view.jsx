@@ -1,6 +1,5 @@
-import { useState, useCallback, useEffect, useMemo, useContext } from 'react';
-
 import axios from 'axios';
+import { useMemo, useState, useEffect, useContext, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
 import Tab from '@mui/material/Tab';
@@ -19,11 +18,11 @@ import { RouterLink } from 'src/routes/components';
 import { useBoolean } from 'src/hooks/use-boolean';
 import { useSetState } from 'src/hooks/use-set-state';
 
-import { varAlpha } from 'src/theme/styles';
-import { DashboardContent } from 'src/layouts/dashboard';
-import { _roles, USER_STATUS_OPTIONS } from 'src/_mock';
-import { useUserList } from 'src/_mock/_user';
 import { CONFIG } from 'src/config-global';
+import { varAlpha } from 'src/theme/styles';
+import { useUserList } from 'src/_mock/_user';
+import { _roles, USER_STATUS_OPTIONS } from 'src/_mock';
+import { DashboardContent } from 'src/layouts/dashboard';
 
 import { Label } from 'src/components/label';
 import { toast } from 'src/components/snackbar';
@@ -34,14 +33,11 @@ import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 import { TableCustomPaginationZohoStyleRow } from 'src/components/table/table-pagination-custom-zoho-style-row';
 import {
   useTable,
-  emptyRows,
   rowInPage,
   TableNoData,
   getComparator,
-  TableEmptyRows,
   TableHeadCustom,
   TableSelectedAction,
-  TablePaginationCustom,
 } from 'src/components/table';
 
 import { LoadingContext } from 'src/auth/context/loading-context';

@@ -1,7 +1,4 @@
-import { useCallback, useEffect, useContext } from 'react';
-
-import dayjs from 'dayjs';
-import axios from 'axios';
+import { useEffect, useContext, useCallback } from 'react';
 
 import Stack from '@mui/material/Stack';
 import MenuList from '@mui/material/MenuList';
@@ -9,17 +6,13 @@ import MenuItem from '@mui/material/MenuItem';
 import TextField from '@mui/material/TextField';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { formHelperTextClasses } from '@mui/material/FormHelperText';
+
+import { generatePrintablePDF } from 'src/utils/printable-pdf';
 
 import { Iconify } from 'src/components/iconify';
 import { usePopover, CustomPopover } from 'src/components/custom-popover';
 
 import { LoadingContext } from 'src/auth/context/loading-context';
-import { CONFIG } from 'src/config-global';
-import ExportCSV from 'src/utils/export-csv';
-import { fDate } from 'src/utils/format-time';
-import { generatePrintablePDF } from 'src/utils/printable-pdf';
 
 
 // ----------------------------------------------------------------------

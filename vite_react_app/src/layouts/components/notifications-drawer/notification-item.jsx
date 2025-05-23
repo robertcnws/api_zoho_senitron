@@ -1,7 +1,9 @@
+import axios from 'axios';
+import { useCallback } from 'react';
+
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
-import Avatar from '@mui/material/Avatar';
 import Typography from '@mui/material/Typography';
 import ListItemText from '@mui/material/ListItemText';
 import ListItemAvatar from '@mui/material/ListItemAvatar';
@@ -16,8 +18,6 @@ import { CONFIG } from 'src/config-global';
 
 import { Label } from 'src/components/label';
 import { FileThumbnail } from 'src/components/file-thumbnail';
-import { useCallback } from 'react';
-import axios from 'axios';
 
 // ----------------------------------------------------------------------
 

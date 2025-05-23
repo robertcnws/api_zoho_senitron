@@ -1,19 +1,23 @@
 import React, { useContext } from 'react';
+
 import Table from '@mui/material/Table';
-import { Box, Button, TextField, Stack, TableContainer, TableHead, TableRow, TableCell, TableBody, InputAdornment, Checkbox, Alert, FormControlLabel } from "@mui/material";
-import { usePopover, CustomPopover } from 'src/components/custom-popover';
-import IconButton from '@mui/material/IconButton';
 import MenuList from '@mui/material/MenuList';
 import MenuItem from '@mui/material/MenuItem';
+import IconButton from '@mui/material/IconButton';
+import { alpha, useTheme } from '@mui/material/styles';
+import { Box, Stack, TableRow, TextField, TableCell, TableBody, TableContainer, InputAdornment } from "@mui/material";
+
+import ExportCSV from "src/utils/export-csv";
+import { fDateTime } from 'src/utils/format-time';
+import { generatePrintablePDF } from 'src/utils/printable-pdf';
+
+import { Label } from "src/components/label";
 import { Iconify } from 'src/components/iconify';
 import { ConfirmDialog } from 'src/components/custom-dialog';
-import { Label } from "src/components/label";
-import { alpha, useTheme } from '@mui/material/styles';
-import { generatePrintablePDF } from 'src/utils/printable-pdf';
+import { TableNoData, TableHeadCustom } from 'src/components/table';
+import { usePopover, CustomPopover } from 'src/components/custom-popover';
+
 import { LoadingContext } from 'src/auth/context/loading-context';
-import ExportCSV from "src/utils/export-csv";
-import { TableHeadCustom, TableNoData } from 'src/components/table';
-import { fDateTime } from 'src/utils/format-time';
 
 export function ModalSublistItemsSerials({
   openModal,
@@ -54,8 +58,7 @@ export function ModalSublistItemsSerials({
         title={`${modalTitle} (${modalDataFiltered?.length} items)`}
         maxWidth='lg'
         content={
-          <>
-            <Box sx={{ width: '100%', bgcolor: 'background.paper', p: 1 }}>
+          <Box sx={{ width: '100%', bgcolor: 'background.paper', p: 1 }}>
               <Stack direction="row" alignItems="center" spacing={1} flexGrow={1} sx={{ width: 1 }}>
                 <TextField
                   fullWidth
@@ -124,8 +127,6 @@ export function ModalSublistItemsSerials({
                 </TableContainer>
               )}
             </Box>
-
-          </>
         }
       />
       <CustomPopover

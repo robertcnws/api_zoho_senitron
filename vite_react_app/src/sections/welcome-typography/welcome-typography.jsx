@@ -1,9 +1,13 @@
-import { Typography, Stack, Button } from '@mui/material';
-import { Iconify } from 'src/components/iconify';
-import { fDate, fDateTime } from 'src/utils/format-time';
-import { Label } from 'src/components/label';
-import { CONFIG } from 'src/config-global';
 import axios from 'axios';
+
+import { Stack, Button, Typography } from '@mui/material';
+
+import { fDate, fDateTime } from 'src/utils/format-time';
+
+import { CONFIG } from 'src/config-global';
+
+import { Label } from 'src/components/label';
+import { Iconify } from 'src/components/iconify';
 
 export const WelcomeTypography = ({
     userLogged,
