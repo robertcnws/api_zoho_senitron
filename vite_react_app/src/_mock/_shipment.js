@@ -88,16 +88,10 @@ const GET_ZOHO_SHIPMENT_ORDERS = gql`
 export const useShipmentsQuery = (startDate, endDate) => {
   const { loading, error, data, startPolling, stopPolling } = useQuery(GET_ZOHO_SHIPMENT_ORDERS, {
     variables: { startDate, endDate },
+    skip: !startDate || !endDate, 
   });
 
-  useEffect(() => {
-    startPolling(CONFIG.pollingInterval); 
-    return () => {
-      stopPolling();
-    };
-  }, [startPolling, stopPolling]);
-  
-  return { loading, error, data: data?.allZohoShipmentOrders };
+  return { loading, error, data: data?.allZohoShipmentOrders || [] };
 };
 
 

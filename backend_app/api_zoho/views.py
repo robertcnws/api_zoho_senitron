@@ -49,6 +49,9 @@ import time
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+def health(request):
+    return JsonResponse({"status": "ok"})
+
 #############################################
 # ZOHO API TOKENS FUNCTIONS
 #############################################

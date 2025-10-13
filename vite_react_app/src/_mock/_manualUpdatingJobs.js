@@ -15,12 +15,5 @@ const GET_MANUAL_UPDATING_JOBS = gql`
 export const useManualUpdatingJobsQuery = () => {
   const { loading, error, data, startPolling, stopPolling } = useQuery(GET_MANUAL_UPDATING_JOBS);
 
-  useEffect(() => {
-    startPolling(CONFIG.pollingInterval); 
-    return () => {
-      stopPolling();
-    };
-  }, [startPolling, stopPolling]);
-
-  return { loading, error, data: data?.allManualUpdatingJobs };
+  return { loading, error, data: data?.allManualUpdatingJobs || [] };
 };

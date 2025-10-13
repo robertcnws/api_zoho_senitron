@@ -85,7 +85,7 @@ export function UserListView() {
   const filters = useSetState({ name: '', role: [], status: 'all' });
 
   // useEffect(() => {
-  //   const socket = new WebSocket(`wss://${CONFIG.apiHost}/${CONFIG.apiDomain}/ws/users/`);
+  //   const socket = new WebSocket(`${CONFIG.websocketProtocol}://${CONFIG.apiHost}/${CONFIG.apiDomain}/ws/users/`);
 
   //   socket.onopen = () => {
   //     console.log('WebSocket connected');

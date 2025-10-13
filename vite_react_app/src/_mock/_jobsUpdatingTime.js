@@ -15,12 +15,5 @@ const GET_JOBS_UPDTING_TIMES = gql`
 export const useJobsUpdatingTimesQuery = () => {
   const { loading, error, data, startPolling, stopPolling } = useQuery(GET_JOBS_UPDTING_TIMES);
 
-  useEffect(() => {
-    startPolling(CONFIG.pollingInterval); 
-    return () => {
-      stopPolling();
-    };
-  }, [startPolling, stopPolling]);
-
-  return { loading, error, data: data?.allJobsUpdatingTimes };
+  return { loading, error, data: data?.allJobsUpdatingTimes || [] };
 };

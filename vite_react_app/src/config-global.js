@@ -13,6 +13,7 @@ export const CONFIG = {
   apiHost: import.meta.env.VITE_BACKEND_HOST ?? '',
   apiDomain: import.meta.env.VITE_BACKEND_DOMAIN ?? '',
   pollingInterval: import.meta.env.VITE_POLLING_INTERVAL ?? 10000,
+  websocketProtocol: import.meta.env.VITE_WEBSOCKET_PROTOCOL ?? 'ws',
   /**
    * Auth
    * @method jwt | amplify | firebase | supabase | auth0

@@ -105,7 +105,7 @@ export function ShipmentListView() {
 
 
   // useEffect(() => {
-  //   const socket = new WebSocket(`wss://${CONFIG.apiHost}/${CONFIG.apiDomain}/ws/inventory_sales_orders/`);
+  //   const socket = new WebSocket(`${CONFIG.websocketProtocol}://${CONFIG.apiHost}/${CONFIG.apiDomain}/ws/inventory_sales_orders/`);
 
   //   socket.onmessage = (event) => {
   //     const message = JSON.parse(event.data);

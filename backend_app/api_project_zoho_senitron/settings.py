@@ -79,10 +79,8 @@ LOGINUSER_PASSWORD = env('LOGINUSER_PASSWORD')
 
 CSRF_TRUSTED_ORIGINS = [
     'https://localhost',
-    'http://localhost:3039',
     'http://localhost:3030',
     'https://127.0.0.1',
-    'http://127.0.0.1:3039',
     'http://127.0.0.1:3030',
     'https://host.docker.internal',
     'https://integration.nws.com',
@@ -107,10 +105,8 @@ CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
     "https://localhost",
-    'http://localhost:3039',
     'http://localhost:3030',
     "https://127.0.0.1",
-    "http://127.0.0.1:3039",
     "http://127.0.0.1:3030",
     "https://host.docker.internal",
     "https://integration.nws.com",
@@ -157,19 +153,20 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'channels',
     'graphene_django',
-    'api_zoho',
-    'api_senitron',
+    'api_zoho.apps.ApiZohoConfig',
+    'api_senitron.apps.ApiSenitronConfig',
     'api_project_zoho_senitron_async_sequence',
+    'api_project_zoho_senitron_graph_ql',
     'django_celery_beat',
 ]
 
-GRAPHENE = {
-    'SCHEMA': 'api_project_zoho_senitron_graph_ql.full_schema.schema',  
-    'MIDDLEWARE': [
-        'graphql_jwt.middleware.JSONWebTokenMiddleware', 
-    ],
-    'GRAPHIQL_ENABLED': True, 
-}
+# GRAPHENE = {
+#     'SCHEMA': 'api_project_zoho_senitron_graph_ql.full_schema.schema',  
+#     'MIDDLEWARE': [
+#         'graphql_jwt.middleware.JSONWebTokenMiddleware', 
+#     ],
+#     'GRAPHIQL_ENABLED': True, 
+# }
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -214,15 +211,15 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [(REDIS_HOST, 6379)], 
+            "hosts": [(REDIS_HOST, 6379, 6)], 
         },
         'CAPACITY': 1500,
     },
 }
 
-ASGI_APPLICATION = "api_project_zoho_senitron.asgi.application"
+# ASGI_APPLICATION = "api_project_zoho_senitron.asgi.application"
 
-# WSGI_APPLICATION = 'api_project_zoho_senitron.wsgi.application'
+WSGI_APPLICATION = 'api_project_zoho_senitron.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
@@ -298,17 +295,28 @@ TEMPLATES = [
 ]
 
 STATIC_URL = '/static/'
+
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
+
+STATICFILES_FINDERS = [
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+]
+
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 BASE_DIR_STATIC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 BACKUP_DIR = os.path.join(BASE_DIR, 'backup')
 
 MEDIA_URL = '/backup/'
 MEDIA_ROOT = BACKUP_DIR
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
-# STATICFILES_DIRS = [
-#     os.path.join(BASE_DIR, 'static'),
-# ]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field

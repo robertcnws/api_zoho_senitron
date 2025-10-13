@@ -36,7 +36,7 @@ export function ItemDetailsItems({ item, senitronItem, setItem, setSenitronItem,
 
 
   // useEffect(() => {
-  //   const socket = new WebSocket(`wss://${CONFIG.apiHost}/${CONFIG.apiDomain}/ws/senitron_inventory_items_assets/`);
+  //   const socket = new WebSocket(`${CONFIG.websocketProtocol}://${CONFIG.apiHost}/${CONFIG.apiDomain}/ws/senitron_inventory_items_assets/`);
   //   socket.onmessage = (event) => {
   //     const message = JSON.parse(event.data);
   //     if (message.type === 'created' || message.type === 'updated') {

@@ -16,8 +16,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from api_zoho.views import health
 
 urlpatterns = [
+    path('api_zoho_senitron/health/', health, name='health'),
     path('api_zoho_senitron/admin/', admin.site.urls),
     path('api_zoho_senitron/api_zoho/', include('api_zoho.urls')),
     path('api_zoho_senitron/api_senitron/', include('api_senitron.urls')),

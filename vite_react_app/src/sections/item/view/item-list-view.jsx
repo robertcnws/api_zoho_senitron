@@ -148,7 +148,7 @@ export function ItemListView() {
 
 
   // useEffect(() => {
-  //   const socket = new WebSocket(`wss://${CONFIG.apiHost}/${CONFIG.apiDomain}/ws/inventory_items/`);
+  //   const socket = new WebSocket(`${CONFIG.websocketProtocol}://${CONFIG.apiHost}/${CONFIG.apiDomain}/ws/inventory_items/`);
   //   socket.onmessage = (event) => {
   //     const message = JSON.parse(event.data);
   //     if (message.type === 'created' || message.type === 'updated') {

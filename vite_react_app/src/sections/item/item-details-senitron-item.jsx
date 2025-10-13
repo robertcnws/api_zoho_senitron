@@ -26,7 +26,7 @@ export function ItemDetailsSenitronItems({ item }) {
   const userLogged = useMemo(() => JSON.parse(localStorage.getItem('userLogged')), []);
 
   useEffect(() => {
-    const socket = new WebSocket(`wss://${CONFIG.apiHost}/${CONFIG.apiDomain}/ws/senitron_inventory_items_assets/`);
+    const socket = new WebSocket(`${CONFIG.websocketProtocol}://${CONFIG.apiHost}/${CONFIG.apiDomain}/ws/senitron_inventory_items_assets/`);
     socket.onmessage = (event) => {
       const message = JSON.parse(event.data);
       if (message.type === 'created' || message.type === 'updated') {
