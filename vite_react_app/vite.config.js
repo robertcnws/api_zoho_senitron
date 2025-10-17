@@ -64,4 +64,20 @@ export default defineConfig({
   },
   server: { port: PORT, host: true },
   preview: { port: PORT, host: true },
+  build: {
+    chunkSizeWarningLimit: 1200, 
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('@mui')) return 'vendor-mui'
+            if (id.includes('react')) return 'vendor-react'
+            if (id.includes('date-fns') || id.includes('dayjs')) return 'vendor-dates'
+            return 'vendor'
+          }
+        },
+      },
+    },
+    sourcemap: false, 
+  },
 });

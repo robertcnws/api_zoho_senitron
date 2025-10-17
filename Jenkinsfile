@@ -116,8 +116,10 @@ pipeline {
           withCredentials([file(credentialsId: env.AWS_FRONTEND_ENV_CRED_ID, variable: 'ENV_FILE')]) {
             sh 'cp $ENV_FILE .env'
           }
+          sh 'set -eux'
+          sh 'export NODE_OPTIONS=--max_old_space_size=4096'
           sh 'npm cache clean --force'
-          sh 'npm install'
+          sh 'npm ci || npm install'
           sh 'npm run lint -- --fix'
           sh 'npm run build'
           sh """
