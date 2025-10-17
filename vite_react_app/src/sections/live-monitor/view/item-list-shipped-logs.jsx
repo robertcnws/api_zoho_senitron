@@ -164,7 +164,6 @@ export function ItemListShippedLogsView({
         (count) => setCountLostItems(count), [setCountLostItems]
     );
 
-
     useEffect(() => {
         // const update = () => {
         if (itemsZohoSenitron && itemsZohoSenitron.length > 0 && listSerials && listSerials.length > 0 && listShipments && listShipments.length > 0) {

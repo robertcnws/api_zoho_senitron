@@ -138,13 +138,13 @@ pipeline {
               script: '''
                 docker images --format '{{.Repository}}:{{.Tag}}' \
                 | awk -v hook="$JENKINS_HOOK" \
-                    '$0 ~ ("ne_" hook "_aws_frontend_app:latest$") {print $1; exit}'
+                    '$0 ~ ("pi-" hook "_aws_frontend_app:latest$") {print $1; exit}'
               ''',
               returnStdout: true
             ).trim()
 
             if (!SRC_IMG) {
-              error "No se encontró la imagen ne_${env.JENKINS_HOOK}_aws_frontend_app:latest"
+              error "No se encontró la imagen pi-${env.JENKINS_HOOK}_aws_frontend_app:latest"
             }
 
             sh """
