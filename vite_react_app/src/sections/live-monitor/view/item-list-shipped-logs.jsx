@@ -135,11 +135,11 @@ export function ItemListShippedLogsView({
     useEffect(() => {
         const page = localStorage.getItem('itemPage');
         if (page) {
-            table.setPage(parseInt(page, 10));
+            table.setPage(Number.parseInt(page, 10));
         }
         const rowsPerPage = localStorage.getItem('itemRowsPerPage');
         if (rowsPerPage) {
-            table.setRowsPerPage(parseInt(rowsPerPage, 10));
+            table.setRowsPerPage(Number.parseInt(rowsPerPage, 10));
         }
     }, [table]);
 

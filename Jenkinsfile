@@ -116,17 +116,25 @@ pipeline {
           withCredentials([file(credentialsId: env.AWS_FRONTEND_ENV_CRED_ID, variable: 'ENV_FILE')]) {
             sh 'cp $ENV_FILE .env'
           }
-          sh 'set -eux'
-          sh 'export NODE_OPTIONS=--max_old_space_size=4096'
-          sh 'npm cache clean --force'
-          sh 'npm ci || npm install'
-          sh 'npm run lint -- --fix'
-          sh 'npm run build'
-          sh """
-            docker-compose -f ../docker-compose.aws.frontend.prod.yml build
-            docker tag "ne_${JENKINS_HOOK}_aws_frontend_app:latest" "${FRONTEND_IMAGE}:latest"
-            docker push "${FRONTEND_IMAGE}:latest"
-          """
+          withEnv([
+            'NODE_OPTIONS=--max-old-space-size=6144',   
+            'CI_LOW_MEM_BUILD=1',                       
+            'ESBUILD_BINARY_PATH=',                     
+            'SWC_WORKER_THREADS=1'                      
+          ]) {
+            sh '''
+              npm cache clean --force
+              npm ci
+              
+              npx -y update-browserslist-db@latest || true
+              
+              npm run build
+
+              docker-compose -f ../docker-compose.aws.frontend.prod.yml build
+              docker tag "ne_${JENKINS_HOOK}_aws_frontend_app:latest" "${FRONTEND_IMAGE}:latest"
+              docker push "${FRONTEND_IMAGE}:latest"
+            '''
+          }
         }
       }
     }
