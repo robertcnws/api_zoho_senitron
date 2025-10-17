@@ -9,7 +9,7 @@ services:
       - ./backend_app:/app
       - ./backend_app/static:/app/staticfiles
     ports:
-      - "8001:8001"
+      - "8000:8000"
     networks:
       - net_api_zoho_senitron
 

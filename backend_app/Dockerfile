@@ -28,8 +28,8 @@ COPY _deploy/supervisord.conf /etc/supervisor/supervisord.conf
 COPY _deploy/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-EXPOSE 8001
+EXPOSE 8000
 
-HEALTHCHECK --interval=30s --timeout=5s --retries=5 CMD wget -qO- http://localhost:8001/api_zoho_senitron/health/ || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --retries=5 CMD wget -qO- http://localhost:8000/api_zoho_senitron/health/ || exit 1
 
 CMD ["/entrypoint.sh"]

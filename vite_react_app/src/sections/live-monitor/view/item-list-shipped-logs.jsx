@@ -123,7 +123,6 @@ export function ItemListShippedLogsView({
         endDate: null,
     });
 
-
     useEffect(() => {
         localStorage.removeItem('routeByAnalytics');
         localStorage.removeItem('routeByLiveMonitor');
