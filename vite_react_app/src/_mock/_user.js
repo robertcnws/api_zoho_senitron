@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { gql, useQuery } from '@apollo/client';
+
 import { CONFIG } from 'src/config-global';
+
 import { _mock } from './_mock';
 
 
@@ -30,14 +32,7 @@ const GET_LOGIN_USERS = gql`
 `;
 
 export const useUserList = () => {
-  const { loading, error, data, startPolling, stopPolling } = useQuery(GET_LOGIN_USERS);
-
-  useEffect(() => {
-    startPolling(CONFIG.pollingInterval * 3); 
-    return () => {
-      stopPolling();
-    };
-  }, [startPolling, stopPolling]);
+  const { loading, error, data } = useQuery(GET_LOGIN_USERS);
 
   const loginUsers = data?.allLoginUsers || [];
 
@@ -62,7 +57,7 @@ export const useUserList = () => {
     gender: user.gender
   }));
 
-  return { loading, error, data: _userList };
+  return { loading, error, data: _userList || [] };
 };
 
 // ----------------------------------------------------------------------

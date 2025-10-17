@@ -1,16 +1,18 @@
 // src/contexts/DataContext.jsx
 
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { useItemsQuery, useSenitronItemsQuery } from 'src/_mock/_items';
-import { useShipmentsQuery } from 'src/_mock/_shipment';
+import React, { useMemo, useState, useContext, createContext } from 'react';
+
+import { fDate } from 'src/utils/format-time';
+
 import { usePackagesQuery } from 'src/_mock/_package';
+import { useShipmentsQuery } from 'src/_mock/_shipment';
+import { useNotificationsQuery } from 'src/_mock/_notification';
 import { useSkuTrackInfoQuery } from 'src/_mock/_sku_track_info';
-import { useJobsUpdatingTimesQuery } from 'src/_mock/_jobsUpdatingTime';
-import { useManualUpdatingJobsQuery } from 'src/_mock/_manualUpdatingJobs';
 import { useTimelineItemsQuery } from 'src/_mock/_timelineItems';
 import { useSenitronAssetsLogsQuery } from 'src/_mock/_itemAssetsLogs';
-import { useNotificationsQuery } from 'src/_mock/_notification';
-import { fDate } from 'src/utils/format-time';
+import { useItemsQuery, useSenitronItemsQuery } from 'src/_mock/_items';
+import { useJobsUpdatingTimesQuery } from 'src/_mock/_jobsUpdatingTime';
+import { useManualUpdatingJobsQuery } from 'src/_mock/_manualUpdatingJobs';
 
 const DataContext = createContext();
 
@@ -206,7 +208,7 @@ export const DataProvider = ({ children }) => {
     }, [filteredLogs]);
 
     const itemsAssetsLogsInfo = useMemo(() => objectsGroupedLogs?.map(group => {
-        const date = group.date;
+        const {date} = group;
         const liveLogs = group.logs.filter(
             log => log.currentStatusName?.toLowerCase().includes('live') &&
                    !log.lastStatusName?.toLowerCase().includes('live') &&

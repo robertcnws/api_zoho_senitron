@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { gql, useQuery } from '@apollo/client';
+
 import { CONFIG } from 'src/config-global';
 
 const GET_NOTIFICATIONS = gql`
@@ -30,14 +31,8 @@ const GET_NOTIFICATIONS = gql`
 export const useNotificationsQuery = (username) => {
   const { loading, error, data, startPolling, stopPolling } = useQuery(GET_NOTIFICATIONS, {
     variables: { username },
+    skip: !username,
   });
 
-  useEffect(() => {
-    startPolling(CONFIG.pollingInterval); 
-    return () => {
-      stopPolling();
-    };
-  }, [startPolling, stopPolling]);
-  
-  return { loading, error, data: data?.allNotificationUser };
-}; 
+  return { loading, error, data: data?.allNotificationUser || [] };
+};

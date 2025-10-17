@@ -1,11 +1,10 @@
-import React, { useEffect, useState } from 'react';
-
 import { Helmet } from 'react-helmet-async';
+import React, { useState, useEffect } from 'react';
 
 import { useParams } from 'src/routes/hooks';
 
-import { useItemsQuery, useSenitronItemsQuery } from 'src/_mock/_items';
 import { CONFIG } from 'src/config-global';
+import { useItemsQuery, useSenitronItemsQuery } from 'src/_mock/_items';
 
 import { ItemDetailsView } from 'src/sections/item/view';
 

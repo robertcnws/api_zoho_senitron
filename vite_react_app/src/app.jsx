@@ -3,7 +3,7 @@ import 'src/global.css';
 // ----------------------------------------------------------------------
 
 import React, { useContext } from 'react';
-
+import { ApolloProvider } from '@apollo/client';
 
 import { Router } from 'src/routes/sections';
 
@@ -14,8 +14,6 @@ import { LocalizationProvider } from 'src/locales';
 import { I18nProvider } from 'src/locales/i18n-provider';
 import { ThemeProvider } from 'src/theme/theme-provider';
 
-import { ApolloProvider } from '@apollo/client';
-
 import { Snackbar } from 'src/components/snackbar';
 import { ProgressBar } from 'src/components/progress-bar';
 import { MotionLazy } from 'src/components/animate/motion-lazy';
@@ -23,17 +21,17 @@ import { SettingsDrawer, defaultSettings, SettingsProvider } from 'src/component
 
 import { CheckoutProvider } from 'src/sections/checkout/context';
 
+import { LoadingContext } from 'src/auth/context/loading-context';
 import { AuthProvider as JwtAuthProvider } from 'src/auth/context/jwt';
 import { AuthProvider as Auth0AuthProvider } from 'src/auth/context/auth0';
 import { AuthProvider as AmplifyAuthProvider } from 'src/auth/context/amplify';
 import { AuthProvider as SupabaseAuthProvider } from 'src/auth/context/supabase';
 import { AuthProvider as FirebaseAuthProvider } from 'src/auth/context/firebase';
-import { LoadingContext } from 'src/auth/context/loading-context';
 
 import client from './utils/graphql-client';
-import BackdropBackground from './layouts/components/backdrop-background';
 import { RouteProvider } from './auth/context/router-context';
 import { DataProvider } from './auth/context/data/data-context';
+import BackdropBackground from './layouts/components/backdrop-background';
 
 
 

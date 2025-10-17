@@ -34,12 +34,12 @@ export const useSenitronAssetsLogsQuery = (startDate) => {
     variables: { startDate },
   });
 
-  useEffect(() => {
-    startPolling(CONFIG.pollingInterval); 
-    return () => {
-      stopPolling();
-    };
-  }, [startPolling, stopPolling]);
-  
-  return { loading, error, data: data?.allSenitronGroupedLogs };
+  // useEffect(() => {
+  //   startPolling(CONFIG.pollingInterval); 
+  //   return () => {
+  //     stopPolling();
+  //   };
+  // }, [startPolling, stopPolling]);
+
+  return { loading, error, data: data?.allSenitronGroupedLogs || [] };
 };

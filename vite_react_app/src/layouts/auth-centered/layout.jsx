@@ -11,10 +11,10 @@ import { stylesMode } from 'src/theme/styles';
 import { Logo } from 'src/components/logo';
 
 import { Main } from './main';
+import { CustomFooter } from '../main/footer';
 import { HeaderSection } from '../core/header-section';
 import { LayoutSection } from '../core/layout-section';
 import { SettingsButton } from '../components/settings-button';
-import { CustomFooter } from '../main/footer';
 
 // ----------------------------------------------------------------------
 

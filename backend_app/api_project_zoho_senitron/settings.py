@@ -25,21 +25,23 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-8=q+a0063s232#ebj-9l94lv8p+v4cb1%qh+-%su93w)4f@8w#'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 env = environ.Env(
-    DEBUG=(bool, True)
+    DEBUG=(bool, False)
 )
 
 environ.Env.read_env()
 
-ALLOWED_HOSTS = [
-    'localhost', 
-    '10.1.10.216', 
-    '127.0.0.1', 
-    'host.docker.internal', 
-    'api-zoho-senitron.nws.home'
-]
+ALLOWED_HOSTS = ['*']
+
+# ALLOWED_HOSTS = [
+#     'localhost', 
+#     '10.1.10.216', 
+#     '127.0.0.1', 
+#     'host.docker.internal', 
+#     'api-zoho-senitron.nws.home'
+# ]
 
 # Env Vars
 ENVIRONMENT = env('ENVIRONMENT')
@@ -66,16 +68,25 @@ API_SENITRON_QUANTITIES_URL = env('API_SENITRON_QUANTITIES_URL')
 API_SENITRON_ASSETS_URL = env('API_SENITRON_ASSETS_URL')
 API_SENITRON_ASSETS_LOGS_URL = env('API_SENITRON_ASSETS_LOGS_URL')
 
+# USERS
+DJANGO_SETTINGS_MODULE = env('DJANGO_SETTINGS_MODULE')
+DJANGO_SUPERUSER_USERNAME = env('DJANGO_SUPERUSER_USERNAME')
+DJANGO_SUPERUSER_EMAIL = env('DJANGO_SUPERUSER_EMAIL')
+DJANGO_SUPERUSER_PASSWORD = env('DJANGO_SUPERUSER_PASSWORD')
+LOGINUSER_USERNAME = env('LOGINUSER_USERNAME')
+LOGINUSER_EMAIL = env('LOGINUSER_EMAIL')
+LOGINUSER_PASSWORD = env('LOGINUSER_PASSWORD')
+
 CSRF_TRUSTED_ORIGINS = [
     'https://localhost',
-    'http://localhost:3039',
     'http://localhost:3030',
     'https://127.0.0.1',
-    'http://127.0.0.1:3039',
     'http://127.0.0.1:3030',
     'https://host.docker.internal',
     'https://integration.nws.com',
-    'https://api-zoho-senitron.nws.home'
+    'https://api-zoho-senitron.nws.home',
+    'https://wms.newwindowsystem.net',
+    'http://wms.newwindowsystem.net',
 ]
 
 CSRF_COOKIE_SECURE = False  
@@ -94,14 +105,14 @@ CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
     "https://localhost",
-    'http://localhost:3039',
     'http://localhost:3030',
     "https://127.0.0.1",
-    "http://127.0.0.1:3039",
     "http://127.0.0.1:3030",
     "https://host.docker.internal",
     "https://integration.nws.com",
-    "https://api-zoho-senitron.nws.home"
+    "https://api-zoho-senitron.nws.home",
+    'https://wms.newwindowsystem.net',
+    'http://wms.newwindowsystem.net',
 ]
 
 CORS_ALLOW_METHODS = [
@@ -142,19 +153,20 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'channels',
     'graphene_django',
-    'api_zoho',
-    'api_senitron',
+    'api_zoho.apps.ApiZohoConfig',
+    'api_senitron.apps.ApiSenitronConfig',
     'api_project_zoho_senitron_async_sequence',
+    'api_project_zoho_senitron_graph_ql',
     'django_celery_beat',
 ]
 
-GRAPHENE = {
-    'SCHEMA': 'api_project_zoho_senitron_graph_ql.full_schema.schema',  
-    'MIDDLEWARE': [
-        'graphql_jwt.middleware.JSONWebTokenMiddleware', 
-    ],
-    'GRAPHIQL_ENABLED': True, 
-}
+# GRAPHENE = {
+#     'SCHEMA': 'api_project_zoho_senitron_graph_ql.full_schema.schema',  
+#     'MIDDLEWARE': [
+#         'graphql_jwt.middleware.JSONWebTokenMiddleware', 
+#     ],
+#     'GRAPHIQL_ENABLED': True, 
+# }
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -199,15 +211,15 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [(REDIS_HOST, 6379)], 
+            "hosts": [(REDIS_HOST, 6379, 6)], 
         },
         'CAPACITY': 1500,
     },
 }
 
-ASGI_APPLICATION = "api_project_zoho_senitron.asgi.application"
+# ASGI_APPLICATION = "api_project_zoho_senitron.asgi.application"
 
-# WSGI_APPLICATION = 'api_project_zoho_senitron.wsgi.application'
+WSGI_APPLICATION = 'api_project_zoho_senitron.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
@@ -283,17 +295,28 @@ TEMPLATES = [
 ]
 
 STATIC_URL = '/static/'
+
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
+
+STATICFILES_FINDERS = [
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+]
+
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 BASE_DIR_STATIC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 BACKUP_DIR = os.path.join(BASE_DIR, 'backup')
 
 MEDIA_URL = '/backup/'
 MEDIA_ROOT = BACKUP_DIR
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
-# STATICFILES_DIRS = [
-#     os.path.join(BASE_DIR, 'static'),
-# ]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
@@ -304,9 +327,13 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50 MB en bytes
 
 # Celery
 
-CELERY_BROKER_URL = 'redis://redis-api-zoho-senitron:6379/0'
+CELERY_BROKER_URL = env('CELERY_BROKER_URL')
+CELERY_TASK_DEFAULT_QUEUE = 'api_project_zoho_senitron_queue'
+CELERY_TASK_ROUTES = {
+    'api_project_zoho_senitron.*': {'queue': 'api_project_zoho_senitron_queue'},
+}
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
-CELERY_RESULT_BACKEND = 'redis://redis-api-zoho-senitron:6379/0'
+CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
@@ -319,11 +346,11 @@ CELERY_BEAT_SCHEDULE = {
     # Lunes a Sábado
     'run-task-sequence-every-2-min-mon-sat': {
         'task': 'api_project_zoho_senitron_async_sequence.tasks.task_sequence_2_min',
-        'schedule': crontab(minute='*/2', hour='7-17', day_of_week='mon-sat'),
+        'schedule': crontab(minute='*/10', hour='7-17', day_of_week='mon-sat'),
     },
     'run-task-sequence-every-45-min-mon-sat': {
         'task': 'api_project_zoho_senitron_async_sequence.tasks.task_sequence_45_min',
-        'schedule': crontab(minute='*/45', hour='7-17', day_of_week='mon-sat'),
+        'schedule': crontab(minute='*/30', hour='7-17', day_of_week='mon-sat'),
     },
 
     # Domingo

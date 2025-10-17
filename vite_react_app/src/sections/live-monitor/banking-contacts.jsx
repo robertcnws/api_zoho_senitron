@@ -1,6 +1,5 @@
-import React, { useContext, useEffect, useMemo, useState } from 'react';
-import { LoadingContext } from 'src/auth/context/loading-context';
-import { fDate, fDateTime } from 'src/utils/format-time';
+import React, { useMemo, useState, useEffect, useContext } from 'react';
+
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Button from '@mui/material/Button';
@@ -8,18 +7,23 @@ import Tooltip from '@mui/material/Tooltip';
 import IconButton from '@mui/material/IconButton';
 import CardHeader from '@mui/material/CardHeader';
 import ListItemText from '@mui/material/ListItemText';
-import { CustomPopover, usePopover } from 'src/components/custom-popover';
-import { Label } from 'src/components/label';
+import { Paper, Stack, Table, Collapse, MenuItem, MenuList, TableRow, TableBody, TableCell, TableContainer } from '@mui/material';
 
+import { fDate, fDateTime } from 'src/utils/format-time';
+
+import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
-import { Collapse, MenuItem, MenuList, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableRow } from '@mui/material';
+import { usePopover, CustomPopover } from 'src/components/custom-popover';
+import { TableNoData, getComparator, TableHeadCustom } from 'src/components/table';
 import { TableCustomPaginationZohoStyleRow } from 'src/components/table/table-pagination-custom-zoho-style-row';
-import { emptyRows, getComparator, TableEmptyRows, TableHeadCustom, TableNoData, TablePaginationCustom } from 'src/components/table';
-import { ModalItemSerialsDetails } from './view/modal-item-serials-details';
-import { ModalSublistItemsSerials } from './view/modal-sublist-items-serials';
+
+import { LoadingContext } from 'src/auth/context/loading-context';
+
 import { BankingContactsToolbar } from './banking-contacts-toolbar';
 import { ItemTableFiltersResult } from '../item/item-table-filters-result';
+import { ModalItemSerialsDetails } from './view/modal-item-serials-details';
+import { ModalSublistItemsSerials } from './view/modal-sublist-items-serials';
 
 
 
@@ -189,8 +193,7 @@ export function BankingContacts({
           title={title}
           subheader={subheader}
           action={
-            <>
-              <Button
+            <Button
                 size="small"
                 color="inherit"
                 endIcon={<Iconify icon="eva:arrow-ios-forward-fill" width={18} sx={{ ml: -0.5 }} />}
@@ -201,8 +204,6 @@ export function BankingContacts({
               >
                 View {isItemTable ? 'in List' : 'in Table'}
               </Button>
-
-            </>
           }
         />
         {isItemTable && (
@@ -514,8 +515,7 @@ function Item({ item, sx, setModalDataFiltered, handleOpenModal, date, isLive, .
               </Box>
             )}
             {item.logs.length > 0 && !isLive && (
-              <>
-                <Box
+              <Box
                   component="span"
                   sx={{ display: 'inline-flex', alignItems: 'center', typography: 'body2', color: 'error.main', gap: 1 }}
                 >
@@ -532,7 +532,6 @@ function Item({ item, sx, setModalDataFiltered, handleOpenModal, date, isLive, .
                       }</b>)</span>
                   </span>
                 </Box>
-              </>
             )}
           </>
         }

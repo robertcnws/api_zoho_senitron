@@ -49,11 +49,25 @@ import time
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+def health(request):
+    return JsonResponse({"status": "ok"})
+
 #############################################
 # ZOHO API TOKENS FUNCTIONS
 #############################################
 #############################################
 # GENERATE AUTH URL
+#############################################
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+@csrf_exempt
+def health_check(request):
+    logger.info('Health check endpoint called')
+    return JsonResponse({'status': 'ok'}, status=200)
+
+#############################################
+# LOGIN
 #############################################
 
 @csrf_exempt

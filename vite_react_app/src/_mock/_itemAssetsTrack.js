@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { gql, useQuery } from '@apollo/client';
+
 import { CONFIG } from 'src/config-global';
 
 const GET_ZOHO_ITEM_ASSETS_TRACK = gql`
@@ -26,14 +27,8 @@ const GET_ZOHO_ITEM_ASSETS_TRACK = gql`
 export const useItemAssetsTrackQuery = (listIds) => {
   const { loading, error, data, startPolling, stopPolling } = useQuery(GET_ZOHO_ITEM_ASSETS_TRACK, {
     variables: { listIds },
+    skip: !listIds || listIds.length === 0,
   });
-
-  useEffect(() => {
-    startPolling(CONFIG.pollingInterval); 
-    return () => {
-      stopPolling();
-    };
-  }, [startPolling, stopPolling]);
   
-  return { loading, error, data: data?.allZohoItemAssetsTrack };
+  return { loading, error, data: data?.allZohoItemAssetsTrack || [] };
 };

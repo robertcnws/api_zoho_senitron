@@ -1,4 +1,4 @@
-import axios, { axiosInstanceBackend, endpoints } from 'src/utils/axios';
+import axios, { endpoints, axiosInstanceBackend } from 'src/utils/axios';
 
 import { setSession } from './utils';
 import { STORAGE_KEY } from './constant';

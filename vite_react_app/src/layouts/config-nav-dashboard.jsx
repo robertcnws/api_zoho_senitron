@@ -1,12 +1,12 @@
+
 import { paths } from 'src/routes/paths';
 
 import { CONFIG } from 'src/config-global';
 
-import { SvgColor } from 'src/components/svg-color';
-import { Iconify } from 'src/components/iconify';
 import { Label } from 'src/components/label';
-import { useContext } from 'react';
-import { useDataContext } from 'src/auth/context/data/data-context';
+import { Iconify } from 'src/components/iconify';
+import { SvgColor } from 'src/components/svg-color';
+
 
 // ----------------------------------------------------------------------
 

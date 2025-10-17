@@ -1,56 +1,41 @@
-import React, { useState, useCallback, useEffect, useContext, useMemo } from 'react';
-import axios from 'axios';
+import React, { useMemo, useState, useEffect, useContext, useCallback } from 'react';
+
 import Box from '@mui/material/Box';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import Card from '@mui/material/Card';
 import Table from '@mui/material/Table';
-import Button from '@mui/material/Button';
-import Tooltip from '@mui/material/Tooltip';
 import TableBody from '@mui/material/TableBody';
-import TableContainer from '@mui/material/TableContainer';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
-import Alert from '@mui/material/Alert';
-import { Collapse, Grid, LinearProgress, Link, ListItemText, Paper, Stack, TableCell, TableRow } from '@mui/material';
+import TableContainer from '@mui/material/TableContainer';
+import { Grid, Link, Paper, Stack, Collapse, TableRow, TableCell, ListItemText, LinearProgress } from '@mui/material';
 
 import { paths } from 'src/routes/paths';
 import { useRouter } from 'src/routes/hooks';
 
-import { useBoolean } from 'src/hooks/use-boolean';
 import { useSetState } from 'src/hooks/use-set-state';
 
+import { fDate, fIsBetween } from 'src/utils/format-time';
 
 import { varAlpha } from 'src/theme/styles';
 import { DashboardContent } from 'src/layouts/dashboard';
-import { ITEM_STATUS_SHORT_OPTIONS, ITEM_SYNC_OPTIONS, useItemsQuery, useSenitronItemsQuery } from 'src/_mock/_items';
-import { CONFIG } from 'src/config-global';
-import { usePopover } from 'src/components/custom-popover';
 
 import { Label } from 'src/components/label';
-import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
-import { ConfirmDialog } from 'src/components/custom-dialog';
-
-import { LoadingContext } from 'src/auth/context/loading-context';
-import { useDataContext } from 'src/auth/context/data/data-context';
-import { fDate, fIsBetween } from 'src/utils/format-time';
 import { TableCustomPaginationZohoStyleRow } from 'src/components/table/table-pagination-custom-zoho-style-row';
 import {
     useTable,
-    emptyRows,
     rowInPage,
     TableNoData,
     getComparator,
-    TableEmptyRows,
     TableHeadCustom,
-    TableSelectedAction,
-    TablePaginationCustom,
 } from 'src/components/table';
 
-import { ItemTableRow } from '../../item/item-table-row';
-import { ItemTableToolbar } from '../../item/item-table-toolbar';
+import { LoadingContext } from 'src/auth/context/loading-context';
+import { useDataContext } from 'src/auth/context/data/data-context';
+
 import { ItemTableFiltersResult } from '../../item/item-table-filters-result';
 import { ItemTableShippedLogsToolbar } from '../item-table-shipped-logs-toolbar';
 
@@ -377,8 +362,7 @@ export function ItemListShippedLogsView({
                                         <Grid item xs={11}>
                                             <ListItemText
                                                 secondary={
-                                                    <>
-                                                        <Grid container spacing={1}>
+                                                    <Grid container spacing={1}>
                                                             {!isMobile && (
                                                                 <Grid item xs={4}>
                                                                     <Typography variant="body2">
@@ -403,7 +387,6 @@ export function ItemListShippedLogsView({
                                                                 </Typography>
                                                             </Grid>
                                                         </Grid>
-                                                    </>
                                                 }
                                                 primaryTypographyProps={{ variant: 'body2' }}
                                                 secondaryTypographyProps={{
@@ -454,8 +437,7 @@ export function ItemListShippedLogsView({
     }
 
     return (
-        <>
-            <Card sx={{ minHeight: isMobile ? '100%' : '40vh' }}>
+        <Card sx={{ minHeight: isMobile ? '100%' : '40vh' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1 }}>
                     <Typography variant="h6">Shipped Logs</Typography>
                 </Box>
@@ -744,7 +726,6 @@ export function ItemListShippedLogsView({
                     }}
                 /> */}
             </Card>
-        </>
     );
 }
 

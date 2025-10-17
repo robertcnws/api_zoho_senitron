@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { gql, useQuery } from '@apollo/client';
+
 import { CONFIG } from 'src/config-global';
 
 const GET_ZOHO_INVENTORY_ITEMS = gql`
@@ -90,14 +91,7 @@ const GET_SENITRON_INVENTORY_ITEM = gql`
 export const useItemsQuery = () => {
   const { loading, error, data, startPolling, stopPolling } = useQuery(GET_ZOHO_INVENTORY_ITEMS);
 
-  useEffect(() => {
-    startPolling(CONFIG.pollingInterval); 
-    return () => {
-      stopPolling();
-    };
-  }, [startPolling, stopPolling]);
-
-  return { loading, error, data: data?.allZohoInventoryItems };
+  return { loading, error, data: data?.allZohoInventoryItems || []};
 };
 
 export const useSenitronItemsQuery = () => {
@@ -105,29 +99,7 @@ export const useSenitronItemsQuery = () => {
     fetchPolicy: 'network-only',
   });
 
-  useEffect(() => {
-    const checkAndTogglePolling = () => {
-      const now = new Date();
-      const currentHour = now.getHours();
-      
-      if (currentHour >= 7 && currentHour < 17) {
-        startPolling(CONFIG.pollingInterval * 3); // 15 minutos
-      } else {
-        stopPolling();
-      }
-    };
-
-    checkAndTogglePolling();
-
-    const intervalId = setInterval(checkAndTogglePolling, 60000); // Cada minuto
-
-    return () => {
-      clearInterval(intervalId);
-      stopPolling();
-    };
-  }, [startPolling, stopPolling]);
-
-  return { loading, error, data: data?.allSenitronInventoryItemsAssets };
+  return { loading, error, data: data?.allSenitronInventoryItemsAssets || [] };
 };
 
 export const ITEM_STATUS_OPTIONS = [

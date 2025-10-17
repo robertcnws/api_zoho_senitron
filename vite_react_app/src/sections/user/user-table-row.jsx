@@ -1,11 +1,12 @@
 import { useContext } from 'react';
-import { ListItemText } from '@mui/material';
+
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Avatar from '@mui/material/Avatar';
 import Tooltip from '@mui/material/Tooltip';
+import { ListItemText } from '@mui/material';
 import MenuList from '@mui/material/MenuList';
 import MenuItem from '@mui/material/MenuItem';
 import TableRow from '@mui/material/TableRow';
@@ -14,12 +15,13 @@ import TableCell from '@mui/material/TableCell';
 import IconButton from '@mui/material/IconButton';
 
 import { useBoolean } from 'src/hooks/use-boolean';
-import { LoadingContext } from 'src/auth/context/loading-context';
 
 import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
 import { ConfirmDialog } from 'src/components/custom-dialog';
 import { usePopover, CustomPopover } from 'src/components/custom-popover';
+
+import { LoadingContext } from 'src/auth/context/loading-context';
 
 import { UserQuickEditForm } from './user-quick-edit-form';
 
@@ -128,15 +130,13 @@ export function UserTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
             </Label>
             <ListItemText
               secondary={
-                <>
-                  <IconButton
+                <IconButton
                     color={quickEdit.value ? 'inherit' : 'info'}
                     onClick={quickEdit.onTrue}
                     sx={{ fontSize: '1rem' }}
                   >
                     Edit <Iconify icon="solar:pen-bold" />
                   </IconButton>
-                </>
               }
             />
           </TableCell>
