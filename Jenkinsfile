@@ -82,20 +82,26 @@ pipeline {
         deleteDir()
         unstash 'source'
         dir('backend_app') {
-          sh """
+          sh '''
             set -eux
+
             docker compose -f ../docker-compose.aws.backend.prod.yml build
+            
             docker images | head -n 20
-            SRC_IMG="$(docker images --format '{{.Repository}}:{{.Tag}}' | awk '/_aws_backend_app:latest$/ {print $1; exit}')"
+            
+            SRC_IMG="$(docker images --format '{{.Repository}}:{{.Tag}}' \
+              | awk '/_aws_backend_app:latest$/ {print $1; exit}')"
+
             if [ -z "$SRC_IMG" ]; then
               echo "❌ No se encontró una imagen *_aws_backend_app:latest después del build." >&2
               docker images --format '{{.Repository}}:{{.Tag}}' | sort || true
               exit 1
             fi
+
             echo "✅ Usando imagen construida: $SRC_IMG"
-            docker tag "$SRC_IMG" "${BACKEND_IMAGE}:latest"
-            docker push "${BACKEND_IMAGE}:latest"
-          """
+            docker tag "$SRC_IMG" "$BACKEND_IMAGE:latest"
+            docker push "$BACKEND_IMAGE:latest"
+          '''
         }
       }
     }

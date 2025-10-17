@@ -5,7 +5,10 @@ export const handleShippedSerialQuantity = (itemShipped) => itemShipped?.logs.re
 );
 
 export const countingLostItems = (itemsZohoSenitron, listSerials, listShipments, endDate) => {
-    if (itemsZohoSenitron && itemsZohoSenitron.length > 0 && listSerials && listSerials.length > 0 && listShipments && listShipments.length > 0) {
+    if (itemsZohoSenitron && itemsZohoSenitron.length > 0 && 
+        listSerials && listSerials.length > 0 && 
+        listShipments && listShipments.length > 0
+    ) {
 
         const allowedIds = itemsZohoSenitron?.filter((item) => item.syncedWithSenitron).map((item) => item.itemId);
 
