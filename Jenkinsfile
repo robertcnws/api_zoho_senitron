@@ -107,30 +107,48 @@ pipeline {
     }
 
     stage('7. Build & Push Frontend') {
-      when { changeset "**/vite_react_app/**" }
+      when { changeset pattern: "**/vite_react_app/**", comparator: "ANT" }
       agent { label 'docker' }
+
+      environment {
+        NODE_OPTIONS       = '--max-old-space-size=6144'
+        CI_LOW_MEM_BUILD   = '1'
+        SWC_WORKER_THREADS = '1'
+        VITE_DISABLE_PWA   = '1'
+      }
+
       steps {
         deleteDir()
         unstash 'source'
+
         dir('vite_react_app') {
           withCredentials([file(credentialsId: env.AWS_FRONTEND_ENV_CRED_ID, variable: 'ENV_FILE')]) {
-            sh 'cp $ENV_FILE .env'
+            sh 'cp "$ENV_FILE" .env'
           }
-          withEnv([
-              'NODE_OPTIONS=--max-old-space-size=6144', 
-              'CI_LOW_MEM_BUILD=1',                    
-              'SWC_WORKER_THREADS=1',                  
-              'VITE_DISABLE_PWA=1'                     
-            ]) {
-              sh '''
-                npm ci
-                npx -y update-browserslist-db@latest || true
-                npm run build
-                docker-compose -f ../docker-compose.aws.frontend.prod.yml build
-                docker tag "ne_${JENKINS_HOOK}_aws_frontend_app:latest" "${FRONTEND_IMAGE}:latest"
-                docker push "${FRONTEND_IMAGE}:latest"
-              '''
+
+          sh '''
+            npm ci
+            npx -y update-browserslist-db@latest || true
+            npm run build
+            docker-compose -f ../docker-compose.aws.frontend.prod.yml build
+          '''
+
+          script {
+            def SRC_IMG = sh(
+              script: """docker images --format '{{.Repository}}:{{.Tag}}' \
+                | awk '/ne_${JENKINS_HOOK}_aws_frontend_app:latest$/ {print \$1; exit}'""",
+              returnStdout: true
+            ).trim()
+
+            if (!SRC_IMG) {
+              error "No se encontró la imagen construida que termina en ne_${env.JENKINS_HOOK}_aws_frontend_app:latest"
             }
+
+            sh """
+              echo "Usando imagen: ${SRC_IMG}"
+              docker tag "${SRC_IMG}" "${FRONTEND_IMAGE}:latest"
+              docker push "${FRONTEND_IMAGE}:latest"
+            """
           }
         }
       }

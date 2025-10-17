@@ -143,7 +143,6 @@ export function ItemListShippedLogsView({
         }
     }, [table]);
 
-
     const handleShippedSerialQuantity = useCallback(
         (itemShipped) => itemShipped?.logs.reduce(
             (acc, h) => acc + ((h.currentStatusName.toLowerCase().includes('removed') || h.currentStatusName.toLowerCase().includes('kill')) ? 1 : 0), 0
