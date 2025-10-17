@@ -102,12 +102,12 @@ pipeline {
             sh 'cp $ENV_FILE .env'
           }
           sh 'npm cache clean --force'
-          sh 'npm ci'
+          sh 'npm install'
           sh 'npm run lint -- --fix'
           sh 'npm run build'
           sh """
             docker-compose -f ../docker-compose.aws.frontend.prod.yml build
-            docker tag "${JENKINS_HOOK}_aws_frontend_app:latest" "${FRONTEND_IMAGE}:latest"
+            docker tag "ne_${JENKINS_HOOK}_aws_frontend_app:latest" "${FRONTEND_IMAGE}:latest"
             docker push "${FRONTEND_IMAGE}:latest"
           """
         }
@@ -207,7 +207,7 @@ pipeline {
           mimeType: 'text/html',
           subject: "✅ Build #${env.BUILD_NUMBER} Success – ${env.JOB_NAME}",
           to: '$DEFAULT_RECIPIENTS',
-          from: 'Jenkins NWS CI/CD (API Zoho Senitron) <nnws15815@gmail.com>',
+          from: 'Jenkins NWS CI/CD (WMS Zoho Senitron) <nnws15815@gmail.com>',
           body: '''<!DOCTYPE html>
               <html>
                 <head>
@@ -223,7 +223,7 @@ pipeline {
                 </head>
                 <body>
                   <div class="header">
-                    Jenkins CI/CD Notification (API Zoho Senitron)
+                    Jenkins CI/CD Notification (WMS Zoho Senitron)
                   </div>
                   <div class="content">
                     <h1>Build #${BUILD_NUMBER} – Success 🎉</h1>
@@ -253,7 +253,7 @@ pipeline {
         mimeType: 'text/html',
         subject: "❌ Build #${env.BUILD_NUMBER} Failed – ${env.JOB_NAME}",
         to: '$DEFAULT_RECIPIENTS',
-        from: 'Jenkins NWS CI/CD (API Zoho Senitron) <nnws15815@gmail.com>',
+        from: 'Jenkins NWS CI/CD (WMS Zoho Senitron) <nnws15815@gmail.com>',
         body: '${FILE,path="failure_template.html"}'
       )
     }

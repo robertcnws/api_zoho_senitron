@@ -30,7 +30,7 @@ const GET_SENITRON_ITEMS_ASSETS_LOGS = gql`
 `;
 
 export const useSenitronAssetsLogsQuery = (startDate) => {
-  const { loading, error, data, startPolling, stopPolling } = useQuery(GET_SENITRON_ITEMS_ASSETS_LOGS, {
+  const { loading, error, data, refetch } = useQuery(GET_SENITRON_ITEMS_ASSETS_LOGS, {
     variables: { startDate },
   });
 
@@ -41,5 +41,5 @@ export const useSenitronAssetsLogsQuery = (startDate) => {
   //   };
   // }, [startPolling, stopPolling]);
 
-  return { loading, error, data: data?.allSenitronGroupedLogs || [] };
+  return { loading, error, data: data?.allSenitronGroupedLogs || [], refetch };
 };

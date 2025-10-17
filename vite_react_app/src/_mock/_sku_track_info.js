@@ -17,7 +17,7 @@ const GET_ZOHO_SKU_TRACK_INFO = gql`
 `;
 
 export const useSkuTrackInfoQuery = () => {
-  const { loading, error, data, startPolling, stopPolling } = useQuery(GET_ZOHO_SKU_TRACK_INFO);
+  const { loading, error, data, refetch } = useQuery(GET_ZOHO_SKU_TRACK_INFO);
 
-  return { loading, error, data: data?.allZohoSkuTrackInfo || [] };
+  return { loading, error, data: data?.allZohoSkuTrackInfo || [], refetch };
 };

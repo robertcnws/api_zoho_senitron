@@ -25,10 +25,10 @@ const GET_ZOHO_ITEM_ASSETS_TRACK = gql`
 `;
 
 export const useItemAssetsTrackQuery = (listIds) => {
-  const { loading, error, data, startPolling, stopPolling } = useQuery(GET_ZOHO_ITEM_ASSETS_TRACK, {
+  const { loading, error, data, refetch } = useQuery(GET_ZOHO_ITEM_ASSETS_TRACK, {
     variables: { listIds },
     skip: !listIds || listIds.length === 0,
   });
   
-  return { loading, error, data: data?.allZohoItemAssetsTrack || [] };
+  return { loading, error, data: data?.allZohoItemAssetsTrack || [], refetch };
 };

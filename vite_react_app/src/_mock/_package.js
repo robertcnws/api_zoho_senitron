@@ -62,10 +62,10 @@ const GET_ZOHO_PACKAGES = gql`
 `;
 
 export const usePackagesQuery = (shipmentId, packageId, listPackagesId) => {
-  const { loading, error, data, startPolling, stopPolling } = useQuery(GET_ZOHO_PACKAGES, {
+  const { loading, error, data, refetch } = useQuery(GET_ZOHO_PACKAGES, {
     variables: { shipmentId, packageId, listPackagesId },
     skip: (!shipmentId && !packageId && (!listPackagesId || listPackagesId.length === 0)),
   });
   
-  return { loading, error, data: data?.allZohoPackages || [] };
+  return { loading, error, data: data?.allZohoPackages || [], refetch };
 };

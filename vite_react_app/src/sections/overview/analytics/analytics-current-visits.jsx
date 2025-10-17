@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 
 import Card from '@mui/material/Card';
 import Divider from '@mui/material/Divider';
@@ -59,31 +59,45 @@ export function AnalyticsCurrentVisits({
     hexAlpha(theme.palette.error.main, 0.8),
   ];
 
+  const mergedData = useMemo(() => {
+    if (!zohoItems?.length || !senitronItems?.length) return [];
+    const newData = [];
+    const sItemMap = new Map();
+    senitronItems?.forEach((sItem) => {
+      sItemMap.set(sItem.itemNumber, sItem);
+    });
+    zohoItems?.filter(item => item.syncedWithSenitron).forEach((zItem) => {
+      const sItem = sItemMap.get(zItem.itemId);
+      const max = Math.max(zItem.stockOnHand, sItem?.count ?? 0);
+      const min = Math.min(zItem.stockOnHand, sItem?.count ?? 0);
+      const match = max !== 0 ? Math.floor((min / max) * 100) : max === 0 && min === 0 ? 100 : 0;
+      newData.push({
+        itemId: zItem.itemId,
+        name: zItem.name,
+        sku: zItem.sku,
+        stockOnHand: zItem.stockOnHand,
+        quantity: sItem?.count ?? 0,
+        difference: parseInt(sItem?.count ?? 0, 10) - parseInt(zItem.stockOnHand, 10),
+        percentage: match,
+      });
+    });
+    return newData;
+  }, [zohoItems, senitronItems]);
+
   useEffect(() => {
-    if (zohoItems.length > 0 && senitronItems.length > 0) {
-      const newData = [];
-      const sItemMap = new Map();
-      senitronItems.forEach((sItem) => {
-        sItemMap.set(sItem.itemNumber, sItem);
-      });
-      zohoItems.filter(item => item.syncedWithSenitron).forEach((zItem) => {
-        const sItem = sItemMap.get(zItem.itemId);
-        const max = Math.max(zItem.stockOnHand, sItem?.count ?? 0);
-        const min = Math.min(zItem.stockOnHand, sItem?.count ?? 0);
-        const match = max !== 0 ? Math.floor((min / max) * 100) : max === 0 && min === 0 ? 100 : 0;
-        newData.push({
-          itemId: zItem.itemId,
-          name: zItem.name,
-          sku: zItem.sku,
-          stockOnHand: zItem.stockOnHand,
-          quantity: sItem?.count ?? 0,
-          difference: parseInt(sItem?.count ?? 0, 10) - parseInt(zItem.stockOnHand, 10),
-          percentage: match,
-        });
-      });
-      setModalDataFiltered(newData);
-    }
-  }, [zohoItems, senitronItems, setModalDataFiltered]);
+    setModalDataFiltered(mergedData);
+  }, [mergedData, setModalDataFiltered]);
+
+  const handleViewSublists = useCallback(
+    (seriesIndex) => mergedData?.filter((item) =>
+      seriesIndex === 0 ? parseInt(item.percentage, 10) === 100 :
+        seriesIndex === 1 ? item.percentage >= 90 && item.percentage < 100 :
+          seriesIndex === 2 ? item.percentage >= 80 && item.percentage < 90 :
+            seriesIndex === 3 ? item.percentage >= 70 && item.percentage < 80 :
+              seriesIndex === 4 ? item.percentage >= 60 && item.percentage < 70 :
+                seriesIndex === 5 ? item.percentage >= 50 && item.percentage < 60 : item.percentage < 50
+    ), [mergedData]);
+
 
 
   const chartOptions = useChart({
@@ -104,8 +118,8 @@ export function AnalyticsCurrentVisits({
       },
       events: {
         dataPointSelection: (event, chartContext, config) => {
-          const {dataPointIndex} = config;
-          const list = handleViewSublists(dataPointIndex);
+          const { dataPointIndex } = config;
+          const list = handleViewSublists(dataPointIndex) ?? [];
 
           setModalTitle(
             dataPointIndex === 0 ? `SKUs Matched 100 %` :
@@ -135,15 +149,6 @@ export function AnalyticsCurrentVisits({
     ...chart.options,
   });
 
-  const handleViewSublists = (seriesIndex) => modalDataFiltered?.filter((item) =>
-    seriesIndex === 0 ? parseInt(item.percentage, 10) === 100 :
-      seriesIndex === 1 ? item.percentage >= 90 && item.percentage < 100 :
-        seriesIndex === 2 ? item.percentage >= 80 && item.percentage < 90 :
-          seriesIndex === 3 ? item.percentage >= 70 && item.percentage < 80 :
-            seriesIndex === 4 ? item.percentage >= 60 && item.percentage < 70 :
-              seriesIndex === 5 ? item.percentage >= 50 && item.percentage < 60 : item.percentage < 50
-  );
-
   return (
     <>
       <Card {...other}>
@@ -167,27 +172,29 @@ export function AnalyticsCurrentVisits({
         />
       </Card>
 
-      <ModalSublistItems
-        openModal={openModal}
-        setOpenModal={setOpenModal}
-        modalDataFiltered={modalDataFiltered}
-        modalTitle={modalTitle}
-        headersCSV={headersCSV}
-        modalButtonColor={modalButtonColor}
-        filters={filters}
-        handleFilterName={handleFilterName}
-        handleViewRow={handleViewRow}
-        userLogged={userLogged}
-        hasIgnoredErrors={hasIgnoredErrors}
-        ignoreErrorsSelected={ignoreErrorsSelected}
-        setIgnoreErrorsSelected={setIgnoreErrorsSelected}
-        handleCheckboxChange={handleCheckboxChange}
-        handleSelectAllIgnoreErrors={handleSelectAllIgnoreErrors}
-        valueIgnoreErrors={valueIgnoreErrors}
-        handleUpdateIgnoreErrors={handleUpdateIgnoreErrors}
-        isIgnore={isIgnore}
-        setIsIgnore={setIsIgnore}
-      />
+      {modalDataFiltered && modalDataFiltered.length > 0 && (
+        <ModalSublistItems
+          openModal={openModal}
+          setOpenModal={setOpenModal}
+          modalDataFiltered={modalDataFiltered ?? []}
+          modalTitle={modalTitle}
+          headersCSV={headersCSV}
+          modalButtonColor={modalButtonColor}
+          filters={filters}
+          handleFilterName={handleFilterName}
+          handleViewRow={handleViewRow}
+          userLogged={userLogged}
+          hasIgnoredErrors={hasIgnoredErrors}
+          ignoreErrorsSelected={ignoreErrorsSelected}
+          setIgnoreErrorsSelected={setIgnoreErrorsSelected}
+          handleCheckboxChange={handleCheckboxChange}
+          handleSelectAllIgnoreErrors={handleSelectAllIgnoreErrors}
+          valueIgnoreErrors={valueIgnoreErrors}
+          handleUpdateIgnoreErrors={handleUpdateIgnoreErrors}
+          isIgnore={isIgnore}
+          setIsIgnore={setIsIgnore}
+        />
+      )}
     </>
   );
 }

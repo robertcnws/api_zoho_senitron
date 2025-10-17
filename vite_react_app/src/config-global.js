@@ -11,6 +11,7 @@ export const CONFIG = {
   assetsDir: import.meta.env.VITE_ASSETS_DIR ?? '',
   apiUrl: import.meta.env.VITE_BACKEND_URL ?? '',
   apiHost: import.meta.env.VITE_BACKEND_HOST ?? '',
+  apiPort: import.meta.env.VITE_BACKEND_PORT ?? '',
   apiDomain: import.meta.env.VITE_BACKEND_DOMAIN ?? '',
   pollingInterval: import.meta.env.VITE_POLLING_INTERVAL ?? 10000,
   websocketProtocol: import.meta.env.VITE_WEBSOCKET_PROTOCOL ?? 'ws',

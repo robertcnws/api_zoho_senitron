@@ -29,10 +29,10 @@ const GET_NOTIFICATIONS = gql`
 `;
 
 export const useNotificationsQuery = (username) => {
-  const { loading, error, data, startPolling, stopPolling } = useQuery(GET_NOTIFICATIONS, {
+  const { loading, error, data, refetch } = useQuery(GET_NOTIFICATIONS, {
     variables: { username },
     skip: !username,
   });
 
-  return { loading, error, data: data?.allNotificationUser || [] };
+  return { loading, error, data: data?.allNotificationUser || [], refetch };
 };

@@ -30,6 +30,8 @@ import { ConfirmDialog } from 'src/components/custom-dialog';
 import { usePopover, CustomPopover } from 'src/components/custom-popover';
 
 import { LoadingContext } from 'src/auth/context/loading-context';
+import { useWebsocket } from 'src/hooks/use-websocket';
+import { CONFIG } from 'src/config-global';
 
 export function ShipmentTableRow({ row, selected, onViewRow, onSelectRow, onDeleteRow }) {
   const router = useRouter();
@@ -71,7 +73,7 @@ export function ShipmentTableRow({ row, selected, onViewRow, onSelectRow, onDele
 
   const packages = parsePackages(row.packages);
 
-  const { data } = usePackagesQuery(null, null, packages.map(pkg => pkg.package_id));
+  const { data, refetch: refetchPackages } = usePackagesQuery(null, null, packages.map(pkg => pkg.package_id));
 
   const dataRow = useMemo(() => packages, [packages]);
 
@@ -101,6 +103,15 @@ export function ShipmentTableRow({ row, selected, onViewRow, onSelectRow, onDele
     },
     [router]
   );
+
+  const baseWsUrl = `${CONFIG.websocketProtocol}://${CONFIG.apiHost}:${CONFIG.apiPort}/${CONFIG.apiDomain}/ws`;
+
+
+  const onMessage = useCallback((m) => {
+    if (['created', 'updated', 'deleted'].includes(m.type)) refetchPackages?.();
+  }, [refetchPackages]);
+
+  useWebsocket(`${baseWsUrl}/packages/`, onMessage);
 
   const renderPrimary = !isMobile ? (
     <TableRow hover selected={selected}>
@@ -297,13 +308,13 @@ export function ShipmentTableRow({ row, selected, onViewRow, onSelectRow, onDele
                         <ListItemText
                           secondary={
                             <IconButton
-                                color={collapseChild.value ? 'inherit' : 'default'}
-                                onClick={collapseChild.onToggle}
-                                value={item.package_id}
-                                sx={{ fontSize: 'small' }}
-                              >
-                                More Details <Iconify icon={collapseChild.value ? "eva:arrow-ios-upward-fill" : "eva:arrow-ios-downward-fill"} />
-                              </IconButton>
+                              color={collapseChild.value ? 'inherit' : 'default'}
+                              onClick={collapseChild.onToggle}
+                              value={item.package_id}
+                              sx={{ fontSize: 'small' }}
+                            >
+                              More Details <Iconify icon={collapseChild.value ? "eva:arrow-ios-upward-fill" : "eva:arrow-ios-downward-fill"} />
+                            </IconButton>
                           }
                         />
                       )}

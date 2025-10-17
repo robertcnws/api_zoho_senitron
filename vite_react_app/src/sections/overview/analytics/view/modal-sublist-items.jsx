@@ -21,24 +21,24 @@ import { LoadingContext } from 'src/auth/context/loading-context';
 export function ModalSublistItems({
   openModal,
   setOpenModal,
-  modalDataFiltered,
-  modalTitle,
-  headersCSV,
+  modalDataFiltered = [],
+  modalTitle = '',
+  headersCSV = [],
   modalButtonColor,
   filters,
-  handleFilterName,
-  handleViewRow,
-  table,
+  handleFilterName = () => { },
+  handleViewRow = () => { },
+  table = {},
   userLogged,
-  hasIgnoredErrors,
-  ignoreErrorsSelected,
-  setIgnoreErrorsSelected,
-  handleCheckboxChange,
-  handleSelectAllIgnoreErrors,
+  hasIgnoredErrors = false,
+  ignoreErrorsSelected = [],
+  setIgnoreErrorsSelected = () => { },
+  handleCheckboxChange = () => { },
+  handleSelectAllIgnoreErrors = () => { },
   valueIgnoreErrors,
-  handleUpdateIgnoreErrors,
-  isIgnore,
-  setIsIgnore,
+  handleUpdateIgnoreErrors = () => { },
+  isIgnore = true,
+  setIsIgnore = () => { },
   ...other
 }) {
 
@@ -56,18 +56,18 @@ export function ModalSublistItems({
     { id: 'stockOnHand', label: 'On Hand', width: 200 },
     { id: 'quantity', label: 'RFID Count', width: 200 },
     { id: 'difference', label: 'Difference', width: 200 },
-    ...(userLogged?.data.is_staff && hasIgnoredErrors ? [
+    ...(userLogged?.data?.is_staff && hasIgnoredErrors ? [
       {
         id: 'ignoreErrors',
         label: (
           <FormControlLabel
             control={
               <Checkbox
-                checked={ignoreErrorsSelected.length === modalDataFiltered.length && modalDataFiltered.length > 0}
-                indeterminate={ignoreErrorsSelected.length > 0 && ignoreErrorsSelected.length < modalDataFiltered.length}
+                checked={ignoreErrorsSelected.length === modalDataFiltered?.length && modalDataFiltered?.length > 0}
+                indeterminate={ignoreErrorsSelected.length > 0 && ignoreErrorsSelected.length < modalDataFiltered?.length}
                 onChange={(event) => {
                   if (event.target.checked) {
-                    const allItemIds = modalDataFiltered.map((item) => item.itemId);
+                    const allItemIds = modalDataFiltered?.map((item) => item.itemId);
                     setIgnoreErrorsSelected(allItemIds);
                   } else {
                     setIgnoreErrorsSelected([]);
@@ -87,7 +87,7 @@ export function ModalSublistItems({
   ];
 
   const TABLE_HEAD_MOBILE = [
-    { id: 'no', label: '#'},
+    { id: 'no', label: '#' },
     ...(userLogged?.data.is_staff && hasIgnoredErrors ? [
       {
         id: 'ignoreErrors',
@@ -95,11 +95,11 @@ export function ModalSublistItems({
           <FormControlLabel
             control={
               <Checkbox
-                checked={ignoreErrorsSelected.length === modalDataFiltered.length && modalDataFiltered.length > 0}
-                indeterminate={ignoreErrorsSelected.length > 0 && ignoreErrorsSelected.length < modalDataFiltered.length}
+                checked={ignoreErrorsSelected.length === modalDataFiltered?.length && modalDataFiltered?.length > 0}
+                indeterminate={ignoreErrorsSelected.length > 0 && ignoreErrorsSelected.length < modalDataFiltered?.length}
                 onChange={(event) => {
                   if (event.target.checked) {
-                    const allItemIds = modalDataFiltered.map((item) => item.itemId);
+                    const allItemIds = modalDataFiltered?.map((item) => item.itemId);
                     setIgnoreErrorsSelected(allItemIds);
                   } else {
                     setIgnoreErrorsSelected([]);
@@ -124,6 +124,7 @@ export function ModalSublistItems({
   return (
     <>
       <ConfirmDialog
+        keepMounted
         open={openModal.subListItems}
         onClose={() => {
           setIgnoreErrorsSelected([]);
@@ -131,57 +132,56 @@ export function ModalSublistItems({
         }}
         title={`${modalTitle} (${modalDataFiltered?.length} items)`}
         maxWidth='lg'
-        maxHeight='lg'
         content={
           <Box sx={{ width: '100%', bgcolor: 'background.paper', p: 1 }}>
-              <Stack direction="row" alignItems="center" spacing={1} flexGrow={1} sx={{ width: 1 }}>
-                <TextField
-                  fullWidth
-                  value={filters.state.name}
-                  onChange={handleFilterName}
-                  placeholder="Search by item (NAME, SKU, or ID)..."
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled' }} />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-                <IconButton onClick={popover.onOpen}>
-                  <Iconify icon="eva:more-vertical-fill" />
-                </IconButton>
-              </Stack>
-              <br />
-              {ignoreErrorsSelected.length > 0 && (
-                <>
-                  <Box sx={{ display: 'flex', width: '100%' }}>
-                    <Alert
-                      severity={isIgnore ? 'error' : 'success'}
-                      onClick={() => {
-                        console.log('ignoreErrorsSelected', ignoreErrorsSelected);
-                      }}
-                      sx={{ flexGrow: 1 }}
-                    >
-                      {ignoreErrorsSelected.length} items to {isIgnore ? 'ignore' : 'restore'} errors have been selected.
-                    </Alert>
-                  </Box>
-                  <br />
-                </>
-              )}
+            <Stack direction="row" alignItems="center" spacing={1} flexGrow={1} sx={{ width: 1 }}>
+              <TextField
+                fullWidth
+                value={filters.state.name}
+                onChange={handleFilterName}
+                placeholder="Search by item (NAME, SKU, or ID)..."
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled' }} />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <IconButton onClick={popover.onOpen}>
+                <Iconify icon="eva:more-vertical-fill" />
+              </IconButton>
+            </Stack>
+            <br />
+            {ignoreErrorsSelected.length > 0 && (
+              <>
+                <Box sx={{ display: 'flex', width: '100%' }}>
+                  <Alert
+                    severity={isIgnore ? 'error' : 'success'}
+                    onClick={() => {
+                      console.log('ignoreErrorsSelected', ignoreErrorsSelected);
+                    }}
+                    sx={{ flexGrow: 1 }}
+                  >
+                    {ignoreErrorsSelected.length} items to {isIgnore ? 'ignore' : 'restore'} errors have been selected.
+                  </Alert>
+                </Box>
+                <br />
+              </>
+            )}
 
-              {modalDataFiltered?.length > 0 ? (
+            {modalDataFiltered?.length > 0 ? (
 
-                <TableContainer sx={{ maxHeight: 440, minHeight: 440 }}>
-                  <Table size={table?.dense ? 'small' : 'medium'} sx={{ minWidth: !isMobile ? 960 : 280 }} stickyHeader>
-                    <TableHeadCustom
-                      order={table?.order}
-                      orderBy={table?.orderBy}
-                      headLabel={!isMobile ? TABLE_HEAD : TABLE_HEAD_MOBILE}
-                      rowCount={modalDataFiltered?.length}
-                      onSort={table?.onSort}
-                    />
-                    {/* <TableHead>
+              <TableContainer sx={{ maxHeight: 440, minHeight: 440 }}>
+                <Table size={table?.dense ? 'small' : 'medium'} sx={{ minWidth: !isMobile ? 960 : 280 }} stickyHeader>
+                  <TableHeadCustom
+                    order={table?.order}
+                    orderBy={table?.orderBy}
+                    headLabel={!isMobile ? TABLE_HEAD : TABLE_HEAD_MOBILE}
+                    rowCount={modalDataFiltered?.length}
+                    onSort={table?.onSort}
+                  />
+                  {/* <TableHead>
                   <TableRow>
                     <TableCell>No.</TableCell>
                     <TableCell sx={{ width: 300 }}>SKU</TableCell>
@@ -192,103 +192,103 @@ export function ModalSublistItems({
                     <TableCell sx={{ width: 200 }}>Actions</TableCell>
                   </TableRow>
                 </TableHead> */}
-                    <TableBody>
-                      {modalDataFiltered?.map((item, index) => (
-                        !isMobile ? (
-                          <TableRow key={`${item.itemId}-${index}`}>
-                            <TableCell sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }}>
-                              {index + 1}
+                  <TableBody>
+                    {modalDataFiltered?.map((item, index) => (
+                      !isMobile ? (
+                        <TableRow key={`${item.itemId}-${index}`}>
+                          <TableCell sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }}>
+                            {index + 1}
+                          </TableCell>
+                          <TableCell colSpan={!item.sku ? 2 : 0} sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }}>
+                            {item.sku || (item.itemNumber ? `Item ID: ${item.itemNumber}` : `Item Name: ${item.name}`)}
+                          </TableCell>
+                          {!isMobile && item.sku &&
+                            <TableCell>{item.name}</TableCell>
+                          }
+                          <TableCell sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }}>
+                            <Label color='default'>
+                              {item.stockOnHand}
+                            </Label>
+                          </TableCell>
+                          <TableCell sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }}>
+                            <Label color='default'>
+                              {item.quantity}
+                            </Label>
+                          </TableCell>
+                          <TableCell sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }}>
+                            <Label color={item.difference === 0 ? 'success' : item.difference > 0 ? 'warning' : 'error'}>
+                              {item.difference}
+                            </Label>
+                          </TableCell>
+                          {userLogged?.data.is_staff && hasIgnoredErrors && (
+                            <TableCell padding="checkbox" sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }}>
+                              <Checkbox
+                                checked={ignoreErrorsSelected.includes(item.itemId)}
+                                onChange={(event) => handleCheckboxChange(event, item.itemId)}
+                                inputProps={{ id: `row-checkbox-${item.itemId}`, 'aria-label': `Row checkbox` }}
+                              />
                             </TableCell>
-                            <TableCell colSpan={!item.sku ? 2 : 0} sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }}>
+                          )}
+                          <TableCell sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }}>
+                            <Button
+                              onClick={() => {
+                                handleViewRow(item.itemId);
+                              }}
+                              sx={{ color: modalButtonColor }}
+                            >
+                              <Iconify icon="solar:eye-bold" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        <TableRow key={`${item.itemId}-${index}`}>
+                          <TableCell sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }} onClick={() => {
+                            handleViewRow(item.itemId);
+                          }}>
+                            {index + 1}
+                          </TableCell>
+                          {userLogged?.data.is_staff && hasIgnoredErrors && (
+                            <TableCell padding="checkbox" sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }}>
+                              <Checkbox
+                                checked={ignoreErrorsSelected.includes(item.itemId)}
+                                onChange={(event) => handleCheckboxChange(event, item.itemId)}
+                                inputProps={{ id: `row-checkbox-${item.itemId}`, 'aria-label': `Row checkbox` }}
+                              />
+                            </TableCell>
+                          )}
+                          <TableCell sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }} onClick={() => {
+                            handleViewRow(item.itemId);
+                          }}>
+                            <Label color='default'>
                               {item.sku || (item.itemNumber ? `Item ID: ${item.itemNumber}` : `Item Name: ${item.name}`)}
-                            </TableCell>
-                            {!isMobile && item.sku &&
-                              <TableCell>{item.name}</TableCell>
-                            }
-                            <TableCell sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }}>
-                              <Label color='default'>
-                                {item.stockOnHand}
-                              </Label>
-                            </TableCell>
-                            <TableCell sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }}>
-                              <Label color='default'>
-                                {item.quantity}
-                              </Label>
-                            </TableCell>
-                            <TableCell sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }}>
-                              <Label color={item.difference === 0 ? 'success' : item.difference > 0 ? 'warning' : 'error'}>
-                                {item.difference}
-                              </Label>
-                            </TableCell>
-                            {userLogged?.data.is_staff && hasIgnoredErrors && (
-                              <TableCell padding="checkbox" sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }}>
-                                <Checkbox
-                                  checked={ignoreErrorsSelected.includes(item.itemId)}
-                                  onChange={(event) => handleCheckboxChange(event, item.itemId)}
-                                  inputProps={{ id: `row-checkbox-${item.itemId}`, 'aria-label': `Row checkbox` }}
-                                />
-                              </TableCell>
-                            )}
-                            <TableCell sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }}>
-                              <Button
-                                onClick={() => {
-                                  handleViewRow(item.itemId);
-                                }}
-                                sx={{ color: modalButtonColor }}
-                              >
-                                <Iconify icon="solar:eye-bold" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          <TableRow key={`${item.itemId}-${index}`}>
-                            <TableCell sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }} onClick={() => {
-                              handleViewRow(item.itemId);
-                            }}>
-                              {index + 1}
-                            </TableCell>
-                            {userLogged?.data.is_staff && hasIgnoredErrors && (
-                              <TableCell padding="checkbox" sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }}>
-                                <Checkbox
-                                  checked={ignoreErrorsSelected.includes(item.itemId)}
-                                  onChange={(event) => handleCheckboxChange(event, item.itemId)}
-                                  inputProps={{ id: `row-checkbox-${item.itemId}`, 'aria-label': `Row checkbox` }}
-                                />
-                              </TableCell>
-                            )}
-                            <TableCell sx={{ bgcolor: !item.sku ? alpha(theme.palette.error.main, 0.1) : 'none' }} onClick={() => {
-                              handleViewRow(item.itemId);
-                            }}>
-                              <Label color='default'>
-                                {item.sku || (item.itemNumber ? `Item ID: ${item.itemNumber}` : `Item Name: ${item.name}`)}
-                              </Label><br/>
-                              On Hand: <Label color='default'>
-                                {item.stockOnHand}
-                              </Label><br/>
-                              RFID Count: <Label color='default'>
-                                {item.quantity}
-                              </Label><br/>
-                              Difference: <Label color={item.difference === 0 ? 'success' : item.difference > 0 ? 'warning' : 'error'}>
-                                {item.difference}
-                              </Label>
-                            </TableCell>
-                            
-                          </TableRow>
-                        )
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              ) : (
-                <TableContainer sx={{ width: '100%', bgcolor: 'background.paper', p: 1 }}>
-                  <Table>
-                    <TableBody>
-                      <TableNoData notFound={modalDataFiltered?.length === 0} />
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              )}
-            </Box>
+                            </Label><br />
+                            On Hand: <Label color='default'>
+                              {item.stockOnHand}
+                            </Label><br />
+                            RFID Count: <Label color='default'>
+                              {item.quantity}
+                            </Label><br />
+                            Difference: <Label color={item.difference === 0 ? 'success' : item.difference > 0 ? 'warning' : 'error'}>
+                              {item.difference}
+                            </Label>
+                          </TableCell>
+
+                        </TableRow>
+                      )
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ) : (
+              <TableContainer sx={{ width: '100%', bgcolor: 'background.paper', p: 1 }}>
+                <Table>
+                  <TableBody>
+                    <TableNoData notFound={modalDataFiltered?.length === 0} />
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </Box>
         }
       />
       <CustomPopover
@@ -319,7 +319,7 @@ export function ModalSublistItems({
           {userLogged?.data.is_staff && hasIgnoredErrors && (
             <MenuItem onClick={handleSelectAllIgnoreErrors}>
               <Iconify icon="solar:check-square-bold" />
-              {ignoreErrorsSelected.length === modalDataFiltered.length
+              {ignoreErrorsSelected.length === modalDataFiltered?.length
                 ? (isIgnore ? 'Deselect All Ignore Errors' : 'Deselect All Errors')
                 : (isIgnore ? 'Select All Ignore Errors' : 'Select All Errors')}
             </MenuItem>

@@ -13,7 +13,7 @@ const GET_JOBS_UPDTING_TIMES = gql`
 `;
 
 export const useJobsUpdatingTimesQuery = () => {
-  const { loading, error, data, startPolling, stopPolling } = useQuery(GET_JOBS_UPDTING_TIMES);
+  const { loading, error, data, refetch } = useQuery(GET_JOBS_UPDTING_TIMES);
 
-  return { loading, error, data: data?.allJobsUpdatingTimes || [] };
+  return { loading, error, data: data?.allJobsUpdatingTimes || [], refetch };
 };

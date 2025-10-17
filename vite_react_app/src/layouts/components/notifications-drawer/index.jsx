@@ -16,6 +16,7 @@ import IconButton from '@mui/material/IconButton';
 import { useBoolean } from 'src/hooks/use-boolean';
 
 import { CONFIG } from 'src/config-global';
+import { useWebsocket } from 'src/hooks/use-websocket';
 
 import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
@@ -28,27 +29,40 @@ import { useDataContext } from 'src/auth/context/data/data-context';
 import { NotificationItem } from './notification-item';
 
 
-
-
 // ----------------------------------------------------------------------
 
 export function NotificationsDrawer({ sx, ...other }) {
 
   const {
-    userNotifications
+    userNotifications,
+    refetchNotifications
   } = useDataContext();
 
   const [notifications, setNotifications] = useState(null);
 
   useEffect(() => {
     if (userNotifications) {
-      const interval = setInterval(() => {
-        setNotifications(userNotifications);
-      }, 5000);
-      return () => clearInterval(interval);
+      setNotifications(userNotifications);
     }
-    return () => { };
   }, [userNotifications]);
+
+  useEffect(() => {
+    if(refetchNotifications) {
+      refetchNotifications().then((response) => {
+        if (response?.data) {
+          setNotifications(response.data.allNotificationUser);
+        }
+      });
+    }
+  }, [refetchNotifications]);
+
+  const baseWsUrl = `${CONFIG.websocketProtocol}://${CONFIG.apiHost}:${CONFIG.apiPort}/${CONFIG.apiDomain}/ws`;
+
+  const onMessage = useCallback((msg) => {
+    if (['created', 'updated', 'deleted'].includes(msg.type)) refetchNotifications?.();
+  }, [refetchNotifications]);
+
+  useWebsocket(`${baseWsUrl}/notification_users/`, onMessage);
 
   const drawer = useBoolean();
 
@@ -148,7 +162,7 @@ export function NotificationsDrawer({ sx, ...other }) {
       <Box component="ul">
         {filteredNotifications?.map((notification) => (
           <Box component="li" key={notification.id} sx={{ display: 'flex' }}>
-            <NotificationItem notification={notification} drawer={drawer}/>
+            <NotificationItem notification={notification} drawer={drawer} />
           </Box>
         ))}
       </Box>

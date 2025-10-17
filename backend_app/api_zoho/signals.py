@@ -1,268 +1,267 @@
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
-from .models import ZohoInventoryItem, ZohoInventoryShipmentSalesOrder, LoginUser
-from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
-import json
+from .models import (
+    ZohoInventoryItem,
+    ZohoInventoryShipmentSalesOrder,
+    ZohoShipmentOrder,
+    ZohoPackage,
+    ZohoItemAssetsTrack,
+    ZohoSkuTrackInfo,
+    LoginUser,
+    JobsUpdatingTimes,
+    ManualUpdatingJobs,
+)
+from django.db import transaction
+from utils.signals_helper import cache_delete_keys, cache_delete_patterns, channels_group_send
+import api_zoho.model_serializer as model_serializer
 
-
-# ZohoInventoryItem
-
+# =========================================================
+# ZohoInventoryItem  (invalida lista 'all_zoho_inventory_items')
+# =========================================================
 @receiver(post_save, sender=ZohoInventoryItem)
 def inventory_item_saved(sender, instance, created, **kwargs):
-    channel_layer = get_channel_layer()
+    cache_delete_keys(["gql:all_zoho_inventory_items:v1"])
+
     event = {
         'type': 'send_item_update',
         'message': {
             'type': 'created' if created else 'updated',
-            "item": {
-                "groupId": instance.group_id,
-                "groupName": instance.group_name,
-                "itemId": instance.item_id,
-                "name": instance.name,
-                "status": instance.status,
-                "source": instance.source,
-                "itemType": instance.item_type,
-                "isLinkedWithZohocrm": instance.is_linked_with_zohocrm,
-                "description": instance.description,
-                "rate": float(instance.rate) if instance.rate is not None else None,
-                "isTaxable": instance.is_taxable,
-                "taxId": instance.tax_id,
-                "taxName": instance.tax_name,
-                "taxPercentage": float(instance.tax_percentage) if instance.tax_percentage is not None else None,
-                "purchaseDescription": instance.purchase_description,
-                "purchaseRate": float(instance.purchase_rate) if instance.purchase_rate is not None else None,
-                "isComboProduct": instance.is_combo_product,
-                "syncedWithSenitron": instance.synced_with_senitron,
-                "productType": instance.product_type,
-                "attributeId1": instance.attribute_id1,
-                "attributeName1": instance.attribute_name1,
-                "reorderLevel": float(instance.reorder_level) if instance.reorder_level is not None else None,
-                "stockOnHand": float(instance.stock_on_hand) if instance.stock_on_hand is not None else None,
-                "availableStock": float(instance.available_stock) if instance.available_stock is not None else None,
-                "actualAvailableStock": float(instance.actual_available_stock) if instance.actual_available_stock is not None else None,
-                "sku": instance.sku,
-                "upc": instance.upc,
-                "ean": instance.ean,
-                "isbn": instance.isbn,
-                "partNumber": instance.part_number,
-                "attributeOptionId1": instance.attribute_option_id1,
-                "attributeOptionName1": instance.attribute_option_name1,
-                "createdTime": instance.created_time.isoformat() if instance.created_time else None,
-                "lastModifiedTime": instance.last_modified_time.isoformat() if instance.last_modified_time else None,
-                "hsnOrSac": instance.hsn_or_sac,
-                "satItemKeyCode": instance.sat_item_key_code,
-                "unitkeyCode": instance.unitkey_code
-            }
-
+            "item": model_serializer._inventory_item_to_message_dict(instance)
         }
     }
-    async_to_sync(channel_layer.group_send)('inventory_items', event)
+    transaction.on_commit(lambda: channels_group_send('inventory_items', event))
 
 @receiver(post_delete, sender=ZohoInventoryItem)
 def inventory_item_deleted(sender, instance, **kwargs):
-    channel_layer = get_channel_layer()
+    cache_delete_keys(["gql:all_zoho_inventory_items:v1"])
+
     event = {
         'type': 'send_item_update',
         'message': {
             'type': 'deleted',
-            "item": {
-                "groupId": instance.group_id,
-                "groupName": instance.group_name,
-                "itemId": instance.item_id,
-                "name": instance.name,
-                "status": instance.status,
-                "source": instance.source,
-                "itemType": instance.item_type,
-                "isLinkedWithZohocrm": instance.is_linked_with_zohocrm,
-                "description": instance.description,
-                "rate": float(instance.rate) if instance.rate is not None else None,
-                "isTaxable": instance.is_taxable,
-                "taxId": instance.tax_id,
-                "taxName": instance.tax_name,
-                "taxPercentage": float(instance.tax_percentage) if instance.tax_percentage is not None else None,
-                "purchaseDescription": instance.purchase_description,
-                "purchaseRate": float(instance.purchase_rate) if instance.purchase_rate is not None else None,
-                "isComboProduct": instance.is_combo_product,
-                "syncedWithSenitron": instance.synced_with_senitron,
-                "productType": instance.product_type,
-                "attributeId1": instance.attribute_id1,
-                "attributeName1": instance.attribute_name1,
-                "reorderLevel": float(instance.reorder_level) if instance.reorder_level is not None else None,
-                "stockOnHand": float(instance.stock_on_hand) if instance.stock_on_hand is not None else None,
-                "availableStock": float(instance.available_stock) if instance.available_stock is not None else None,
-                "actualAvailableStock": float(instance.actual_available_stock) if instance.actual_available_stock is not None else None,
-                "sku": instance.sku,
-                "upc": instance.upc,
-                "ean": instance.ean,
-                "isbn": instance.isbn,
-                "partNumber": instance.part_number,
-                "attributeOptionId1": instance.attribute_option_id1,
-                "attributeOptionName1": instance.attribute_option_name1,
-                "createdTime": instance.created_time.isoformat() if instance.created_time else None,
-                "lastModifiedTime": instance.last_modified_time.isoformat() if instance.last_modified_time else None,
-                "hsnOrSac": instance.hsn_or_sac,
-                "satItemKeyCode": instance.sat_item_key_code,
-                "unitkeyCode": instance.unitkey_code
-            }
+            "item": model_serializer._inventory_item_to_message_dict(instance)
         }
     }
-    async_to_sync(channel_layer.group_send)('inventory_items', event)
-   
-# ZohoInventoryShipmentSalesOrder 
-    
+    transaction.on_commit(lambda: channels_group_send('inventory_items', event))
+
+
+# =========================================================
+# ZohoInventoryShipmentSalesOrder  (lista con filtros por fecha)
+# Cache key en resolver: f"gql:all_zoho_inventory_sales_orders:{start}:{end}:v1"
+# =========================================================
 @receiver(post_save, sender=ZohoInventoryShipmentSalesOrder)
-def inventory_sales_order_saved(sender, instance, created, **kwargs):
-    channel_layer = get_channel_layer()
+def inv_sales_order_saved(sender, instance, created, **kwargs):
+    cache_delete_patterns(["gql:all_zoho_inventory_sales_orders:*:*:v1"])
     event = {
         'type': 'send_sales_order_update',
         'message': {
             'type': 'created' if created else 'updated',
-            "item": {
-                "salesorderId": instance.salesorder_id,
-                "salesorderNumber": instance.salesorder_number,
-                "date": instance.date.isoformat() if instance.date else None,
-                "status": instance.status,
-                "lineItems": instance.line_items,
-                "customerId": instance.customer_id,
-                "customerName": instance.customer_name,
-                "isTaxable": instance.is_taxable,
-                "taxId": instance.tax_id,
-                "taxName": instance.tax_name,
-                "taxPercentage": instance.tax_percentage,
-                "currencyId": instance.currency_id,
-                "currencyCode": instance.currency_code,
-                "currencySymbol": instance.currency_symbol,
-                "exchangeRate": instance.exchange_rate,
-                "deliveryMethod": instance.delivery_method,
-                "totalQuantity": instance.total_quantity,
-                "subTotal": instance.sub_total,
-                "taxTotal": instance.tax_total,
-                "total": instance.total,
-                "createdByEmail": instance.created_by_email,
-                "createdByName": instance.created_by_name,
-                "salespersonId": instance.salesperson_id,
-                "isTestOrder": instance.is_test_order,
-                "notes": instance.notes,
-                "paymentTerms": instance.payment_terms,
-                "paymentTermsLabel": instance.payment_terms_label,
-                "shippingAddress": instance.shipping_address,
-                "billingAddress": instance.billing_address,
-                "warehouses": instance.warehouses,
-                "customFields": instance.custom_fields,
-                "orderSubStatuses": instance.order_sub_statuses,
-                "shipmentSubStatuses": instance.shipment_sub_statuses,
-                "createdTime": instance.created_time.isoformat() if instance.created_time else None,
-                "lastModifiedTime": instance.last_modified_time.isoformat() if instance.last_modified_time else None,
-            }
+            "item": model_serializer._sales_order_to_message_dict(instance)
         }
     }
-    async_to_sync(channel_layer.group_send)('inventory_sales_order', event)
+    transaction.on_commit(lambda: channels_group_send('inventory_sales_order', event))
 
 @receiver(post_delete, sender=ZohoInventoryShipmentSalesOrder)
-def inventory_sales_order_deleted(sender, instance, **kwargs):
-    channel_layer = get_channel_layer()
+def inv_sales_order_deleted(sender, instance, **kwargs):
+    cache_delete_patterns(["gql:all_zoho_inventory_sales_orders:*:*:v1"])
     event = {
         'type': 'send_sales_order_update',
         'message': {
             'type': 'deleted',
-            "item": {
-                "salesorderId": instance.salesorder_id,
-                "salesorderNumber": instance.salesorder_number,
-                "date": instance.date.isoformat() if instance.date else None,
-                "status": instance.status,
-                "lineItems": instance.line_items,
-                "customerId": instance.customer_id,
-                "customerName": instance.customer_name,
-                "isTaxable": instance.is_taxable,
-                "taxId": instance.tax_id,
-                "taxName": instance.tax_name,
-                "taxPercentage": instance.tax_percentage,
-                "currencyId": instance.currency_id,
-                "currencyCode": instance.currency_code,
-                "currencySymbol": instance.currency_symbol,
-                "exchangeRate": instance.exchange_rate,
-                "deliveryMethod": instance.delivery_method,
-                "totalQuantity": instance.total_quantity,
-                "subTotal": instance.sub_total,
-                "taxTotal": instance.tax_total,
-                "total": instance.total,
-                "createdByEmail": instance.created_by_email,
-                "createdByName": instance.created_by_name,
-                "salespersonId": instance.salesperson_id,
-                "isTestOrder": instance.is_test_order,
-                "notes": instance.notes,
-                "paymentTerms": instance.payment_terms,
-                "paymentTermsLabel": instance.payment_terms_label,
-                "shippingAddress": instance.shipping_address,
-                "billingAddress": instance.billing_address,
-                "warehouses": instance.warehouses,
-                "customFields": instance.custom_fields,
-                "orderSubStatuses": instance.order_sub_statuses,
-                "shipmentSubStatuses": instance.shipment_sub_statuses,
-                "createdTime": instance.created_time.isoformat() if instance.created_time else None,
-                "lastModifiedTime": instance.last_modified_time.isoformat() if instance.last_modified_time else None,
-            }
+            "item": model_serializer._sales_order_to_message_dict(instance)
         }
     }
-    async_to_sync(channel_layer.group_send)('inventory_sales_order', event)
-    
-# LoginUser
+    transaction.on_commit(lambda: channels_group_send('inventory_sales_order', event))
 
+
+# =========================================================
+# ZohoShipmentOrder  (cache key: f"gql:all_zoho_shipment_orders:{start}:{end}:v1")
+# =========================================================
+    
+@receiver(post_save, sender=ZohoShipmentOrder)
+def shipment_order_saved(sender, instance, created, **kwargs):
+    cache_delete_patterns(["gql:all_zoho_shipment_orders:*:*:v1"])
+    event = {
+        'type': 'send_shipment_order_update',
+        'message': {
+            'type': 'created' if created else 'updated',
+            'item': model_serializer._shipment_to_message_dict(instance)
+        }
+    }
+    transaction.on_commit(lambda: channels_group_send('inventory_shipment_order', event))
+
+@receiver(post_delete, sender=ZohoShipmentOrder)
+def shipment_order_deleted(sender, instance, **kwargs):
+    cache_delete_patterns(["gql:all_zoho_shipment_orders:*:*:v1"])
+    event = {
+        'type': 'send_shipment_order_update',
+        'message': {
+            'type': 'deleted',
+            'item': model_serializer._shipment_to_message_dict(instance)
+        }
+    }
+    transaction.on_commit(lambda: channels_group_send('inventory_shipment_order', event))
+
+
+# =========================================================
+# ZohoPackage  (cache key: "gql:all_zoho_packages:v1" solo para “sin filtros”)
+# =========================================================
+@receiver(post_save, sender=ZohoPackage)
+def package_saved(sender, instance, created, **kwargs):
+    cache_delete_keys(["gql:all_zoho_packages:v1"])
+    event = {
+        'type': 'send_package_update',
+        'message': {
+            'type': 'created' if created else 'updated',
+            'item': model_serializer._package_to_message_dict(instance)
+        }
+    }
+    transaction.on_commit(lambda: channels_group_send('inventory_packages', event))
+
+@receiver(post_delete, sender=ZohoPackage)
+def package_deleted(sender, instance, **kwargs):
+    cache_delete_keys(["gql:all_zoho_packages:v1"])
+    event = {
+        'type': 'send_package_update',
+        'message': {
+            'type': 'deleted',
+            'item': model_serializer._package_to_message_dict(instance)
+        }
+    }
+    transaction.on_commit(lambda: channels_group_send('inventory_packages', event))
+
+
+# =========================================================
+# ZohoSkuTrackInfo  (cache key: "gql:all_zoho_sku_track_info:v1")
+# =========================================================
+@receiver(post_save, sender=ZohoSkuTrackInfo)
+def sku_track_saved(sender, instance, created, **kwargs):
+    cache_delete_keys(["gql:all_zoho_sku_track_info:v1"])
+    event = {
+        'type': 'send_sku_track_update',
+        'message': {
+            'type': 'created' if created else 'updated',
+            'item': model_serializer._sku_track_info_to_message_dict(instance)
+        }
+    }
+    transaction.on_commit(lambda: channels_group_send('inventory_sku_track_info', event))
+
+@receiver(post_delete, sender=ZohoSkuTrackInfo)
+def sku_track_deleted(sender, instance, **kwargs):
+    cache_delete_keys(["gql:all_zoho_sku_track_info:v1"])
+    event = {
+        'type': 'send_sku_track_update',
+        'message': {
+            'type': 'deleted',
+            'item': model_serializer._sku_track_info_to_message_dict(instance)
+        }
+    }
+    transaction.on_commit(lambda: channels_group_send('inventory_sku_track_info', event))
+
+
+# =========================================================
+# ZohoItemAssetsTrack  (cache key: f"gql:all_zoho_item_assets_track:{item_id}:{list_ids}:v1")
+# Como hay muchas combinaciones, borramos por patrón y una específica por item_id
+# =========================================================
+@receiver(post_save, sender=ZohoItemAssetsTrack)
+def item_assets_track_saved(sender, instance, created, **kwargs):
+    cache_delete_patterns(["gql:all_zoho_item_assets_track:*:v1"])
+    cache_delete_patterns([f"gql:all_zoho_item_assets_track:{instance.item_id}:*:v1"])
+    event = {
+        'type': 'send_item_assets_track_update',
+        'message': {
+            'type': 'created' if created else 'updated',
+            'item': model_serializer._item_assets_track_to_message_dict(instance)
+        }
+    }
+    transaction.on_commit(lambda: channels_group_send('inventory_item_assets_track', event))
+
+@receiver(post_delete, sender=ZohoItemAssetsTrack)
+def item_assets_track_deleted(sender, instance, **kwargs):
+    cache_delete_patterns(["gql:all_zoho_item_assets_track:*:v1"])
+    cache_delete_patterns([f"gql:all_zoho_item_assets_track:{instance.item_id}:*:v1"])
+    event = {
+        'type': 'send_item_assets_track_update',
+        'message': {
+            'type': 'deleted',
+            'item': model_serializer._item_assets_track_to_message_dict(instance)
+        }
+    }
+    transaction.on_commit(lambda: channels_group_send('inventory_item_assets_track', event))
+
+
+# =========================================================
+# LoginUser (no cacheado en tu schema actual; solo eventos)
+# =========================================================
 @receiver(post_save, sender=LoginUser)
 def login_user_saved(sender, instance, created, **kwargs):
-    channel_layer = get_channel_layer()
     event = {
         'type': 'send_login_user_update',
         'message': {
             'type': 'created' if created else 'updated',
-            "item": {
-                "username": instance.username if instance.username else None,
-                "lastLogin": instance.last_login.isoformat() if instance.last_login else None,
-                "isSuperuser": instance.is_superuser,
-                "firstName": instance.first_name if instance.first_name else None,
-                "lastName": instance.last_name if instance.last_name else None,
-                "email": instance.email if instance.email else None,
-                "isStaff": instance.is_staff,
-                "isActive": instance.is_active,
-                "dateJoined": instance.date_joined.isoformat() if instance.date_joined else None,
-                "phoneNumber": instance.phone_number if instance.phone_number else None,
-                "country": instance.country if instance.country else None,
-                "state": instance.state if instance.state else None,
-                "city": instance.city if instance.city else None,
-                "address": instance.address if instance.address else None,
-                "zipCode": instance.zip_code if instance.zip_code else None,
-                "gender": instance.gender if instance.gender else None,
-            }
+            "item": model_serializer._login_user_to_message_dict(instance)
         }
     }
-    async_to_sync(channel_layer.group_send)('login_users', event)   
-    
+    transaction.on_commit(lambda: channels_group_send('login_users', event))
+
 @receiver(post_delete, sender=LoginUser)
 def login_user_deleted(sender, instance, **kwargs):
-    channel_layer = get_channel_layer()
     event = {
         'type': 'send_login_user_update',
         'message': {
             'type': 'deleted',
-            "item": {
-                "username": instance.username if instance.username else None,
-                "lastLogin": instance.last_login.isoformat() if instance.last_login else None,
-                "isSuperuser": instance.is_superuser,
-                "firstName": instance.first_name if instance.first_name else None,
-                "lastName": instance.last_name if instance.last_name else None,
-                "email": instance.email if instance.email else None,
-                "isStaff": instance.is_staff,
-                "isActive": instance.is_active,
-                "dateJoined": instance.date_joined.isoformat() if instance.date_joined else None,
-                "phoneNumber": instance.phone_number if instance.phone_number else None,
-                "country": instance.country if instance.country else None,
-                "state": instance.state if instance.state else None,
-                "city": instance.city if instance.city else None,
-                "address": instance.address if instance.address else None,
-                "zipCode": instance.zip_code if instance.zip_code else None,
-                "gender": instance.gender if instance.gender else None,
-            }
+            "item": model_serializer._login_user_to_message_dict(instance)
         }
     }
-    async_to_sync(channel_layer.group_send)('login_users', event)
+    transaction.on_commit(lambda: channels_group_send('login_users', event))
+    
+# =========================================================
+# JobsUpdatingTimes (no cacheado en tu schema actual; solo eventos)
+# =========================================================
+
+@receiver(post_save, sender=JobsUpdatingTimes)
+def jobs_updating_times_saved(sender, instance, created, **kwargs):
+    event = {
+        'type': 'send_jobs_updating_times_update',
+        'message': {
+            'type': 'created' if created else 'updated',
+            "item": model_serializer._jobs_updating_times_to_message_dict(instance)
+        }
+    }
+    transaction.on_commit(lambda: channels_group_send('jobs_updating_times', event))
+    
+@receiver(post_delete, sender=JobsUpdatingTimes)
+def jobs_updating_times_deleted(sender, instance, **kwargs):
+    event = {
+        'type': 'send_jobs_updating_times_update',
+        'message': {
+            'type': 'deleted',
+            "item": model_serializer._jobs_updating_times_to_message_dict(instance)
+        }
+    }
+    transaction.on_commit(lambda: channels_group_send('jobs_updating_times', event))
+    
+# =========================================================
+# ManualUpdatingJobs (no cacheado en tu schema actual; solo eventos)
+# =========================================================
+@receiver(post_save, sender=ManualUpdatingJobs)
+def manual_updating_jobs_saved(sender, instance, created, **kwargs):
+    event = {
+        'type': 'send_manual_updating_jobs_update',
+        'message': {
+            'type': 'created' if created else 'updated',
+            "item": model_serializer._manual_updating_jobs_to_message_dict(instance)
+        }
+    }
+    transaction.on_commit(lambda: channels_group_send('manual_updating_jobs', event))
+    
+@receiver(post_delete, sender=ManualUpdatingJobs)
+def manual_updating_jobs_deleted(sender, instance, **kwargs):
+    event = {
+        'type': 'send_manual_updating_jobs_update',
+        'message': {
+            'type': 'deleted',
+            "item": model_serializer._manual_updating_jobs_to_message_dict(instance)
+        }
+    }
+    transaction.on_commit(lambda: channels_group_send('manual_updating_jobs', event))

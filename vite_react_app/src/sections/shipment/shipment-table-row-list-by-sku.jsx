@@ -30,6 +30,8 @@ import { ConfirmDialog } from 'src/components/custom-dialog';
 import { usePopover, CustomPopover } from 'src/components/custom-popover';
 
 import { LoadingContext } from 'src/auth/context/loading-context';
+import { useWebsocket } from 'src/hooks/use-websocket';
+import { CONFIG } from 'src/config-global';
 
 export function ShipmentTableRowListBySku({ row, selected, onViewRow, onSelectRow, onDeleteRow }) {
   const router = useRouter();
@@ -71,7 +73,7 @@ export function ShipmentTableRowListBySku({ row, selected, onViewRow, onSelectRo
 
   const packages = parsePackages(row.packages);
 
-  const { data } = usePackagesQuery(null, null, packages.map(pkg => pkg.package_id));
+  const { data, refetch: refetchPackages } = usePackagesQuery(null, null, packages.map(pkg => pkg.package_id));
 
   const dataRow = useMemo(() => packages, [packages]);
 
@@ -109,6 +111,15 @@ export function ShipmentTableRowListBySku({ row, selected, onViewRow, onSelectRo
     },
     [router]
   );
+
+  const baseWsUrl = `${CONFIG.websocketProtocol}://${CONFIG.apiHost}:${CONFIG.apiPort}/${CONFIG.apiDomain}/ws`;
+
+
+  const onMessage = useCallback((m) => {
+    if (['created', 'updated', 'deleted'].includes(m.type)) refetchPackages?.();
+  }, [refetchPackages]);
+
+  useWebsocket(`${baseWsUrl}/packages/`, onMessage);
 
   const renderPrimary = !isMobile ? (
     <TableRow hover selected={selected}>
@@ -238,23 +249,23 @@ export function ShipmentTableRowListBySku({ row, selected, onViewRow, onSelectRo
                       <ListItemText
                         secondary={
                           <Grid container spacing={1}>
-                              <Grid item xs={!isMobile ? 3 : 7.9}>
-                                # Shipment: <strong> </strong>
-                                <Link color="inherit" onClick={() => handleViewShipment(item.shipmentId)} underline="always" sx={{ cursor: 'pointer' }}>
-                                  <strong>{item.shipmentNumber}</strong>
-                                </Link>
-                              </Grid>
-                              <Grid item xs={!isMobile ? 3 : 3.1}>
-                                <Typography variant="body2">
-                                  # Pkg: <strong>{item.packageNumber}</strong>
-                                </Typography>
-                              </Grid>
-                              <Grid item xs={!isMobile ? 2 : 1}>
-                                <Typography variant="body2">
-                                  PkgQty: <strong>{parseInt(item.quantity, 10)}</strong>
-                                </Typography>
-                              </Grid>
+                            <Grid item xs={!isMobile ? 3 : 7.9}>
+                              # Shipment: <strong> </strong>
+                              <Link color="inherit" onClick={() => handleViewShipment(item.shipmentId)} underline="always" sx={{ cursor: 'pointer' }}>
+                                <strong>{item.shipmentNumber}</strong>
+                              </Link>
                             </Grid>
+                            <Grid item xs={!isMobile ? 3 : 3.1}>
+                              <Typography variant="body2">
+                                # Pkg: <strong>{item.packageNumber}</strong>
+                              </Typography>
+                            </Grid>
+                            <Grid item xs={!isMobile ? 2 : 1}>
+                              <Typography variant="body2">
+                                PkgQty: <strong>{parseInt(item.quantity, 10)}</strong>
+                              </Typography>
+                            </Grid>
+                          </Grid>
                         }
                         primaryTypographyProps={{ variant: 'body2' }}
                         secondaryTypographyProps={{

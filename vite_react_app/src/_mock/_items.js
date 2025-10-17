@@ -89,17 +89,17 @@ const GET_SENITRON_INVENTORY_ITEM = gql`
 `;
 
 export const useItemsQuery = () => {
-  const { loading, error, data, startPolling, stopPolling } = useQuery(GET_ZOHO_INVENTORY_ITEMS);
+  const { loading, error, data, refetch } = useQuery(GET_ZOHO_INVENTORY_ITEMS);
 
-  return { loading, error, data: data?.allZohoInventoryItems || []};
+  return { loading, error, data: data?.allZohoInventoryItems || [], refetch };
 };
 
 export const useSenitronItemsQuery = () => {
-  const { loading, error, data, startPolling, stopPolling } = useQuery(GET_SENITRON_INVENTORY_ITEM, {
+  const { loading, error, data, refetch } = useQuery(GET_SENITRON_INVENTORY_ITEM, {
     fetchPolicy: 'network-only',
   });
 
-  return { loading, error, data: data?.allSenitronInventoryItemsAssets || [] };
+  return { loading, error, data: data?.allSenitronInventoryItemsAssets || [], refetch };
 };
 
 export const ITEM_STATUS_OPTIONS = [

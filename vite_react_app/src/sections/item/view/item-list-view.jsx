@@ -20,6 +20,7 @@ import { useRouter } from 'src/routes/hooks';
 
 import { useBoolean } from 'src/hooks/use-boolean';
 import { useSetState } from 'src/hooks/use-set-state';
+import { useWebsocket } from 'src/hooks/use-websocket';
 
 import { CONFIG } from 'src/config-global';
 import { varAlpha } from 'src/theme/styles';
@@ -47,6 +48,7 @@ import { LoadingContext } from 'src/auth/context/loading-context';
 import { ItemTableRow } from '../item-table-row';
 import { ItemTableToolbar } from '../item-table-toolbar';
 import { ItemTableFiltersResult } from '../item-table-filters-result';
+
 
 
 
@@ -103,9 +105,9 @@ export function ItemListView() {
 
   const confirm = useBoolean();
 
-  const { loading, error, data } = useItemsQuery();
+  const { loading, error, data, refetch: refetchItems } = useItemsQuery();
 
-  const { data: senitronData } = useSenitronItemsQuery();
+  const { data: senitronData, refetch: refetchSenitronItems } = useSenitronItemsQuery();
 
   const [tableData, setTableData] = useState([]);
 
@@ -146,27 +148,19 @@ export function ItemListView() {
     // }
   }, [table]);
 
+  const baseWsUrl = `${CONFIG.websocketProtocol}://${CONFIG.apiHost}:${CONFIG.apiPort}/${CONFIG.apiDomain}/ws`;
 
-  // useEffect(() => {
-  //   const socket = new WebSocket(`${CONFIG.websocketProtocol}://${CONFIG.apiHost}/${CONFIG.apiDomain}/ws/inventory_items/`);
-  //   socket.onmessage = (event) => {
-  //     const message = JSON.parse(event.data);
-  //     if (message.type === 'created' || message.type === 'updated') {
-  //       setTableData((prevData) => {
-  //         const existingItemIndex = prevData.findIndex(item => item.itemId === message.item.itemId);
-  //         if (existingItemIndex !== -1) {
-  //           const updatedData = [...prevData];
-  //           updatedData[existingItemIndex] = message.item;
-  //           return updatedData;
-  //         }
-  //         return [message.item, ...prevData];
-  //       });
-  //     }
-  //   };
-  //   return () => {
-  //     socket.close();
-  //   };
-  // }, []);
+  const onInvMsg = useCallback((m) => {
+    if (['created', 'updated', 'deleted'].includes(m.type)) refetchItems?.();
+  }, [refetchItems]);
+
+  const onSenitronInvMsg = useCallback((m) => {
+    if (['created', 'updated', 'deleted'].includes(m.type)) refetchSenitronItems?.();
+  }, [refetchSenitronItems]);
+
+  useWebsocket(`${baseWsUrl}/inventory_items/`, onInvMsg);
+
+  useWebsocket(`${baseWsUrl}/senitron_inventory_items/`, onSenitronInvMsg);
 
 
   useEffect(() => {
@@ -194,9 +188,6 @@ export function ItemListView() {
         .catch((err) => {
           console.error('Error syncing inventory items:', err);
         });
-    } else if (!loading && !error) {
-      console.error("No data returned from useItemsQuery");
-      setTableData([]);
     }
   }, [data, senitronData, loading, error]);
 

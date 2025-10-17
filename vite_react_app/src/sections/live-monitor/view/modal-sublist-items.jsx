@@ -63,11 +63,11 @@ export function ModalSublistItems({
           <FormControlLabel
             control={
               <Checkbox
-                checked={ignoreErrorsSelected.length === modalDataFiltered.length && modalDataFiltered.length > 0}
-                indeterminate={ignoreErrorsSelected.length > 0 && ignoreErrorsSelected.length < modalDataFiltered.length}
+                checked={ignoreErrorsSelected?.length === modalDataFiltered?.length && modalDataFiltered?.length > 0}
+                indeterminate={ignoreErrorsSelected?.length > 0 && ignoreErrorsSelected?.length < modalDataFiltered?.length}
                 onChange={(event) => {
                   if (event.target.checked) {
-                    const allItemIds = modalDataFiltered.map((item) => item.itemId);
+                    const allItemIds = modalDataFiltered?.map((item) => item.itemId);
                     setIgnoreErrorsSelected(allItemIds);
                   } else {
                     setIgnoreErrorsSelected([]);
@@ -100,7 +100,7 @@ export function ModalSublistItems({
         }}
         title={`${modalTitle} (${modalDataFiltered?.length} items)`}
         maxWidth='lg'
-        maxHeight='lg'
+        paperMaxHeight={600}
         content={
           <Box sx={{ width: '100%', height: 860, bgcolor: 'background.paper', p: 1 }}>
               <Stack direction="row" alignItems="center" spacing={1} flexGrow={1} sx={{ width: 1 }}>
@@ -122,7 +122,7 @@ export function ModalSublistItems({
                 </IconButton>
               </Stack>
               <br />
-              {ignoreErrorsSelected.length > 0 && (
+              {ignoreErrorsSelected?.length > 0 && (
                 <>
                   <Box sx={{ display: 'flex', width: '100%' }}>
                     <Alert
@@ -132,7 +132,7 @@ export function ModalSublistItems({
                       }}
                       sx={{ flexGrow: 1 }}
                     >
-                      {ignoreErrorsSelected.length} items to {isIgnore ? 'ignore' : 'restore'} errors have been selected.
+                      {ignoreErrorsSelected?.length} items to {isIgnore ? 'ignore' : 'restore'} errors have been selected.
                     </Alert>
                   </Box>
                   <br />
@@ -249,10 +249,10 @@ export function ModalSublistItems({
             <ExportCSV data={modalDataFiltered} headers={headersCSV} buttonText="Export CSV" docName={modalTitle} />
           </MenuItem>
 
-          {userLogged?.data.is_staff && hasIgnoredErrors && (
+          {userLogged?.data?.is_staff && hasIgnoredErrors && (
             <MenuItem onClick={handleSelectAllIgnoreErrors}>
               <Iconify icon="solar:check-square-bold" />
-              {ignoreErrorsSelected.length === modalDataFiltered.length
+              {ignoreErrorsSelected?.length === modalDataFiltered?.length
                 ? (isIgnore ? 'Deselect All Ignore Errors' : 'Deselect All Errors')
                 : (isIgnore ? 'Select All Ignore Errors' : 'Select All Errors')}
             </MenuItem>

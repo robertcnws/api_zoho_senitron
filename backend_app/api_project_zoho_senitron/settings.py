@@ -187,6 +187,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "whitenoise.middleware.WhiteNoiseMiddleware"
 ]
 
 ROOT_URLCONF = 'api_project_zoho_senitron.urls'
@@ -208,18 +209,30 @@ TEMPLATES = [
 ]
 
 CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            "hosts": [(REDIS_HOST, 6379, 6)], 
-        },
-        'CAPACITY': 1500,
+  "default": {
+    "BACKEND": "channels_redis.core.RedisChannelLayer",
+    "CONFIG": {
+      "hosts": [f"redis://{REDIS_HOST}:6379/6"],
     },
+    "CAPACITY": 1500,
+  },
 }
 
-# ASGI_APPLICATION = "api_project_zoho_senitron.asgi.application"
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": f"redis://{REDIS_HOST}:6379/7",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",
+        },
+        "TIMEOUT": 300,  # default TTL si no se pasa en cache.set (opcional)
+    }
+}
 
-WSGI_APPLICATION = 'api_project_zoho_senitron.wsgi.application'
+ASGI_APPLICATION = "api_project_zoho_senitron.asgi.application"
+
+# WSGI_APPLICATION = 'api_project_zoho_senitron.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
@@ -294,10 +307,6 @@ TEMPLATES = [
     },
 ]
 
-STATIC_URL = '/static/'
-
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
@@ -316,7 +325,8 @@ BACKUP_DIR = os.path.join(BASE_DIR, 'backup')
 MEDIA_URL = '/backup/'
 MEDIA_ROOT = BACKUP_DIR
 
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field

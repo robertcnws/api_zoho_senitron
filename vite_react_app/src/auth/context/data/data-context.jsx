@@ -1,6 +1,6 @@
 // src/contexts/DataContext.jsx
 
-import React, { useMemo, useState, useContext, createContext } from 'react';
+import React, { useMemo, useState, useContext, createContext, useCallback } from 'react';
 
 import { fDate } from 'src/utils/format-time';
 
@@ -13,6 +13,8 @@ import { useSenitronAssetsLogsQuery } from 'src/_mock/_itemAssetsLogs';
 import { useItemsQuery, useSenitronItemsQuery } from 'src/_mock/_items';
 import { useJobsUpdatingTimesQuery } from 'src/_mock/_jobsUpdatingTime';
 import { useManualUpdatingJobsQuery } from 'src/_mock/_manualUpdatingJobs';
+import { CONFIG } from 'src/config-global';
+import { useWebsocket } from 'src/hooks/use-websocket';
 
 const DataContext = createContext();
 
@@ -23,15 +25,84 @@ export const DataProvider = ({ children }) => {
 
     const [countLostItems, setCountLostItems] = useState(0);
 
-    const { data: items, loading: loadingItems, error: errorItems } = useItemsQuery();
-    const { data: senitronItems, loading: loadingSenitronItems, error: errorSenitronItems } = useSenitronItemsQuery();
-    const { data: timelineItems, loading: loadingTimelineItems, error: errorTimelineItems } = useTimelineItemsQuery();
-    const { data: itemsSkusTrack, loading: loadingItemsSkusTrack, error: errorItemsSkusTrack } = useSkuTrackInfoQuery();
-    const { data: jobsUpdatingTime, loading: loadingJobsUpdatingTime, error: errorJobsUpdatingTime } = useJobsUpdatingTimesQuery();
-    const { data: manualUpdatingJobs, loading: loadingManualUpdatingJobs, error: errorManualUpdatingJobs } = useManualUpdatingJobsQuery();
-    const { data: shipments, loading: loadingShipments, error: errorShipments } = useShipmentsQuery(null, null);
-    const { data: senitronAssetsLogs, loading: loadingSenitronAssetsLogs, error: errorSenitronAssetsLogs } = useSenitronAssetsLogsQuery(null);
-    const { data: notifications, loading: loadingNotifications, error: errorNotifications } = useNotificationsQuery(userLogged?.data.username);
+    const {
+        data: items,
+        loading: loadingItems,
+        error: errorItems,
+        refetch: refetchItems
+    } = useItemsQuery();
+
+    const {
+        data: senitronItems,
+        loading: loadingSenitronItems,
+        error: errorSenitronItems,
+        refetch: refetchSenitronItems
+    } = useSenitronItemsQuery();
+
+    const {
+        data: timelineItems,
+        loading: loadingTimelineItems,
+        error: errorTimelineItems,
+        refetch: refetchTimelineItems
+    } = useTimelineItemsQuery();
+
+    const {
+        data: itemsSkusTrack,
+        loading: loadingItemsSkusTrack,
+        error: errorItemsSkusTrack,
+        refetch: refetchItemsSkusTrack
+    } = useSkuTrackInfoQuery();
+
+    const {
+        data: jobsUpdatingTime,
+        loading: loadingJobsUpdatingTime,
+        error: errorJobsUpdatingTime,
+        refetch: refetchJobsUpdatingTime
+    } = useJobsUpdatingTimesQuery();
+
+    const {
+        data: manualUpdatingJobs,
+        loading: loadingManualUpdatingJobs,
+        error: errorManualUpdatingJobs,
+        refetch: refetchManualUpdatingJobs
+    } = useManualUpdatingJobsQuery();
+
+    const {
+        data: shipments,
+        loading: loadingShipments,
+        error: errorShipments,
+        refetch: refetchShipments
+    } = useShipmentsQuery(null, null);
+
+    const {
+        data: senitronAssetsLogs,
+        loading: loadingSenitronAssetsLogs,
+        error: errorSenitronAssetsLogs,
+        refetch: refetchSenitronAssetsLogs
+    } = useSenitronAssetsLogsQuery(null);
+
+    const {
+        data: notifications,
+        loading: loadingNotifications,
+        error: errorNotifications,
+        refetch: refetchNotifications
+    } = useNotificationsQuery(userLogged?.data.username);
+
+    const baseWsUrl = `${CONFIG.websocketProtocol}://${CONFIG.apiHost}:${CONFIG.apiPort}/${CONFIG.apiDomain}/ws`;
+
+    const onMessage = useCallback((m, _refetchFunc) => {
+        if (['created', 'updated', 'deleted'].includes(m.type)) _refetchFunc?.();
+    }, []);
+
+    useWebsocket(`${baseWsUrl}/inventory_items/`, (msg) => onMessage(msg, refetchItems));
+    useWebsocket(`${baseWsUrl}/senitron_inventory_items/`, (msg) => onMessage(msg, refetchSenitronItems));
+    useWebsocket(`${baseWsUrl}/senitron_timelines/`, (msg) => onMessage(msg, refetchTimelineItems));
+    useWebsocket(`${baseWsUrl}/sku_track_info/`, (msg) => onMessage(msg, refetchItemsSkusTrack));
+    useWebsocket(`${baseWsUrl}/jobs_updating_times/`, (msg) => onMessage(msg, refetchJobsUpdatingTime));
+    useWebsocket(`${baseWsUrl}/manual_updating_jobs/`, (msg) => onMessage(msg, refetchManualUpdatingJobs));
+    useWebsocket(`${baseWsUrl}/shipment_orders/`, (msg) => onMessage(msg, refetchShipments));
+    useWebsocket(`${baseWsUrl}/senitron_inventory_items_asset_logs/`, (msg) => onMessage(msg, refetchSenitronAssetsLogs));
+    useWebsocket(`${baseWsUrl}/notification_users/`, (msg) => onMessage(msg, refetchNotifications));
 
     const loading =
         loadingItems ||
@@ -208,24 +279,24 @@ export const DataProvider = ({ children }) => {
     }, [filteredLogs]);
 
     const itemsAssetsLogsInfo = useMemo(() => objectsGroupedLogs?.map(group => {
-        const {date} = group;
+        const { date } = group;
         const liveLogs = group.logs.filter(
             log => log.currentStatusName?.toLowerCase().includes('live') &&
-                   !log.lastStatusName?.toLowerCase().includes('live') &&
-                   log.createdAt &&
-                   fDate(log.createdAt, 'YYYY-MM-DD') === date
+                !log.lastStatusName?.toLowerCase().includes('live') &&
+                log.createdAt &&
+                fDate(log.createdAt, 'YYYY-MM-DD') === date
         );
         const killedLogs = group.logs.filter(
             log => log.currentStatusName?.toLowerCase().includes('kill') &&
-                   !log.lastStatusName?.toLowerCase().includes('kill') &&
-                   log.createdAt &&
-                   fDate(log.createdAt, 'YYYY-MM-DD') === date
+                !log.lastStatusName?.toLowerCase().includes('kill') &&
+                log.createdAt &&
+                fDate(log.createdAt, 'YYYY-MM-DD') === date
         );
         const removedLogs = group.logs.filter(
             log => log.currentStatusName?.toLowerCase().includes('removed') &&
-                   !log.lastStatusName?.toLowerCase().includes('removed') &&
-                   log.createdAt &&
-                   fDate(log.createdAt, 'YYYY-MM-DD') === date
+                !log.lastStatusName?.toLowerCase().includes('removed') &&
+                log.createdAt &&
+                fDate(log.createdAt, 'YYYY-MM-DD') === date
         );
         const liveLogsSet = [...new Set(liveLogs.map(log => log.serialNumber))].sort();
         const killedLogsSet = [...new Set(killedLogs.map(log => log.serialNumber))].sort();
@@ -255,6 +326,8 @@ export const DataProvider = ({ children }) => {
         };
     }).filter(Boolean), [objectsGroupedLogs]);
 
+    
+
     const value = useMemo(() => ({
         userNotifications,
         items,
@@ -276,6 +349,15 @@ export const DataProvider = ({ children }) => {
         finalGroupedArray,
         countLostItems,
         setCountLostItems,
+        refetchItems,
+        refetchSenitronItems,
+        refetchTimelineItems,
+        refetchItemsSkusTrack,
+        refetchJobsUpdatingTime,
+        refetchManualUpdatingJobs,
+        refetchShipments,
+        refetchSenitronAssetsLogs,
+        refetchNotifications
     }), [
         userNotifications,
         items,
@@ -295,7 +377,16 @@ export const DataProvider = ({ children }) => {
         itemsZohoSenitron,
         itemsSenitronZoho,
         finalGroupedArray,
-        countLostItems
+        countLostItems,
+        refetchItems,
+        refetchSenitronItems,
+        refetchTimelineItems,
+        refetchItemsSkusTrack,
+        refetchJobsUpdatingTime,
+        refetchManualUpdatingJobs,
+        refetchShipments,
+        refetchSenitronAssetsLogs,
+        refetchNotifications
     ]);
 
     return (

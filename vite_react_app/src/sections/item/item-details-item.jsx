@@ -29,8 +29,8 @@ export function ItemDetailsItems({ item, senitronItem, setItem, setSenitronItem,
 
 
   useEffect(() => {
-    if (item) setCurrentItem(item);
-    if (senitronItem) setCurrentSenitronItem(senitronItem);
+    if (item && item?.itemId) setCurrentItem(item);
+    if (senitronItem && senitronItem?.assets) setCurrentSenitronItem(senitronItem);
 
   }, [item, senitronItem]);
 

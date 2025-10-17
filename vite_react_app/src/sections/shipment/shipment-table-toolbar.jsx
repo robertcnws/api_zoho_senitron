@@ -39,7 +39,7 @@ export function ShipmentTableToolbar({ filters, onResetPage, dateError, setUpdat
     const today = dayjs();
     if (!filters.state.startDate && !filters.state.endDate) {
       filters.setState({
-        startDate: today.subtract(1, 'day'),
+        startDate: today,
         endDate: today,
       });
     }
@@ -65,12 +65,14 @@ export function ShipmentTableToolbar({ filters, onResetPage, dateError, setUpdat
 
   const handleFilterEndDate = useCallback(
     (newValue) => {
+      setUpdating(true);
       onResetPage();
       const isoString = newValue.toISOString();
+      localStorage.setItem('startDate', isoString);
       localStorage.setItem('endDate', isoString);
-      filters.setState({ endDate: dayjs(isoString), startDate: dayjs(isoString).subtract(1, 'day') });
+      filters.setState({ endDate: dayjs(isoString), startDate: dayjs(isoString) });
     },
-    [filters, onResetPage]
+    [filters, onResetPage, setUpdating]
   );
 
   return (

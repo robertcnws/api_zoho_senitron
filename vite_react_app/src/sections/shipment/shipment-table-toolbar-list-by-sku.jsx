@@ -40,7 +40,7 @@ export function ShipmentTableToolbarListBySku({ filters, onResetPage, dataFilter
     const today = dayjs();
     if (!filters.state.startDate && !filters.state.endDate) {
       filters.setState({
-        startDate: today.subtract(1, 'day'),
+        startDate: today,
         endDate: today,
       });
     }
@@ -65,14 +65,16 @@ export function ShipmentTableToolbarListBySku({ filters, onResetPage, dataFilter
   // );
 
   const handleFilterEndDate = useCallback(
-    (newValue) => {
-      onResetPage();
-      const isoString = newValue.toISOString();
-      localStorage.setItem('endDate', isoString);
-      filters.setState({ endDate: dayjs(isoString), startDate: dayjs(isoString).subtract(1, 'day') });
-    },
-    [filters, onResetPage]
-  );
+      (newValue) => {
+        setUpdating(true);
+        onResetPage();
+        const isoString = newValue.toISOString();
+        localStorage.setItem('startDate', isoString);
+        localStorage.setItem('endDate', isoString);
+        filters.setState({ endDate: dayjs(isoString), startDate: dayjs(isoString) });
+      },
+      [filters, onResetPage, setUpdating]
+    );
 
   return (
     <>

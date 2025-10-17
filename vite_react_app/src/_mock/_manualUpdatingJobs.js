@@ -13,7 +13,7 @@ const GET_MANUAL_UPDATING_JOBS = gql`
 `;
 
 export const useManualUpdatingJobsQuery = () => {
-  const { loading, error, data, startPolling, stopPolling } = useQuery(GET_MANUAL_UPDATING_JOBS);
+  const { loading, error, data, refetch } = useQuery(GET_MANUAL_UPDATING_JOBS);
 
-  return { loading, error, data: data?.allManualUpdatingJobs || [] };
+  return { loading, error, data: data?.allManualUpdatingJobs || [], refetch };
 };

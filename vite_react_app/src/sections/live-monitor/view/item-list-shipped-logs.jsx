@@ -17,6 +17,7 @@ import { useRouter } from 'src/routes/hooks';
 import { useSetState } from 'src/hooks/use-set-state';
 
 import { fDate, fIsBetween } from 'src/utils/format-time';
+import { countingLostItems } from 'src/utils/counting-utils';
 
 import { varAlpha } from 'src/theme/styles';
 import { DashboardContent } from 'src/layouts/dashboard';
@@ -38,11 +39,6 @@ import { useDataContext } from 'src/auth/context/data/data-context';
 
 import { ItemTableFiltersResult } from '../../item/item-table-filters-result';
 import { ItemTableShippedLogsToolbar } from '../item-table-shipped-logs-toolbar';
-
-
-
-
-
 
 // ----------------------------------------------------------------------
 
@@ -178,95 +174,17 @@ export function ItemListShippedLogsView({
         // const update = () => {
         if (itemsZohoSenitron && itemsZohoSenitron.length > 0 && listSerials && listSerials.length > 0 && listShipments && listShipments.length > 0) {
 
-            const allowedIds = itemsZohoSenitron?.filter((item) => item.syncedWithSenitron).map((item) => item.itemId);
+            const result = countingLostItems(itemsZohoSenitron, listSerials, listShipments, filters.state.endDate);
 
-            const allowedIdsSet = new Set(allowedIds);
+            updateCountItemLost(result.lostCount);
 
-            const syncedShipments = listShipments?.filter(item => allowedIdsSet.has(item.itemId));
-
-            const rData = syncedShipments?.map((item) => {
-                const senitronItem = listSerials?.find((sItem) => sItem?.itemNumber === item.itemId);
-                return {
-                    ...item,
-                    shippedSerialsQuantity: handleShippedSerialQuantity(senitronItem) || 0,
-                    differenceShipped: handleShippedSerialQuantity(senitronItem) ?
-                        (item.itemTotalQty - handleShippedSerialQuantity(senitronItem)) : item.itemTotalQty,
-                    receivedSerialsQuantity: senitronItem?.logs.reduce(
-                        (acc, h) => acc + (h.currentStatusName.toLowerCase().includes('live') ? 1 : 0), 0
-                    ) || 0,
-                    isReconciled: false,
-                    logs: senitronItem?.logs,
-                };
-            });
-
-            const rDataZohoSenitron = rData?.map((item) => {
-                const senitronItem = itemsZohoSenitron?.find((sItem) => sItem?.itemId === item.itemId);
-                return {
-                    ...item,
-                    isReconciled: parseInt(senitronItem?.stockOnHand, 10) - parseInt(senitronItem?.quantity, 10) === 0 || false,
-                }
-
-            });
-
-            const existingItemIds = new Set(rDataZohoSenitron.map(item => item.itemId));
-
-            const newItems = listSerials
-                .filter(item => !existingItemIds.has(item.itemNumber))
-                .map(item => ({
-                    ...item,
-                    itemId: item.itemNumber,
-                    itemTotalQty: 0,
-                    shippedSerialsQuantity: handleShippedSerialQuantity(item) || 0,
-                    differenceShipped: handleShippedSerialQuantity(item) ?
-                        (0 - handleShippedSerialQuantity(item)) : 0,
-                    receivedSerialsQuantity: item?.logs.reduce(
-                        (acc, h) => acc + (h.currentStatusName.toLowerCase().includes('live') ? 1 : 0), 0
-                    ) || 0,
-                }));
-
-
-            const updatedRDataZohoSenitron = [...rDataZohoSenitron, ...newItems];
-
-
-
-            const filteredData = updatedRDataZohoSenitron?.map(item => {
-
-                const filteredLogs = item.logs?.filter(log => fDate(log.createdAt, 'YYYY-MM-DD') === fDate(filters.state.endDate, 'YYYY-MM-DD'));
-                return {
-                    ...item,
-                    logs: filteredLogs,
-                };
-            });
-
-            const finalFilteredData = filteredData?.map((item) => {
-                const senitronItem = itemsZohoSenitron?.find((sItem) => sItem?.itemId === item.itemId);
-                return {
-                    ...item,
-                    isReconciled: parseInt(senitronItem?.stockOnHand, 10) - parseInt(senitronItem?.quantity, 10) === 0 || false,
-                }
-
-            });
-
-            // console.log('finalFilteredData', finalFilteredData);
-
-            const lostCount = finalFilteredData.filter(
-                (it) => it.differenceShipped < 0 && !it.isReconciled && it.date === fDate(filters.state.endDate, 'YYYY-MM-DD')
-            ).length;
-
-            if (lostCount > 0 && fDate(filters.state.endDate, 'YYYY-MM-DD') === fDate(new Date(), 'YYYY-MM-DD')) {
-                updateCountItemLost(lostCount);
-            }
-            else {
-                updateCountItemLost(0);
-            }
-
-            setTableData(finalFilteredData);
+            setTableData(result.finalFilteredData);
 
         }
         else {
             updateCountItemLost(0);
         }
-    }, [listSerials, listShipments, itemsZohoSenitron, filters.state.endDate, setCountLostItems, handleShippedSerialQuantity, updateCountItemLost]);
+    }, [listSerials, listShipments, itemsZohoSenitron, filters.state.endDate, setCountLostItems, updateCountItemLost]);
 
     useEffect(() => {
         setListItemsLost(tableData?.filter((item) => item.differenceShipped < 0 && !item.isReconciled && item.date === fDate(filters.state.endDate, 'YYYY-MM-DD')));
@@ -317,23 +235,6 @@ export function ItemListShippedLogsView({
         },
         [router]
     );
-
-    // if (!tableData || tableData.length === 0) {
-    //     return (
-    //         <DashboardContent>
-    //             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2.5 }}>
-    //                 <Typography variant="h6">Shipped Logs</Typography>
-    //             </Box>
-    //             <TableContainer sx={{ width: '100%', bgcolor: 'background.paper', p: 1 }}>
-    //                 <Table>
-    //                     <TableBody>
-    //                         <TableNoData notFound={tableData.length === 0} />
-    //                     </TableBody>
-    //                 </Table>
-    //             </TableContainer>
-    //         </DashboardContent>
-    //     );
-    // }
 
     const renderSecondary = (row) => (
         <TableRow>

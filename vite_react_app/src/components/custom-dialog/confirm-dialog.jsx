@@ -8,7 +8,7 @@ import DialogContent from '@mui/material/DialogContent';
 
 // ----------------------------------------------------------------------
 
-export function ConfirmDialog({ open, title, action, content, onClose, maxWidth, ...other }) {
+export function ConfirmDialog({ open, title, action, content, onClose, maxWidth, paperMaxHeight = null, PaperProps = {}, ...other }) {
 
   const dialogRef = useRef(null);
 
@@ -22,7 +22,21 @@ export function ConfirmDialog({ open, title, action, content, onClose, maxWidth,
   };
 
   return (
-    <Dialog fullWidth maxWidth={!maxWidth ? 'xs' : maxWidth} open={open} onClose={handleClose} ref={dialogRef} {...other}>
+    <Dialog
+      fullWidth
+      maxWidth={!maxWidth ? 'xs' : maxWidth}
+      open={open}
+      onClose={handleClose}
+      ref={dialogRef}
+      PaperProps={{
+        ...(PaperProps || {}),
+        sx: {
+          ...(PaperProps?.sx || {}),
+          ...(paperMaxHeight ? { maxHeight: paperMaxHeight } : {}),
+        },
+      }}
+      {...other}
+    >
       <DialogTitle sx={{ pb: 2 }}>{title}</DialogTitle>
 
       {content && <DialogContent sx={{ typography: 'body2' }}> {content} </DialogContent>}

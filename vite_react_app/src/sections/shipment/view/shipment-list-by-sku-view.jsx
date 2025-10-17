@@ -12,6 +12,7 @@ import { Typography, LinearProgress } from '@mui/material';
 
 import { paths } from 'src/routes/paths';
 import { useRouter } from 'src/routes/hooks';
+import dayjs from 'dayjs';
 
 import { useBoolean } from 'src/hooks/use-boolean';
 import { useSetState } from 'src/hooks/use-set-state';
@@ -38,26 +39,29 @@ import {
 } from 'src/components/table';
 
 import { LoadingContext } from 'src/auth/context/loading-context';
+import { useWebsocket } from 'src/hooks/use-websocket';
+import { CONFIG } from 'src/config-global';
 
 import { ShipmentTableRowListBySku } from '../shipment-table-row-list-by-sku';
 import { ShipmentTableToolbarListBySku } from '../shipment-table-toolbar-list-by-sku';
 import { ShipmentTableFiltersResultListBySku } from '../shipment-table-filters-result-list-by-sku';
 
 
-
 // ----------------------------------------------------------------------
 
 const STATUS_OPTIONS = [{ value: 'all', label: 'All' }, ...SHIPMENTS_STATUS_OPTIONS];
-
 
 // ----------------------------------------------------------------------
 
 export function ShipmentListBySkuView() {
 
+  const start = localStorage.getItem('startDate') || String(dayjs().format('YYYY-MM-DD'));
+  const end = localStorage.getItem('endDate') || String(dayjs().format('YYYY-MM-DD'));
+
   const filters = useSetState({
     sku: '',
-    startDate: null,
-    endDate: null,
+    startDate: dayjs(start),
+    endDate: dayjs(end),
   });
 
   const parseLineItems = (lineItems) => {
@@ -113,11 +117,21 @@ export function ShipmentListBySkuView() {
 
   const confirm = useBoolean();
 
-  const { data: shipments } = useShipmentsQuery(null, null);
+  const { data: shipments, refetch: refetchShipments } = useShipmentsQuery(
+    String(filters.state.startDate.format('YYYY-MM-DD')),
+    String(filters.state.endDate.format('YYYY-MM-DD'))
+  );
 
   const [dataShipments, setDataShipments] = useState([]);
 
-  // const [tableData, setTableData] = useState([]);
+  useEffect(() => {
+    if (refetchShipments) {
+      refetchShipments?.().then(() => {
+        setDataShipments(shipments);
+        setUpdating(false);
+      });
+    }
+  }, [filters, refetchShipments, shipments]);
 
 
   useEffect(() => {
@@ -132,14 +146,15 @@ export function ShipmentListBySkuView() {
   }, [table]);
 
 
-  const allShipments = useMemo(() => shipments || null, [shipments]);
+  const allShipments = useMemo(() => shipments || [], [shipments]);
 
   // console.log('allShipments:', allShipments);
 
   const allPackages = useMemo(() => {
     if (allShipments) {
       const packages = [];
-      allShipments.filter((shipment) => shipment?.date === filters.state.startDate).forEach(shipment => {
+      const startDate = String(filters.state.startDate.format('YYYY-MM-DD'))
+      allShipments.filter((shipment) => shipment?.date === startDate).forEach(shipment => {
         const parsedPackage = parsePackages(shipment.packages, shipment.date);
         packages.push(parsedPackage);
       });
@@ -153,9 +168,11 @@ export function ShipmentListBySkuView() {
 
   // console.log('allShipments:', allPackages?.flatMap(pkgs => pkgs.map(pkg => pkg.package_id)) || []);
 
-  const { data: linePackages } = usePackagesQuery(null, null, allPackages?.flatMap(pkgs => pkgs.map(pkg => pkg.package_id)));
+  const { data: linePackages, refetch: refetchLinePackages } = usePackagesQuery(
+    null, null, allPackages?.flatMap(pkgs => pkgs.map(pkg => pkg.package_id))
+  );
 
-  const allLinePackages = useMemo(() => linePackages || null, [linePackages]);
+  const allLinePackages = useMemo(() => linePackages || [], [linePackages]);
 
   const dataItems = useMemo(() => {
     if (linePackages) {
@@ -288,6 +305,19 @@ export function ShipmentListBySkuView() {
     [router]
   );
 
+  const baseWsUrl = `${CONFIG.websocketProtocol}://${CONFIG.apiHost}:${CONFIG.apiPort}/${CONFIG.apiDomain}/ws`;
+
+  const onMessagePackages = useCallback((m) => {
+    if (['created', 'updated', 'deleted'].includes(m.type)) refetchLinePackages?.();
+  }, [refetchLinePackages]);
+
+  useWebsocket(`${baseWsUrl}/packages/`, onMessagePackages);
+
+  const onMessageShipments = useCallback((m) => {
+    if (['created', 'updated', 'deleted'].includes(m.type)) refetchShipments?.();
+  }, [refetchShipments]);
+
+  useWebsocket(`${baseWsUrl}/shipment_orders/`, onMessageShipments);  
 
   if (updating) {
     return (
@@ -506,15 +536,15 @@ function applyFilter({ inputData, comparator, filters, dateError }) {
     );
   }
 
-  if (!dateError) {
-    if (startDate && endDate) {
-      inputData = inputData?.filter((ship) => fIsBetween(ship.date, startDate, endDate));
-    }
-    else if (endDate) {
-      const oneDayBefore = new Date(endDate) - 1;
-      inputData = inputData?.filter((ship) => fIsBetween(ship.date, oneDayBefore, endDate));
-    }
-  }
+  // if (!dateError) {
+  //   if (startDate && endDate) {
+  //     inputData = inputData?.filter((ship) => fIsBetween(ship.date, startDate, endDate));
+  //   }
+  //   else if (endDate) {
+  //     const oneDayBefore = new Date(endDate) - 1;
+  //     inputData = inputData?.filter((ship) => fIsBetween(ship.date, oneDayBefore, endDate));
+  //   }
+  // }
 
   return inputData;
 }

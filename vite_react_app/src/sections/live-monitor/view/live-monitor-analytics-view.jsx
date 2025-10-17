@@ -8,6 +8,7 @@ import { Box, Alert, LinearProgress } from '@mui/material';
 import { useSetState } from 'src/hooks/use-set-state';
 
 import { fDate } from 'src/utils/format-time';
+import { useWebsocket } from 'src/hooks/use-websocket';
 
 import { CONFIG } from 'src/config-global';
 import { DashboardContent } from 'src/layouts/dashboard';
@@ -27,6 +28,7 @@ import { useDataContext } from 'src/auth/context/data/data-context';
 import { ModalListItemsSerials } from './modal-list-items-serials';
 import { ItemListShippedLogsTotals } from './item-list-shipped-logs-totals';
 import { ItemListShippedLogsTotalsTable } from './item-list-shipped-logs-totals-table';
+
 
 
 
@@ -77,9 +79,13 @@ export function LiveMonitorAnalyticsView() {
 
   const {
     senitronItems,
+    refetchItems,
+    refetchSenitronItems,
     itemsZohoData,
     jobsUpdatingTimeData,
+    refetchJobsUpdatingTime,
     manualUpdatingJobsData,
+    refetchManualUpdatingJobs,
     itemsAssetsLogsInfo,
     itemsZohoSenitron,
     itemsSenitronZoho,
@@ -98,6 +104,17 @@ export function LiveMonitorAnalyticsView() {
       setDate(fDate(globalDateFilters.state.endDate, 'YYYY-MM-DD'));
     }
   }, [globalDateFilters]);
+
+  const baseWsUrl = `${CONFIG.websocketProtocol}://${CONFIG.apiHost}:${CONFIG.apiPort}/${CONFIG.apiDomain}/ws`;
+
+  const onMessage = useCallback((m, _refetchFunc) => {
+    if (['created', 'updated', 'deleted'].includes(m.type)) _refetchFunc?.();
+  }, []);
+
+  useWebsocket(`${baseWsUrl}/inventory_items/`, (msg) => onMessage(msg, refetchItems));
+  useWebsocket(`${baseWsUrl}/senitron_inventory_items/`, (msg) => onMessage(msg, refetchSenitronItems));
+  useWebsocket(`${baseWsUrl}/jobs_updating_times/`, (msg) => onMessage(msg, refetchJobsUpdatingTime));
+  useWebsocket(`${baseWsUrl}/manual_updating_jobs/`, (msg) => onMessage(msg, refetchManualUpdatingJobs));
 
   const filteredData = useMemo(() => {
     if (itemsAssetsLogsInfo && itemsAssetsLogsInfo.length > 0) {
@@ -357,31 +374,31 @@ export function LiveMonitorAnalyticsView() {
       {!itemsZohoSenitron || !itemsSenitronZoho || !itemsZohoData || filteredData === null ||
         totalZohoQty === null || totalSenitronQty === null || totalErrors === null || updating ? (
         <Box
+          sx={{
+            width: '350px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '80vh',
+            margin: 'auto'
+          }}
+        >
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            {titleLinearProgress}
+          </Typography>
+          <LinearProgress
+            key="error"
             sx={{
-              width: '350px',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: '80vh',
-              margin: 'auto'
+              mb: 2,
+              width: '100%',
+              '& .MuiLinearProgress-bar': {
+                backgroundColor: 'black',
+              },
+              backgroundColor: '#e0e0e0',
             }}
-          >
-            <Typography variant="body2" sx={{ mb: 1 }}>
-              {titleLinearProgress}
-            </Typography>
-            <LinearProgress
-              key="error"
-              sx={{
-                mb: 2,
-                width: '100%',
-                '& .MuiLinearProgress-bar': {
-                  backgroundColor: 'black',
-                },
-                backgroundColor: '#e0e0e0',
-              }}
-            />
-          </Box>
+          />
+        </Box>
       ) : (
         <>
           <DashboardContent maxWidth="xl">

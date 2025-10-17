@@ -9,6 +9,7 @@ import { paths } from 'src/routes/paths';
 import { useRouter } from 'src/routes/hooks';
 
 import { useSetState } from 'src/hooks/use-set-state';
+import { useWebsocket } from 'src/hooks/use-websocket';
 
 import { fDateTime } from 'src/utils/format-time';
 
@@ -89,12 +90,18 @@ export function OverviewAnalyticsView() {
 
   const {
     senitronItems,
+    refetchItems,
+    refetchSenitronItems,
     timelineItems,
+    refetchTimelineItems,
     itemsZohoData,
     itemsTimelineData,
     itemsSkuTrackInfo,
+    refetchItemsSkusTrack,
     jobsUpdatingTimeData,
+    refetchJobsUpdatingTime,
     manualUpdatingJobsData,
+    refetchManualUpdatingJobs,
     itemsAssetsLogsInfo,
     itemsZohoSenitron,
     itemsSenitronZoho,
@@ -231,6 +238,19 @@ export function OverviewAnalyticsView() {
   // Data loaded validation
 
   const [dataLoaded, setDataLoaded] = useState(false);
+
+  const baseWsUrl = `${CONFIG.websocketProtocol}://${CONFIG.apiHost}:${CONFIG.apiPort}/${CONFIG.apiDomain}/ws`;
+
+  const onMessage = useCallback((m, _refetchFunc) => {
+    if (['created', 'updated', 'deleted'].includes(m.type)) _refetchFunc?.();
+  }, []);
+
+  useWebsocket(`${baseWsUrl}/inventory_items/`, (msg) => onMessage(msg, refetchItems));
+  useWebsocket(`${baseWsUrl}/senitron_inventory_items/`, (msg) => onMessage(msg, refetchSenitronItems));
+  useWebsocket(`${baseWsUrl}/jobs_updating_times/`, (msg) => onMessage(msg, refetchJobsUpdatingTime));
+  useWebsocket(`${baseWsUrl}/manual_updating_jobs/`, (msg) => onMessage(msg, refetchManualUpdatingJobs));
+  useWebsocket(`${baseWsUrl}/sku_track_info/`, (msg) => onMessage(msg, refetchItemsSkusTrack));
+  useWebsocket(`${baseWsUrl}/senitron_timelines/`, (msg) => onMessage(msg, refetchTimelineItems));
 
   useEffect(() => {
     if (
@@ -389,49 +409,49 @@ export function OverviewAnalyticsView() {
         !itemsZohoData || !seriesPieChart || totalZohoQty === null ||
         totalSenitronQty === null || totalErrors === null || updating ? (
         <Box
+          sx={{
+            width: '350px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '80vh',
+            margin: 'auto'
+          }}
+        >
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            {titleLinearProgress}
+          </Typography>
+          <LinearProgress
+            key="error"
             sx={{
-              width: '350px',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: '80vh',
-              margin: 'auto'
+              mb: 2,
+              width: '100%',
+              '& .MuiLinearProgress-bar': {
+                backgroundColor: 'black',
+              },
+              backgroundColor: '#e0e0e0',
             }}
-          >
-            <Typography variant="body2" sx={{ mb: 1 }}>
-              {titleLinearProgress}
-            </Typography>
-            <LinearProgress
-              key="error"
-              sx={{
-                mb: 2,
-                width: '100%',
-                '& .MuiLinearProgress-bar': {
-                  backgroundColor: 'black',
-                },
-                backgroundColor: '#e0e0e0',
-              }}
-            />
-          </Box>
+          />
+        </Box>
       ) : (
         <>
           <DashboardContent maxWidth="xl">
             {!isMobile ? (
               <Grid container spacing={2}>
-                <Grid 
-                xs={
-                  countLostItems === 0 && itemsIgnoreErrors.length === 0 ? 12 : 
-                  (countLostItems === 0 && itemsIgnoreErrors.length > 0) || (countLostItems > 0 && itemsIgnoreErrors.length === 0) ? 9.5 : 8
-                } 
-                sm={
-                  countLostItems === 0 && itemsIgnoreErrors.length === 0 ? 12 : 
-                  (countLostItems === 0 && itemsIgnoreErrors.length > 0) || (countLostItems > 0 && itemsIgnoreErrors.length === 0) ? 9.5 : 8
-                }
-                md={
-                  countLostItems === 0 && itemsIgnoreErrors.length === 0 ? 12 : 
-                  (countLostItems === 0 && itemsIgnoreErrors.length > 0) || (countLostItems > 0 && itemsIgnoreErrors.length === 0) ? 9.5 : 8
-                }
+                <Grid
+                  xs={
+                    countLostItems === 0 && itemsIgnoreErrors.length === 0 ? 12 :
+                      (countLostItems === 0 && itemsIgnoreErrors.length > 0) || (countLostItems > 0 && itemsIgnoreErrors.length === 0) ? 9.5 : 8
+                  }
+                  sm={
+                    countLostItems === 0 && itemsIgnoreErrors.length === 0 ? 12 :
+                      (countLostItems === 0 && itemsIgnoreErrors.length > 0) || (countLostItems > 0 && itemsIgnoreErrors.length === 0) ? 9.5 : 8
+                  }
+                  md={
+                    countLostItems === 0 && itemsIgnoreErrors.length === 0 ? 12 :
+                      (countLostItems === 0 && itemsIgnoreErrors.length > 0) || (countLostItems > 0 && itemsIgnoreErrors.length === 0) ? 9.5 : 8
+                  }
                 >
                   <WelcomeTypography
                     userLogged={userLogged}
@@ -475,7 +495,7 @@ export function OverviewAnalyticsView() {
                       icon={<AnimatedIcon icon="mdi:error" color="error" width="25px" />}
                       sx={{ mb: 2, cursor: 'pointer', p: 1 }}>
                       <Typography variant="body2" sx={{ fontSize: '14px' }}>
-                        <b>{updatedCountLostItems}</b> {itemsIgnoreErrors.length === 0 ? `Items lost today ( ${fDateTime(new Date(), 'YYYY-MM-DD HH:mm')} ) ` : `Items lost today`} 
+                        <b>{updatedCountLostItems}</b> {itemsIgnoreErrors.length === 0 ? `Items lost today ( ${fDateTime(new Date(), 'YYYY-MM-DD HH:mm')} ) ` : `Items lost today`}
                       </Typography>
                     </Alert>
                   </Grid>
@@ -483,19 +503,19 @@ export function OverviewAnalyticsView() {
               </Grid >
             ) : (
               <Grid container spacing={2}>
-                <Grid 
-                xs={
-                  countLostItems === 0 && itemsIgnoreErrors.length === 0 ? 12 : 
-                  (countLostItems === 0 && itemsIgnoreErrors.length > 0) || (countLostItems > 0 && itemsIgnoreErrors.length === 0) ? 6 : 4
-                } 
-                sm={
-                  countLostItems === 0 && itemsIgnoreErrors.length === 0 ? 12 : 
-                  (countLostItems === 0 && itemsIgnoreErrors.length > 0) || (countLostItems > 0 && itemsIgnoreErrors.length === 0) ? 6 : 4
-                }
-                md={
-                  countLostItems === 0 && itemsIgnoreErrors.length === 0 ? 12 : 
-                  (countLostItems === 0 && itemsIgnoreErrors.length > 0) || (countLostItems > 0 && itemsIgnoreErrors.length === 0) ? 6 : 4
-                }
+                <Grid
+                  xs={
+                    countLostItems === 0 && itemsIgnoreErrors.length === 0 ? 12 :
+                      (countLostItems === 0 && itemsIgnoreErrors.length > 0) || (countLostItems > 0 && itemsIgnoreErrors.length === 0) ? 6 : 4
+                  }
+                  sm={
+                    countLostItems === 0 && itemsIgnoreErrors.length === 0 ? 12 :
+                      (countLostItems === 0 && itemsIgnoreErrors.length > 0) || (countLostItems > 0 && itemsIgnoreErrors.length === 0) ? 6 : 4
+                  }
+                  md={
+                    countLostItems === 0 && itemsIgnoreErrors.length === 0 ? 12 :
+                      (countLostItems === 0 && itemsIgnoreErrors.length > 0) || (countLostItems > 0 && itemsIgnoreErrors.length === 0) ? 6 : 4
+                  }
                 >
                   <WelcomeTypography
                     userLogged={userLogged}
@@ -539,7 +559,7 @@ export function OverviewAnalyticsView() {
                       icon={<AnimatedIcon icon="mdi:error" color="error" width="25px" />}
                       sx={{ mb: 2, cursor: 'pointer', p: 1 }}>
                       <Typography variant="body2" sx={{ fontSize: '14px' }}>
-                        <b>{updatedCountLostItems}</b> {itemsIgnoreErrors.length === 0 ? ` lost today at ${fDateTime(new Date(), 'YYYY-MM-DD HH:mm')} ` : ` lost today`} 
+                        <b>{updatedCountLostItems}</b> {itemsIgnoreErrors.length === 0 ? ` lost today at ${fDateTime(new Date(), 'YYYY-MM-DD HH:mm')} ` : ` lost today`}
                       </Typography>
                     </Alert>
                   </Grid>

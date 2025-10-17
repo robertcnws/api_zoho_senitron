@@ -49,7 +49,7 @@ const GET_TIMELINES_ITEMS = gql`
 `;
 
 export const useTimelineItemsQuery = () => {
-  const { loading, error, data, startPolling, stopPolling } = useQuery(GET_TIMELINES_ITEMS);
+  const { loading, error, data, refetch } = useQuery(GET_TIMELINES_ITEMS);
 
-  return { loading, error, data: data?.allTimelineItems || [] };
+  return { loading, error, data: data?.allTimelineItems || [], refetch};
 };

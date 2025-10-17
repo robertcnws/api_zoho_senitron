@@ -2,64 +2,42 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 import json
 
-class SenitronInventoryItemConsumer(AsyncWebsocketConsumer):
+ALLOWED_GROUPS = {
+    "senitron_inventory_items",
+    "senitron_inventory_items_assets",
+    "senitron_timelines",
+    "senitron_inventory_items_asset_logs",
+    "notification_users",
+}
+
+EVENT_TYPES = (
+    "send_senitron_item_update",
+    "send_senitron_item_asset_update",
+    "send_senitron_timeline_update",
+    "send_senitron_item_asset_log_update",
+    "send_notification_user_update",
+)
+
+class GenericSenitronGroupConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        await self.channel_layer.group_add(
-            "senitron_inventory_items",  # Nombre del grupo
-            self.channel_name
-        )
+        self.group = self.scope["url_route"]["kwargs"]["group"]
+        if self.group not in ALLOWED_GROUPS:
+            await self.close(code=4001)
+            return
+        await self.channel_layer.group_add(self.group, self.channel_name)
         await self.accept()
 
-    async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(
-            "senitron_inventory_items",
-            self.channel_name
-        )
+    async def disconnect(self, code):
+        if hasattr(self, "group") and self.group in ALLOWED_GROUPS:
+            await self.channel_layer.group_discard(self.group, self.channel_name)
 
     async def receive(self, text_data):
         pass
 
-    async def send_senitron_item_update(self, event):
+    async def _forward(self, event):
         await self.send(text_data=json.dumps(event["message"]))
         
-
-class SenitronInventoryItemsAssetsConsumer(AsyncWebsocketConsumer):
-    async def connect(self):
-        await self.channel_layer.group_add(
-            "senitron_inventory_items_assets",  
-            self.channel_name
-        )
-        await self.accept()
-
-    async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(
-            "senitron_inventory_items_assets",
-            self.channel_name
-        )
-
-    async def receive(self, text_data):
-        pass
-
-    async def send_senitron_item_asset_update(self, event):
-        await self.send(text_data=json.dumps(event["message"]))
-        
-
-class SenitronTimelineConsumer(AsyncWebsocketConsumer):
-    async def connect(self):
-        await self.channel_layer.group_add(
-            "senitron_timeline",  
-            self.channel_name
-        )
-        await self.accept()
-
-    async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(
-            "senitron_timeline",
-            self.channel_name
-        )
-
-    async def receive(self, text_data):
-        pass
-
-    async def send_senitron_timeline_update(self, event):
-        await self.send(text_data=json.dumps(event["message"]))
+for _name in EVENT_TYPES:
+    async def _mk(self, event, __f=GenericSenitronGroupConsumer._forward):
+        await __f(self, event)
+    setattr(GenericSenitronGroupConsumer, _name, _mk)

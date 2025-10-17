@@ -16,6 +16,9 @@ from .models import (
                         NotificationUser
                     )
 from api_zoho.models import JobsUpdatingTimes, LoginUser
+from django.core.cache import cache
+from utils.graphql_perf import fetch_all_streamed
+from utils.graphql_cache import get_or_build_list
 
 class SenitronStatusType(DjangoObjectType):
     class Meta:
@@ -188,9 +191,14 @@ class Query(graphene.ObjectType):
     
 
     def resolve_all_senitron_inventory_items(self, info, **kwargs):
-        return SenitronItem.objects.annotate(
+        items = SenitronItem.objects.annotate(
             item_number_int=Cast('item_number', BigIntegerField())
         ).order_by('-item_number_int')
+        return get_or_build_list(
+            f"gql:all_senitron_inventory_items:v1",
+            lambda: fetch_all_streamed(items, chunk_size=2000),
+            ttl=180
+        )
         
 
     def resolve_all_senitron_inventory_items_assets(self, info, **kwargs):
@@ -232,14 +240,14 @@ class Query(graphene.ObjectType):
             )
             result.append(senitron_item_group)
         
-        return result
-        
-        # return SenitronItemAsset.objects.annotate(
-        #     item_number_int=Cast('item_number', BigIntegerField())
-        # ).select_related('senitron_item', 'status').order_by('-item_number_int')
+        return get_or_build_list(
+            f"gql:all_senitron_inventory_items_assets:v1",
+            lambda: result,
+            ttl=180
+        )
         
     def resolve_all_timeline_items(self, info, **kwargs):
-        return TimelineItem.objects.filter(
+        timelines = TimelineItem.objects.filter(
              Q(zoho_item__sku__isnull=False) & ~Q(zoho_item__sku='') &
                 (~Q(text__icontains='stock on hand') | Q(date_actual_stock_on_hand__isnull=False)) &
                 (~Q(text__icontains='status') | Q(date_actual_status_zoho__isnull=False)
@@ -252,6 +260,11 @@ class Query(graphene.ObjectType):
                     F('date_actual_status_senitron')
                 )
             ).order_by('-order_date')[:100]
+        return get_or_build_list(
+            f"gql:all_timeline_items:v1",
+            lambda: fetch_all_streamed(timelines, chunk_size=2000),
+            ttl=180
+        )
             
             
     def resolve_all_jobs_updating_times(self, info, **kwargs):
@@ -278,13 +291,21 @@ class Query(graphene.ObjectType):
                 logs=logs_in_group
             ))
         
-        return result
+        return get_or_build_list(
+            f"gql:all_senitron_grouped_logs:{start_date}:v1",
+            lambda: result,
+            ttl=180
+        )
     
     def resolve_all_notification_user(self, info, username=None, **kwargs):
         qs = NotificationUser.objects.select_related('notification', 'user').order_by('-created_at')
         if username:
             qs = qs.filter(user__username=username)
         qs = qs[:100]
-        return qs
+        return get_or_build_list(
+            f"gql:all_notification_user:{username}:v1",
+            lambda: fetch_all_streamed(qs, chunk_size=2000),
+            ttl=180
+        )
 
 schema = graphene.Schema(query=Query)

@@ -39,13 +39,15 @@ import {
   TableHeadCustom,
   TableSelectedAction,
 } from 'src/components/table';
+import dayjs from 'dayjs';
 
 import { LoadingContext } from 'src/auth/context/loading-context';
+import { useWebsocket } from 'src/hooks/use-websocket';
+import { CONFIG } from 'src/config-global';
 
 import { ShipmentTableRow } from '../shipment-table-row';
 import { ShipmentTableToolbar } from '../shipment-table-toolbar';
 import { ShipmentTableFiltersResult } from '../shipment-table-filters-result';
-
 
 
 // ----------------------------------------------------------------------
@@ -78,6 +80,17 @@ export function ShipmentListView() {
     { id: 'package_quantity', label: 'Pkg Qty' },
   ];
 
+  const start = localStorage.getItem('startDate') || String(dayjs().format('YYYY-MM-DD'));
+  const end = localStorage.getItem('endDate') || String(dayjs().format('YYYY-MM-DD'));
+
+
+  const filters = useSetState({
+    shipmentNumber: '',
+    status: 'all',
+    startDate: dayjs(start),
+    endDate: dayjs(end),
+  });
+
 
   const table = useTable({ defaultOrderBy: 'shipmentNumber', defaultDense: true });
 
@@ -85,10 +98,21 @@ export function ShipmentListView() {
 
   const confirm = useBoolean();
 
-  const { loading, error, data } = useShipmentsQuery(null, null);
-
   const [tableData, setTableData] = useState([]);
 
+  const { loading, error, data, refetch } = useShipmentsQuery(
+    String(filters.state.startDate.format('YYYY-MM-DD')),
+    String(filters.state.endDate.format('YYYY-MM-DD'))
+  );
+
+  useEffect(() => {
+    if (refetch) {
+      refetch?.().then(() => {
+        setTableData(data);
+        setUpdating(false);
+      });
+    }
+  }, [filters, refetch, data]);
 
   useEffect(() => {
     localStorage.removeItem('routeShipmentByLiveMonitor');
@@ -102,45 +126,21 @@ export function ShipmentListView() {
     }
   }, [table]);
 
-
-
-  // useEffect(() => {
-  //   const socket = new WebSocket(`${CONFIG.websocketProtocol}://${CONFIG.apiHost}/${CONFIG.apiDomain}/ws/inventory_sales_orders/`);
-
-  //   socket.onmessage = (event) => {
-  //     const message = JSON.parse(event.data);
-  //     if (message.type === 'created' || message.type === 'updated') {
-  //       setTableData((prevData) => {
-  //         const existingItemIndex = prevData.findIndex(item => item.shipmentId === message.item.shipmentId);
-  //         if (existingItemIndex !== -1) {
-  //           const updatedData = [...prevData];
-  //           updatedData[existingItemIndex] = message.item;
-  //           return updatedData;
-  //         }
-  //         return [message.item, ...prevData];
-  //       });
-  //     }
-  //   };
-  //   return () => {
-  //     socket.close();
-  //   };
-  // }, []);
-
   useEffect(() => {
-    if (data && data.length > 0) {
+    if (data && data?.length > 0) {
       setTableData(data);
-    } else if (!loading && !error) {
-      console.error("No data returned from useShipmentsQuery");
-      setTableData([]);
     }
   }, [data, loading, error]);
 
-  const filters = useSetState({
-    shipmentNumber: '',
-    status: 'all',
-    startDate: null,
-    endDate: null,
-  });
+
+  const baseWsUrl = `${CONFIG.websocketProtocol}://${CONFIG.apiHost}:${CONFIG.apiPort}/${CONFIG.apiDomain}/ws`;
+
+
+  const onMessage = useCallback((m) => {
+    if (['created', 'updated', 'deleted'].includes(m.type)) refetch?.();
+  }, [refetch]);
+
+  useWebsocket(`${baseWsUrl}/shipment_orders/`, onMessage);
 
   const dateError = fIsAfter(null, filters.state.endDate);
 
@@ -454,15 +454,15 @@ function applyFilter({ inputData, comparator, filters, dateError }) {
     inputData = inputData.filter((ship) => ship.status === status);
   }
 
-  if (!dateError) {
-    if (startDate && endDate) {
-      inputData = inputData.filter((ship) => fIsBetween(ship.date, startDate, endDate));
-    }
-    else if (endDate) {
-      const oneDayBefore = new Date(endDate) - 1;
-      inputData = inputData.filter((ship) => fIsBetween(ship.date, oneDayBefore, endDate));
-    }
-  }
+  // if (!dateError) {
+  //   if (startDate && endDate) {
+  //     inputData = inputData.filter((ship) => fIsBetween(ship.date, startDate, endDate));
+  //   }
+  //   else if (endDate) {
+  //     const oneDayBefore = new Date(endDate) - 1;
+  //     inputData = inputData.filter((ship) => fIsBetween(ship.date, oneDayBefore, endDate));
+  //   }
+  // }
 
   return inputData;
 }

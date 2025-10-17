@@ -1,5 +1,5 @@
 import axios from 'axios';
-import React, { useMemo, useState, useEffect, useContext } from 'react';
+import React, { useMemo, useState, useEffect, useContext, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -15,6 +15,7 @@ import { Iconify } from 'src/components/iconify';
 import { TableNoData } from 'src/components/table';
 
 import { LoadingContext } from 'src/auth/context/loading-context';
+import { useWebsocket } from 'src/hooks/use-websocket';
 
 
 // ----------------------------------------------------------------------
@@ -25,25 +26,27 @@ export function ItemDetailsSenitronItems({ item }) {
   const [currentItem, setCurrentItem] = useState(item);
   const userLogged = useMemo(() => JSON.parse(localStorage.getItem('userLogged')), []);
 
-  useEffect(() => {
-    const socket = new WebSocket(`${CONFIG.websocketProtocol}://${CONFIG.apiHost}/${CONFIG.apiDomain}/ws/senitron_inventory_items_assets/`);
-    socket.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      if (message.type === 'created' || message.type === 'updated') {
-        setCurrentItem((prevItem) => {
-          if (message.item.itemNumber === prevItem.itemNumber) {
-            return message.item;
-          }
-          return prevItem;
-        });
-      }
-    };
-    return () => {
-      socket.close();
-    };
-  }, []);
+  const baseWsUrl = `${CONFIG.websocketProtocol}://${CONFIG.apiHost}:${CONFIG.apiPort}/${CONFIG.apiDomain}/ws`;
 
+  const onMessage = useCallback((m) => {
+    if (['created', 'updated'].includes(m.type)) {
+      setCurrentItem((prevItem) => {
+        if (m.item.itemNumber === prevItem.itemNumber) {
+          return m.item;
+        }
+        return prevItem;
+      });
+    } else if (m.type === 'deleted') {
+      setCurrentItem((prevItem) => {
+        if (m.item.itemNumber === prevItem.itemNumber) {
+          return null;
+        }
+        return prevItem;
+      });
+    }
+  }, [setCurrentItem]);
 
+  useWebsocket(`${baseWsUrl}/senitron_inventory_items_assets/`, onMessage);
 
   const renderTotal = (
     <Stack spacing={1} alignItems="flex-start" sx={{ p: 3, textAlign: 'left', typography: 'body2' }}>
