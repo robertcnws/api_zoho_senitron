@@ -90,10 +90,10 @@ pipeline {
             docker images | head -n 20
             
             SRC_IMG="$(docker images --format '{{.Repository}}:{{.Tag}}' \
-              | awk '/_aws_backend_app:latest$/ {print $1; exit}')"
+              | awk '/-aws_backend_app:latest$/ {print $1; exit}')"
 
             if [ -z "$SRC_IMG" ]; then
-              echo "❌ No se encontró una imagen *_aws_backend_app:latest después del build." >&2
+              echo "❌ No se encontró una imagen *aws_backend_app:latest después del build." >&2
               docker images --format '{{.Repository}}:{{.Tag}}' | sort || true
               exit 1
             fi

@@ -59,8 +59,6 @@ export const countingLostItems = (itemsZohoSenitron, listSerials, listShipments,
 
         const updatedRDataZohoSenitron = [...rDataZohoSenitron, ...newItems];
 
-
-
         const filteredData = updatedRDataZohoSenitron?.map(item => {
 
             const filteredLogs = item.logs?.filter(log => fDate(log.createdAt, 'YYYY-MM-DD') === fDate(endDate, 'YYYY-MM-DD'));
