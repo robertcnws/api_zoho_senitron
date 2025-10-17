@@ -14,9 +14,9 @@ import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 
 import { useBoolean } from 'src/hooks/use-boolean';
+import { useWebsocket } from 'src/hooks/use-websocket';
 
 import { CONFIG } from 'src/config-global';
-import { useWebsocket } from 'src/hooks/use-websocket';
 
 import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';

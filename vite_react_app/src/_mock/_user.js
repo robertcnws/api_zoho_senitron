@@ -1,7 +1,4 @@
-import { useEffect } from 'react';
 import { gql, useQuery } from '@apollo/client';
-
-import { CONFIG } from 'src/config-global';
 
 import { _mock } from './_mock';
 

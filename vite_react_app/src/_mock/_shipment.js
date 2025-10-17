@@ -1,7 +1,6 @@
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { gql, useQuery } from '@apollo/client';
 
-import { CONFIG } from 'src/config-global';
 
 const GET_ZOHO_SHIPMENT_ORDERS = gql`
   query GetZohoShipmentOrders($startDate: String, $endDate: String) {

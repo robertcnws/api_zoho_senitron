@@ -6,9 +6,9 @@ import Typography from '@mui/material/Typography';
 import { Box, Alert, LinearProgress } from '@mui/material';
 
 import { useSetState } from 'src/hooks/use-set-state';
+import { useWebsocket } from 'src/hooks/use-websocket';
 
 import { fDate } from 'src/utils/format-time';
-import { useWebsocket } from 'src/hooks/use-websocket';
 
 import { CONFIG } from 'src/config-global';
 import { DashboardContent } from 'src/layouts/dashboard';

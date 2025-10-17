@@ -19,9 +19,11 @@ import { paths } from 'src/routes/paths';
 import { useRouter } from 'src/routes/hooks';
 
 import { useBoolean } from 'src/hooks/use-boolean';
+import { useWebsocket } from 'src/hooks/use-websocket';
 
 import { fDate } from 'src/utils/format-time';
 
+import { CONFIG } from 'src/config-global';
 import { usePackagesQuery } from 'src/_mock/_package';
 
 import { Label } from 'src/components/label';
@@ -30,8 +32,6 @@ import { ConfirmDialog } from 'src/components/custom-dialog';
 import { usePopover, CustomPopover } from 'src/components/custom-popover';
 
 import { LoadingContext } from 'src/auth/context/loading-context';
-import { useWebsocket } from 'src/hooks/use-websocket';
-import { CONFIG } from 'src/config-global';
 
 export function ShipmentTableRow({ row, selected, onViewRow, onSelectRow, onDeleteRow }) {
   const router = useRouter();

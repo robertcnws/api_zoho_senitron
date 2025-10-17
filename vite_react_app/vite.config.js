@@ -8,6 +8,8 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 const PORT = 3030;
 
+const lowMem = process.env.CI_LOW_MEM_BUILD === '1'
+
 export default defineConfig({
   plugins: [
     react(),
@@ -23,6 +25,29 @@ export default defineConfig({
     }),
     VitePWA({
       registerType: 'autoUpdate',
+      // workbox: {
+      //   maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
+      // },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
+        manifestTransforms: [
+          async (entries) => {
+            const manifest = entries.filter((e) => !/\/assets\/vendor-react-.*\.js$/.test(e.url))
+            return { manifest, warnings: [] }
+          },
+        ],
+        runtimeCaching: [
+          {
+            urlPattern: ({ sameOrigin, url }) => sameOrigin && url.pathname.startsWith('/assets/vendor-react-'),
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'vendor-react',
+              expiration: { maxEntries: 5, maxAgeSeconds: 60 * 60 * 24 * 7 },
+            },
+          },
+        ],
+      },
       includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
       manifest: {
         name: 'WMS App',
@@ -65,19 +90,24 @@ export default defineConfig({
   server: { port: PORT, host: true },
   preview: { port: PORT, host: true },
   build: {
-    chunkSizeWarningLimit: 1200, 
+    sourcemap: false,
+    minify: lowMem ? false : 'esbuild',
+    cssMinify: lowMem ? false : true,
+    chunkSizeWarningLimit: 1200,
     rollupOptions: {
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            if (id.includes('@mui')) return 'vendor-mui'
             if (id.includes('react')) return 'vendor-react'
+            if (id.includes('@mui')) return 'vendor-mui'
+            if (id.includes('@tanstack') || id.includes('@apollo')) return 'vendor-graphql'
             if (id.includes('date-fns') || id.includes('dayjs')) return 'vendor-dates'
+            if (id.includes('lodash')) return 'vendor-lodash'
             return 'vendor'
           }
         },
       },
+      treeshake: true,
     },
-    sourcemap: false, 
   },
 });

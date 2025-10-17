@@ -1,7 +1,5 @@
-import { useEffect } from 'react';
 import { gql, useQuery } from '@apollo/client';
 
-import { CONFIG } from 'src/config-global';
 
 const GET_SENITRON_ITEMS_ASSETS_LOGS = gql`
   query GetSenitronGroupedLogs($startDate: Date) {

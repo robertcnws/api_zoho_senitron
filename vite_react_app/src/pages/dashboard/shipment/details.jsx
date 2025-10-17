@@ -3,11 +3,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 
 import { useParams } from 'src/routes/hooks';
 
+import { useWebsocket } from 'src/hooks/use-websocket';
+
 import { CONFIG } from 'src/config-global';
 import { useShipmentsQuery } from 'src/_mock/_shipment';
 
 import { ShipmentDetailsView } from 'src/sections/shipment/view';
-import { useWebsocket } from 'src/hooks/use-websocket';
 
 // ----------------------------------------------------------------------
 

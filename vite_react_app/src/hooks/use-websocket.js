@@ -1,5 +1,5 @@
 // use-websocket.js
-import { useEffect, useRef, useCallback } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 
 const __wsStarted = new Set();
 

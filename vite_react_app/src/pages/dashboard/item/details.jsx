@@ -3,11 +3,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 
 import { useParams } from 'src/routes/hooks';
 
+import { useWebsocket } from 'src/hooks/use-websocket';
+
 import { CONFIG } from 'src/config-global';
 import { useItemsQuery, useSenitronItemsQuery } from 'src/_mock/_items';
 
 import { ItemDetailsView } from 'src/sections/item/view';
-import { useWebsocket } from 'src/hooks/use-websocket';
 
 // ----------------------------------------------------------------------
 
