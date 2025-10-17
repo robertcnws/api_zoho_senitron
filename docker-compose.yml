@@ -9,7 +9,7 @@ services:
       - ./backend_app:/app
       - ./backend_app/static:/app/staticfiles
     ports:
-      - "8000:8000"
+      - "8001:8001"
     env_file:
       - ./backend_app/.env
     networks:
