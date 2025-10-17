@@ -158,8 +158,6 @@ export function ItemListShippedLogsView({
         () => finalGroupedArray?.filter((item) => item?.date === fDate(filters.state.endDate, 'YYYY-MM-DD')),
         [finalGroupedArray, filters.state.endDate]);
 
-    // const listShipments = useMemo(() => finalGroupedArray, [finalGroupedArray]);
-
     // console.log('listShipments', listShipments);
 
     const updateCountItemLost = useCallback(
