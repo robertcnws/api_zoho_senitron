@@ -8,7 +8,9 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 const PORT = 3030;
 
-const lowMem = process.env.CI_LOW_MEM_BUILD === '1'
+const lowMem = process.env.CI_LOW_MEM_BUILD === '1';
+
+const enablePWA = process.env.VITE_DISABLE_PWA !== '1';
 
 export default defineConfig({
   plugins: [
@@ -23,7 +25,7 @@ export default defineConfig({
         initialIsOpen: false,
       },
     }),
-    VitePWA({
+    ...(enablePWA ? [VitePWA({
       registerType: 'autoUpdate',
       // workbox: {
       //   maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
@@ -73,7 +75,7 @@ export default defineConfig({
           },
         ],
       },
-    }),
+    })] : []),
   ],
   resolve: {
     alias: [

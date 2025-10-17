@@ -117,23 +117,20 @@ pipeline {
             sh 'cp $ENV_FILE .env'
           }
           withEnv([
-            'NODE_OPTIONS=--max-old-space-size=6144',   
-            'CI_LOW_MEM_BUILD=1',                       
-            'ESBUILD_BINARY_PATH=',                     
-            'SWC_WORKER_THREADS=1'                      
-          ]) {
-            sh '''
-              npm cache clean --force
-              npm ci
-              
-              npx -y update-browserslist-db@latest || true
-              
-              npm run build
-
-              docker-compose -f ../docker-compose.aws.frontend.prod.yml build
-              docker tag "ne_${JENKINS_HOOK}_aws_frontend_app:latest" "${FRONTEND_IMAGE}:latest"
-              docker push "${FRONTEND_IMAGE}:latest"
-            '''
+              'NODE_OPTIONS=--max-old-space-size=6144', 
+              'CI_LOW_MEM_BUILD=1',                    
+              'SWC_WORKER_THREADS=1',                  
+              'VITE_DISABLE_PWA=1'                     
+            ]) {
+              sh '''
+                npm ci
+                npx -y update-browserslist-db@latest || true
+                npm run build
+                docker-compose -f ../docker-compose.aws.frontend.prod.yml build
+                docker tag "ne_${JENKINS_HOOK}_aws_frontend_app:latest" "${FRONTEND_IMAGE}:latest"
+                docker push "${FRONTEND_IMAGE}:latest"
+              '''
+            }
           }
         }
       }
