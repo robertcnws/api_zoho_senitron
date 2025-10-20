@@ -43,11 +43,22 @@ from requests.packages.urllib3.util.retry import Retry
 from tenacity import retry, wait_exponential, stop_after_attempt, retry_if_exception_type
 from datetime import timedelta
 from django.utils import timezone
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from api_zoho.auth_serializers import CustomTokenObtainPairSerializer, CustomTokenRefreshSerializer
 import logging
 import time
+import utils.authorization_utils as auth_utils
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
+
+class CustomTokenRefreshView(TokenRefreshView):
+    serializer_class = CustomTokenRefreshSerializer
+    
 
 def health(request):
     return JsonResponse({"status": "ok"})
@@ -84,7 +95,7 @@ def login(request):
                 auth_login(request, user)
                 logger.info(f'User {username} logged in')
                 return JsonResponse({
-                    'data': model_to_dict(user)
+                    'data': model_to_dict(user),
                 }, status=200)
             login_user = User.objects.filter(username=username).first()
             if login_user:

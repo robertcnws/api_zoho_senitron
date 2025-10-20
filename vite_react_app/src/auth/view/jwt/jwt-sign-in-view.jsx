@@ -39,6 +39,7 @@ export const SignInSchema = zod.object({
     .string()
     .min(1, { message: 'Password is required!' })
     .min(5, { message: 'Password must be at least 6 characters!' }),
+  rememberMe: zod.boolean().optional(),
 });
 
 // ----------------------------------------------------------------------
@@ -58,6 +59,7 @@ export function JwtSignInView() {
     // email: 'demo@minimals.cc',
     username: '',
     password: '',
+    rememberMe: false,
   };
 
   const methods = useForm({
@@ -73,7 +75,11 @@ export function JwtSignInView() {
   const onSubmit = handleSubmit(async (data) => {
     try {
       // await signInWithPassword({ email: data.email, password: data.password });
-      await signInWithUsernameAndPassword({ username: data.username, password: data.password });
+      await signInWithUsernameAndPassword({ 
+        username: data.username, 
+        password: data.password,
+        rememberMe: data.rememberMe, 
+      });
       await checkUserSession?.();
 
       router.refresh();
@@ -89,16 +95,6 @@ export function JwtSignInView() {
       <Field.Text name="username" label="Username" InputLabelProps={{ shrink: true }} />
 
       <Box gap={1.5} display="flex" flexDirection="column">
-        <Link
-          component={RouterLink}
-          href="#"
-          variant="body2"
-          color="inherit"
-          sx={{ alignSelf: 'flex-end' }}
-        >
-          Forgot password?
-        </Link>
-
         <Field.Text
           name="password"
           label="Password"
@@ -116,6 +112,33 @@ export function JwtSignInView() {
           }}
         />
       </Box>
+      <Box display="flex" flexDirection='row' sx={{ mt: -2 }} justifyContent="space-between" alignItems="center">
+        <Field.Switch
+          name="rememberMe"
+          slotProps={{
+            switch: {
+              // icon: <BoxEmpty />,
+              // checkedIcon: <BoxFilled />,
+              disableRipple: true,
+            },
+          }}
+          label={
+            <span style={{ fontSize: 15, color: 'grey' }}>
+              Remember me
+            </span>
+          }
+          sx={{ alignSelf: 'flex-start' }}
+        />
+        {/* <Link
+          component={RouterLink}
+          href="#"
+          variant="body2"
+          color="inherit"
+          sx={{ alignSelf: 'flex-end', mt: -3 }}
+        >
+          Forgot password?
+        </Link> */}
+      </Box>
 
       <LoadingButton
         fullWidth
@@ -132,35 +155,35 @@ export function JwtSignInView() {
   );
 
   return (
-    <Box sx={{ mt: isMobile ? 25 : 0}}>
-        <FormHead
-          title="Sign in to your account"
-          // description={
-          //   <>
-          //     {`Don’t have an account? `}
-          //     <Link component={RouterLink} href={paths.auth.jwt.signUp} variant="subtitle2">
-          //       Get started
-          //     </Link>
-          //   </>
-          // }
-          sx={{ textAlign: { xs: 'center', md: 'left' } }}
-        />
+    <Box sx={{ mt: isMobile ? 25 : 0 }}>
+      <FormHead
+        title="Sign in to your account"
+        // description={
+        //   <>
+        //     {`Don’t have an account? `}
+        //     <Link component={RouterLink} href={paths.auth.jwt.signUp} variant="subtitle2">
+        //       Get started
+        //     </Link>
+        //   </>
+        // }
+        sx={{ textAlign: { xs: 'center', md: 'left' } }}
+      />
 
-        {/* <Alert severity="info" sx={{ mb: 3 }}>
+      {/* <Alert severity="info" sx={{ mb: 3 }}>
         Use <strong>{defaultValues.email}</strong>
         {' with password '}
         <strong>{defaultValues.password}</strong>
       </Alert> */}
 
-        {!!errorMsg && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {errorMsg}
-          </Alert>
-        )}
+      {!!errorMsg && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {errorMsg}
+        </Alert>
+      )}
 
-        <Form methods={methods} onSubmit={onSubmit}>
-          {renderForm}
-        </Form>
-      </Box>
+      <Form methods={methods} onSubmit={onSubmit}>
+        {renderForm}
+      </Form>
+    </Box>
   );
 }

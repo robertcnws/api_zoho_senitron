@@ -1,6 +1,6 @@
 # project/urls.py
 from django.urls import path  # Importa include
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from api_zoho.views import CustomTokenObtainPairView, CustomTokenRefreshView
 from django.conf.urls.static import static
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
@@ -24,8 +24,8 @@ urlpatterns = [
     path('load/inventory_sales_orders/', views.load_inventory_sales_orders, name='load_inventory_sales_orders'),
     # path('load/inventory_packages/', views.load_inventory_packages, name='load_inventory_packages'),
     path('load/inventory_shipments/', views.load_inventory_shipments, name='load_inventory_shipments'),
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', CustomTokenRefreshView.as_view(), name='token_refresh'),
     path('sync/senitron/', views.sync_with_senitron, name='sync_with_senitron'),
     path('create_zoho_sku_track_info/', views.create_zoho_sku_track_info, name='create_zoho_sku_track_info'),
     path('create_zoho_items_assets_track/', views.create_zoho_items_assets_track, name='create_zoho_items_assets_track'),

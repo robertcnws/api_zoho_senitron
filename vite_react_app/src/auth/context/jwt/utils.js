@@ -80,13 +80,15 @@ export async function setSession(accessToken) {
 
       axios.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
 
-      const decodedToken = jwtDecode(accessToken); // ~3 days by minimals server
+      const decodedToken = jwtDecode(accessToken);
 
-      if (decodedToken && 'exp' in decodedToken) {
-        tokenExpired(decodedToken.exp);
-      } else {
-        throw new Error('Invalid access token!');
-      }
+      // console.log('Decoded Token:', decodedToken);
+
+      // if (decodedToken && 'exp' in decodedToken) {
+      //   tokenExpired(decodedToken.exp);
+      // } else {
+      //   throw new Error('Invalid access token!');
+      // }
     } else {
       sessionStorage.removeItem(STORAGE_KEY);
       delete axios.defaults.headers.common.Authorization;

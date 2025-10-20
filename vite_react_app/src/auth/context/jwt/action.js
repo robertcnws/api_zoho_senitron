@@ -26,9 +26,9 @@ export const signInWithPassword = async ({ email, password }) => {
   }
 };
 
-export const signInWithUsernameAndPassword = async ({ username, password }) => {
+export const signInWithUsernameAndPassword = async ({ username, password, rememberMe }) => {
   try {
-    const params = { username, password };
+    const params = { username, password, rememberMe };
 
     const res = await axiosInstanceBackend.post(endpoints.auth.token, params, {
       headers: {
@@ -38,25 +38,23 @@ export const signInWithUsernameAndPassword = async ({ username, password }) => {
     });
 
     if (res.status === 200) {
-      localStorage.setItem('accessToken', res.data.access);
-      localStorage.setItem('refreshToken', res.data.refresh);
-      setSession(res.data.access);
+      const { access, refresh } = res.data;
+      if (!access || !refresh) throw new Error('Tokens not found');
 
-      const accessToken = res.data.access;
-
-      if (!accessToken) {
-        throw new Error('Access token not found in response');
-      }
+      localStorage.setItem('accessToken', access);
+      localStorage.setItem('refreshToken', refresh);
+      setSession(access);
 
       const loginResponse = await axiosInstanceBackend.post(endpoints.auth.login, params, {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
+          'Authorization': `Bearer ${access}`,
         },
       });
 
       if (loginResponse.status === 200) {
         delete loginResponse.data.data.password;
+        console.log('Login Response Data:', loginResponse.data);
         localStorage.setItem('userLogged', JSON.stringify(loginResponse.data));
       }
       // setSession(accessToken);
