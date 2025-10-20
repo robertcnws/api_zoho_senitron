@@ -6,6 +6,7 @@ import { useTheme } from '@mui/material/styles';
 import { iconButtonClasses } from '@mui/material/IconButton';
 
 import { useBoolean } from 'src/hooks/use-boolean';
+import { useTabNotifications } from 'src/hooks/use-tab-notifications';
 
 import { Logo } from 'src/components/logo';
 import { useSettingsContext } from 'src/components/settings';
@@ -30,6 +31,7 @@ import { AccountDrawer } from '../components/account-drawer';
 import { SettingsButton } from '../components/settings-button';
 import { navData as dashboardNavData } from '../config-nav-dashboard';
 import { NotificationsDrawer } from '../components/notifications-drawer';
+
 
 
 
@@ -90,6 +92,11 @@ export function DashboardLayout({ sx, children, header, data }) {
   const isNavMini = settings.navLayout === 'mini';
   const isNavHorizontal = settings.navLayout === 'horizontal';
   const isNavVertical = isNavMini || settings.navLayout === 'vertical';
+
+  useTabNotifications(countLostItems || 0, {
+    soundEnabled: true,
+    playOnEveryPositiveUpdate: true, 
+  });
 
   return (
     <LayoutSection
