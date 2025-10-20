@@ -27,6 +27,7 @@
 
 /backend_app/venv
 *__pycache__
+/backend_app/celerybeat-schedule*
 
 
 # GENERAL
@@ -37,5 +38,5 @@
 
 *.crt
 *.pem   
-
+*celerybeat-schedule*
 

@@ -494,9 +494,15 @@ export function OverviewAnalyticsView() {
                       severity="error"
                       icon={<AnimatedIcon icon="mdi:error" color="error" width="25px" />}
                       sx={{ mb: 2, cursor: 'pointer', p: 1 }}>
-                      <Typography variant="body2" sx={{ fontSize: '14px' }}>
-                        <b>{updatedCountLostItems}</b> {itemsIgnoreErrors.length === 0 ? `Items lost today ( ${fDateTime(new Date(), 'YYYY-MM-DD HH:mm')} ) ` : `Items lost today`}
-                      </Typography>
+                      <Box display='flex' flexDirection='column' sx={{ width: '100%' }}>
+                        <Typography variant="body2" sx={{ fontSize: '14px' }}>
+                          {/* <b>{updatedCountLostItems}</b> {itemsIgnoreErrors.length === 0 ? `Items lost ( ${fDateTime(new Date(), 'YYYY-MM-DD HH:mm')} ) ` : `Items lost`} */}
+                          <b>{updatedCountLostItems}</b> Item(s) lost
+                        </Typography>
+                        <Typography variant='caption' sx={{ cursor: 'pointer', textDecoration: 'underline' }}>
+                          Today at: {fDateTime(new Date(), 'YYYY-MM-DD HH:mm')}
+                        </Typography>
+                      </Box>
                     </Alert>
                   </Grid>
                 )}

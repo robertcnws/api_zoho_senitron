@@ -1,4 +1,5 @@
 
+import { useEffect, useLayoutEffect, useMemo } from 'react';
 import Box from '@mui/material/Box';
 import Alert from '@mui/material/Alert';
 import { useTheme } from '@mui/material/styles';
@@ -8,8 +9,10 @@ import { useBoolean } from 'src/hooks/use-boolean';
 
 import { Logo } from 'src/components/logo';
 import { useSettingsContext } from 'src/components/settings';
+import { countingLostItems } from 'src/utils/counting-utils';
 
 import { useDataContext } from 'src/auth/context/data/data-context';
+import { fDate } from 'src/utils/format-time';
 
 import { Main } from './main';
 import { NavMobile } from './nav-mobile';
@@ -30,16 +33,44 @@ import { NotificationsDrawer } from '../components/notifications-drawer';
 
 
 
-
 // ----------------------------------------------------------------------
 
 export function DashboardLayout({ sx, children, header, data }) {
 
   const {
     countLostItems,
+    setCountLostItems,
+    itemsZohoSenitron,
+    itemsAssetsLogsInfo,
+    finalGroupedArray,
   } = useDataContext();
 
-  // const countLostItems = 11;
+  const today = useMemo(() => new Date(), []);
+  const formattedToday = useMemo(() => fDate(today, 'YYYY-MM-DD'), [today]);
+
+  const listSerials = useMemo(
+    () => itemsAssetsLogsInfo?.filter((item) => item?.date === formattedToday),
+    [itemsAssetsLogsInfo, formattedToday]);
+
+  const listShipments = useMemo(
+    () => finalGroupedArray?.filter((item) => item?.date === formattedToday),
+    [finalGroupedArray, formattedToday]);
+
+  const lostItems = useMemo(
+    () => countingLostItems(itemsZohoSenitron, listSerials, listShipments, today) || 0,
+    [itemsZohoSenitron, listSerials, listShipments, today]
+  );
+
+  const lostCount = lostItems?.lostCount ?? 0;
+
+  useLayoutEffect(() => {
+    if (countLostItems !== lostCount) {
+      setCountLostItems(lostCount);
+    }
+  }, [lostCount, countLostItems, setCountLostItems]);
+
+  // console.log('DashboardLayout countLostItems:', countLostItems);
+  // console.log('Fdate Today:', fDate(today, 'YYYY-MM-DD'));
 
   const theme = useTheme();
 
@@ -51,7 +82,10 @@ export function DashboardLayout({ sx, children, header, data }) {
 
   const layoutQuery = 'lg';
 
-  const navData = data?.nav ?? dashboardNavData(countLostItems);
+  const navData = useMemo(
+    () => data?.nav ?? dashboardNavData(lostCount),
+    [data?.nav, lostCount]
+  );
 
   const isNavMini = settings.navLayout === 'mini';
   const isNavHorizontal = settings.navLayout === 'horizontal';
