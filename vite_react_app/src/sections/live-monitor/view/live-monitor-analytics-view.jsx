@@ -400,20 +400,25 @@ export function LiveMonitorAnalyticsView() {
       ) : (
         <>
           <DashboardContent maxWidth="xl">
-            <Grid container spacing={3}>
-              <Grid xs={countLostItems > 0 ? 8 : 12} sm={countLostItems > 0 ? 8 : 12} md={countLostItems > 0 ? 8 : 12}>
-                <WelcomeTypography
-                  userLogged={userLogged}
-                  manualUpdatingJobsData={manualUpdatingJobsData}
-                  jobsUpdatingTimeData={jobsUpdatingTimeData}
-                  itemsZohoSenitron={itemsZohoSenitron}
-                  setUpdating={setUpdating}
-                  setError={setError}
-                  handleSetManualUpdatingJobs={handleSetManualUpdatingJobs}
-                  setTitleLinearProgress={setTitleLinearProgress}
-                  isMobile={isMobile}
-                />
-              </Grid >
+            <Box
+              display='flex'
+              flexDirection={{ xs: 'column', sm: 'row', md: 'row', lg: 'row', xl: 'row' }}
+              width='100%'
+              justifyContent='space-between'
+              alignItems='center'
+              sx={{ mb: 2 }}
+            >
+              <WelcomeTypography
+                userLogged={userLogged}
+                manualUpdatingJobsData={manualUpdatingJobsData}
+                jobsUpdatingTimeData={jobsUpdatingTimeData}
+                itemsZohoSenitron={itemsZohoSenitron}
+                setUpdating={setUpdating}
+                setError={setError}
+                handleSetManualUpdatingJobs={handleSetManualUpdatingJobs}
+                setTitleLinearProgress={setTitleLinearProgress}
+                isMobile={isMobile}
+              />
               {countLostItems > 0 && (
                 <Grid xs={4} sm={4} md={4}>
                   <Alert
@@ -435,7 +440,7 @@ export function LiveMonitorAnalyticsView() {
                   </Alert>
                 </Grid>
               )}
-            </Grid >
+            </Box >
 
             <Grid container spacing={3}>
 

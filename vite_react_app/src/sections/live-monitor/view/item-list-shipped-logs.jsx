@@ -159,9 +159,9 @@ export function ItemListShippedLogsView({
 
     // console.log('listShipments', listShipments);
 
-    const updateCountItemLost = useCallback(
-        (count) => setCountLostItems(count), [setCountLostItems]
-    );
+    // const updateCountItemLost = useCallback(
+    //     (count) => setCountLostItems(count), [setCountLostItems]
+    // );
 
     useEffect(() => {
         // const update = () => {
@@ -169,15 +169,15 @@ export function ItemListShippedLogsView({
 
             const result = countingLostItems(itemsZohoSenitron, listSerials, listShipments, filters.state.endDate);
 
-            updateCountItemLost(result.lostCount);
+            // updateCountItemLost(result.lostCount);
 
             setTableData(result.finalFilteredData);
 
         }
-        else {
-            updateCountItemLost(0);
-        }
-    }, [listSerials, listShipments, itemsZohoSenitron, filters.state.endDate, setCountLostItems, updateCountItemLost]);
+        // else {
+        //     updateCountItemLost(0);
+        // }
+    }, [listSerials, listShipments, itemsZohoSenitron, filters.state.endDate, setCountLostItems]);
 
     useEffect(() => {
         setListItemsLost(tableData?.filter((item) => item.differenceShipped < 0 && !item.isReconciled && item.date === fDate(filters.state.endDate, 'YYYY-MM-DD')));

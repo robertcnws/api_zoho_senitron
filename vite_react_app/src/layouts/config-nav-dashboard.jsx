@@ -71,7 +71,7 @@ export const navData = (countLostItems) => [
               variant="inverted"
               startIcon={<Iconify icon="solar:bell-bing-bold-duotone" />}
             >
-              {`${countLostItems} Lost`}
+              {`${countLostItems} Lost today`}
             </Label>
           )
         ),
