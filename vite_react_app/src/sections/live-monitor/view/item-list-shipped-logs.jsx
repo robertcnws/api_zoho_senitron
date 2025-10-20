@@ -153,7 +153,6 @@ export function ItemListShippedLogsView({
         () => itemsAssetsLogsInfo?.filter((item) => item?.date === fDate(filters.state.endDate, 'YYYY-MM-DD')),
         [itemsAssetsLogsInfo, filters.state.endDate]);
 
-
     const listShipments = useMemo(
         () => finalGroupedArray?.filter((item) => item?.date === fDate(filters.state.endDate, 'YYYY-MM-DD')),
         [finalGroupedArray, filters.state.endDate]);

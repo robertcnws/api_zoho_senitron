@@ -137,14 +137,14 @@ pipeline {
             def SRC_IMG = sh(
               script: '''
                 docker images --format '{{.Repository}}:{{.Tag}}' \
-                | awk -v hook="$JENKINS_HOOK" \
-                    '$0 ~ ("pi-" hook "_aws_frontend_app:latest$") {print $1; exit}'
+                | awk '/_aws_frontend_app:latest$/ {print $1; exit}'
               ''',
               returnStdout: true
             ).trim()
 
             if (!SRC_IMG) {
-              error "No se encontró la imagen pi-${env.JENKINS_HOOK}_aws_frontend_app:latest"
+              sh 'docker images --format "{{.Repository}}:{{.Tag}}" | sort || true'
+              error "No se encontró ninguna imagen *_aws_frontend_app:latest tras el build."
             }
 
             sh """
