@@ -21,7 +21,7 @@ import { useBoolean } from 'src/hooks/use-boolean';
 import { useSetState } from 'src/hooks/use-set-state';
 import { useWebsocket } from 'src/hooks/use-websocket';
 
-import { fIsAfter } from 'src/utils/format-time';
+import { fDate, fIsAfter } from 'src/utils/format-time';
 
 import { CONFIG } from 'src/config-global';
 import { usePackagesQuery } from 'src/_mock/_package';
@@ -105,7 +105,11 @@ export function ShipmentListSkuHistoryView() {
   const router = useRouter();
   const confirm = useBoolean();
 
-  const { data: shipments, refetch: refetchShipments } = useShipmentsQuery(
+  const {
+    data: shipments,
+    loading: loadingShipments,
+    refetch: refetchShipments
+  } = useShipmentsQuery(
     String(filters.state.startDate.format('YYYY-MM-DD')),
     String(filters.state.endDate.format('YYYY-MM-DD'))
   );
@@ -133,7 +137,11 @@ export function ShipmentListSkuHistoryView() {
     [allPackages]
   );
 
-  const { data: linePackages, refetch: refetchLinePackages } = usePackagesQuery(
+  const {
+    data: linePackages,
+    loading: loadingLinePackages,
+    refetch: refetchLinePackages
+  } = usePackagesQuery(
     null,
     null,
     packageIds
@@ -283,7 +291,15 @@ export function ShipmentListSkuHistoryView() {
   );
   useWebsocket(`${baseWsUrl}/shipment_orders/`, onMessageShipments);
 
-  if (updating) {
+  const loading = updating || loadingShipments || (packageIds !== null && loadingLinePackages);
+
+  useEffect(() => {
+    if (loading) {
+      setTitleLinearProgress(`Loading history shipments data from ${fDate(filters.state.startDate)} to ${fDate(filters.state.endDate)}...`);
+    }
+  }, [loading, filters.state.startDate, filters.state.endDate]);
+
+  if (loading) {
     return (
       <DashboardContent>
         <Box
@@ -481,7 +497,7 @@ function applyFilter({ inputData, comparator, filters, dateError }) {
         ship.linePackages.some((pkg) => pkg.shipmentNumber.toLowerCase().includes(q))
     );
   }
-  if (ignoreMull){
+  if (ignoreMull) {
     out = out?.filter(
       (ship) =>
         ship.sku.toLowerCase().includes('mull-') === false

@@ -95,7 +95,11 @@ export function ItemListShortView({ updating, setUpdating, setTitleLinearProgres
 
     const { loading, error, data, refetch: refetchItems } = useItemsQuery();
 
-    const { data: senitronData, refetch: refetchSenitronItems } = useSenitronItemsQuery();
+    const { 
+        data: senitronData, 
+        loading: senitronLoading,
+        refetch: refetchSenitronItems 
+    } = useSenitronItemsQuery();
 
     const [tableData, setTableData] = useState([]);
 
@@ -230,45 +234,15 @@ export function ItemListShortView({ updating, setUpdating, setTitleLinearProgres
         [router, filters]
     );
 
-    if (loading) {
-        return (
-            <DashboardContent>
-                <Box display="flex" alignItems="center" mb={5}>
-                    <Alert severity="info" sx={{ borderRadius: 0, display: 'none' }}>
-                        <Typography>Loading...</Typography>
-                    </Alert>
-                </Box>
-            </DashboardContent>
-        );
-    }
+    const loadingData = senitronLoading || loading || updating;
 
-    if (error) {
-        return (
-            <DashboardContent>
-                <Box display="flex" alignItems="center" mb={5}>
-                    <Alert severity="error" sx={{ borderRadius: 0 }}>
-                        <Typography>Error fetching items: {error.message}</Typography>
-                    </Alert>
-                </Box>
-            </DashboardContent>
-        );
-    }
+    useEffect(() => {
+        if (loadingData) {
+            setTitleLinearProgress(`Loading items from Zoho and Senitron...`);
+        }
+    }, [loadingData, setTitleLinearProgress]);
 
-    if (!tableData || tableData.length === 0) {
-        return (
-            <DashboardContent>
-                <TableContainer>
-                    <Table>
-                        <TableBody>
-                            <TableNoData notFound={tableData.length === 0} />
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-            </DashboardContent>
-        );
-    }
-
-    if (updating) {
+    if (loadingData) {
         return (
             <DashboardContent>
                 <Box
