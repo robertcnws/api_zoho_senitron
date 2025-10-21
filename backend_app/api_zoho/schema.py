@@ -1,22 +1,14 @@
+# schema.py
 import graphene
-from django.db.models import Window, F, BigIntegerField
-from django.db.models.functions import Lead, Cast
+from django.db.models import F
 from itertools import groupby
 from operator import attrgetter
 from graphene_django.types import DjangoObjectType
-from django.db.models.functions import Lead, RowNumber
-from .models import LoginUser, \
-                    ZohoInventoryItem, \
-                    ZohoInventoryShipmentSalesOrder, \
-                    ZohoSkuTrackInfo, \
-                    ZohoPackage, \
-                    ZohoShipmentOrder, \
-                    ZohoItemAssetsTrack, \
-                    ManualUpdatingJobs
-from .scalars import JSONScalar
-from datetime import datetime
+from datetime import date
 from django.utils import timezone
 from django.core.cache import cache
+from .models import LoginUser, ZohoInventoryItem, ZohoInventoryShipmentSalesOrder, ZohoSkuTrackInfo, ZohoPackage, ZohoShipmentOrder, ZohoItemAssetsTrack, ManualUpdatingJobs
+from .scalars import JSONScalar
 from utils.graphql_perf import fetch_all_streamed
 from utils.graphql_cache import get_or_build_list
 
@@ -24,7 +16,7 @@ class LoginUserType(DjangoObjectType):
     class Meta:
         model = LoginUser
         fields = "__all__"
-        
+
 class ManualUpdatingJobsType(DjangoObjectType):
     class Meta:
         model = ManualUpdatingJobs
@@ -39,36 +31,30 @@ class ZohoInventoryShipmentSalesOrderType(DjangoObjectType):
     class Meta:
         model = ZohoInventoryShipmentSalesOrder
         fields = "__all__"
-        
-        
+
 class ZohoSkuTrackInfoType(DjangoObjectType):
     class Meta:
         model = ZohoSkuTrackInfo
         fields = "__all__"
-        
 
 class ZohoShipmentOrderType(DjangoObjectType):
     class Meta:
         model = ZohoShipmentOrder
         fields = "__all__"
-        
-        
+
 class ZohoPackageType(DjangoObjectType):
     class Meta:
         model = ZohoPackage
         fields = "__all__"
-        
-        
+
 class DifferencesSerialsType(graphene.ObjectType):
-    news = graphene.List(graphene.String, description="New serial numbers")
-    losts = graphene.List(graphene.String, description="Lost serial numbers")
-    
-    
+    news = graphene.List(graphene.String)
+    losts = graphene.List(graphene.String)
+
 class HistoryDifferencesSerialsType(graphene.ObjectType):
     date = graphene.DateTime()
-    differences = graphene.Field(DifferencesSerialsType, description="Differences between the serial numbers of the continuous assets")
-    
-    
+    differences = graphene.Field(DifferencesSerialsType)
+
 class AssetType(graphene.ObjectType):
     id = graphene.Int()
     serial_number = graphene.String()
@@ -89,297 +75,137 @@ class AssetType(graphene.ObjectType):
     updated_at = graphene.DateTime()
     epc = graphene.String()
     text3 = graphene.String()
-        
 
 class ZohoItemAssetsTrackType(DjangoObjectType):
-    differences = graphene.Field(DifferencesSerialsType, description="Differences between the serial numbers of the continuous assets")
-    historial_differences = graphene.List(HistoryDifferencesSerialsType, description="History of differences between the serial numbers of the continuous assets")
+    differences = graphene.Field(DifferencesSerialsType)
+    historial_differences = graphene.List(HistoryDifferencesSerialsType)
     class Meta:
         model = ZohoItemAssetsTrack
         fields = "__all__"
-        
     assets = JSONScalar()
-    
-    assets_list = graphene.List(AssetType, description="List of assets")
-    
+    assets_list = graphene.List(AssetType)
     def resolve_assets_list(self, info):
-        list_assets = []
-        for asset in self.assets:
-            new_asset = AssetType(
-                id=asset.get('id', ''),
-                serial_number=asset.get('serialNumber', ''),
-                alt_serial=asset.get('altSerial', ''),
-                first_seen=asset.get('firstSeen', ''),
-                last_seen=asset.get('lastSeen', ''),
-                last_seen_antenna=asset.get('lastSeenAntenna', ''),
-                last_zone=asset.get('lastZone', ''),
-                handheld_reader=asset.get('handheldReader', ''),
-                handheld_last_seen=asset.get('handheldLastSeen', ''),
-                static_zone=asset.get('staticZone', ''),
-                static_zone_last_update=asset.get('staticZoneLastUpdate', ''),
-                receiving_date=asset.get('receivingDate', ''),
-                current_units=asset.get('currentUnits', ''),
-                storage_unit=asset.get('storageUnit', ''),
-                adjust_qty=asset.get('adjustQty', ''),
-                created_at=asset.get('createdAt', ''),
-                updated_at=asset.get('updatedAt', ''),
-                epc=asset.get('epc', ''),
-                text3=asset.get('text3', '')
-            )
-            list_assets.append(new_asset)
-        return list_assets
-
+        assets = self.assets or []
+        g = dict.get
+        return [AssetType(
+            id=g(a,'id',''),
+            serial_number=g(a,'serialNumber',''),
+            alt_serial=g(a,'altSerial',''),
+            first_seen=g(a,'firstSeen',''),
+            last_seen=g(a,'lastSeen',''),
+            last_seen_antenna=g(a,'lastSeenAntenna',''),
+            last_zone=g(a,'lastZone',''),
+            handheld_reader=g(a,'handheldReader',''),
+            handheld_last_seen=g(a,'handheldLastSeen',''),
+            static_zone=g(a,'staticZone',''),
+            static_zone_last_update=g(a,'staticZoneLastUpdate',''),
+            receiving_date=g(a,'receivingDate',''),
+            current_units=g(a,'currentUnits',''),
+            storage_unit=g(a,'storageUnit',''),
+            adjust_qty=g(a,'adjustQty',''),
+            created_at=g(a,'createdAt',''),
+            updated_at=g(a,'updatedAt',''),
+            epc=g(a,'epc',''),
+            text3=g(a,'text3','')
+        ) for a in assets]
     def resolve_assets(self, info):
         return self.assets
-    
     def resolve_differences(self, info):
         if hasattr(self, 'next_assets') and self.next_assets:
-            current_serials = set(
-                asset['serialNumber'] for asset in self.assets 
-                if 'serialNumber' in asset and asset['serialNumber']
-            )
-            next_serials = set(
-                asset['serialNumber'] for asset in self.next_assets 
-                if 'serialNumber' in asset and asset['serialNumber']
-            )
-            news = list(current_serials - next_serials)
-            losts = list(next_serials - current_serials)
-        else:
-            news = []
-            losts = []
-
-        return DifferencesSerialsType(news=news, losts=losts)
-        
+            cur = {a.get('serialNumber') for a in (self.assets or []) if a.get('serialNumber')}
+            nxt = {a.get('serialNumber') for a in (self.next_assets or []) if a.get('serialNumber')}
+            return DifferencesSerialsType(news=list(cur - nxt), losts=list(nxt - cur))
+        return DifferencesSerialsType(news=[], losts=[])
 
 class Query(graphene.ObjectType):
     all_login_users = graphene.List(LoginUserType)
     all_zoho_inventory_items = graphene.List(ZohoInventoryItemType)
     all_zoho_sku_track_info = graphene.List(ZohoSkuTrackInfoType)
-    all_zoho_packages = graphene.List(
-        ZohoPackageType,
-        shipment_id=graphene.String(required=False),
-        package_id=graphene.String(required=False),
-        list_packages_id=graphene.List(graphene.String, required=False)
-    )
-    all_zoho_shipment_orders = graphene.List(
-        ZohoShipmentOrderType,
-        start_date=graphene.String(required=False),  
-        end_date=graphene.String(required=False)    
-    )
-    all_zoho_inventory_sales_orders = graphene.List(
-        ZohoInventoryShipmentSalesOrderType,
-        start_date=graphene.String(required=False),  
-        end_date=graphene.String(required=False)    
-    )
-    all_zoho_item_assets_track = graphene.List(
-        ZohoItemAssetsTrackType,
-        item_id=graphene.String(required=False), 
-        list_ids=graphene.List(graphene.String, required=False) 
-    )
+    all_zoho_packages = graphene.List(ZohoPackageType, shipment_id=graphene.String(required=False), package_id=graphene.String(required=False), list_packages_id=graphene.List(graphene.String, required=False))
+    all_zoho_shipment_orders = graphene.List(ZohoShipmentOrderType, start_date=graphene.String(required=False), end_date=graphene.String(required=False))
+    all_zoho_inventory_sales_orders = graphene.List(ZohoInventoryShipmentSalesOrderType, start_date=graphene.String(required=False), end_date=graphene.String(required=False))
+    all_zoho_item_assets_track = graphene.List(ZohoItemAssetsTrackType, item_id=graphene.String(required=False), list_ids=graphene.List(graphene.String, required=False))
     all_manual_updating_jobs = graphene.Field(ManualUpdatingJobsType, id=graphene.Int())
-    
 
     def resolve_all_login_users(self, info, **kwargs):
         return LoginUser.objects.all().order_by('username')
 
     def resolve_all_zoho_inventory_items(self, info, **kwargs):
-        qs = ZohoInventoryItem.objects.annotate(
-            item_id_int=Cast('item_id', BigIntegerField())
-        ).order_by('-item_id_int')
-        return get_or_build_list(
-            "gql:all_zoho_inventory_items:v1",
-            lambda: fetch_all_streamed(qs, chunk_size=2000),
-            ttl=180
-        )
-        
+        qs = ZohoInventoryItem.objects.all().order_by(F('item_id_int').desc(nulls_last=True), F('item_id').desc())
+        return get_or_build_list("gql:all_zoho_inventory_items:v3", lambda: fetch_all_streamed(qs, chunk_size=1000), ttl=180)
+
     def resolve_all_zoho_sku_track_info(self, info, **kwargs):
         qs = ZohoSkuTrackInfo.objects.all().order_by('date')
-        return get_or_build_list(
-            "gql:all_zoho_sku_track_info:v1",
-            lambda: fetch_all_streamed(qs, chunk_size=2000),
-            ttl=180
-        )
-    
-    # def resolve_all_zoho_packages(self, info, shipment_id=None, package_id=None, list_packages_id=None, **kwargs):
-    #     cache_key = f"all_zoho_packages:{shipment_id}:{package_id}:{','.join(list_packages_id or [])}"
-    #     cached = cache.get(cache_key)
-    #     if cached is not None:
-    #         return cached
+        return get_or_build_list("gql:all_zoho_sku_track_info:v3", lambda: fetch_all_streamed(qs, chunk_size=1000), ttl=180)
 
-    #     qs = ZohoPackage.objects.all().order_by('-date')
-    #     if shipment_id:
-    #         qs = qs.filter(shipment_id=shipment_id)
-    #     elif package_id:
-    #         qs = qs.filter(package_id=package_id)
-    #     elif list_packages_id:
-    #         qs = qs.filter(package_id__in=list_packages_id)
-
-    #     data = list(qs.iterator(chunk_size=2000))
-    #     cache.set(cache_key, data, 120)  # 2 min
-    #     return data
-    
     def resolve_all_zoho_packages(self, info, shipment_id=None, package_id=None, list_packages_id=None, **kwargs):
-        packages = ZohoPackage.objects.all().order_by('-date')
+        base = ZohoPackage.objects.all().order_by('-date')
         if shipment_id:
-            return packages.filter(shipment_id=shipment_id)
+            return base.filter(shipment_id=shipment_id).iterator(chunk_size=1000)
         if package_id:
-            return packages.filter(package_id=package_id)
+            return base.filter(package_id=package_id).iterator(chunk_size=1000)
         if list_packages_id:
-            return packages.filter(package_id__in=list_packages_id)
-        return get_or_build_list(
-            "gql:all_zoho_packages:v1",
-            lambda: fetch_all_streamed(packages, chunk_size=2000),
-            ttl=120
-        )
+            return base.filter(package_id__in=list_packages_id).iterator(chunk_size=1000)
+        return get_or_build_list("gql:all_zoho_packages:v3", lambda: fetch_all_streamed(base, chunk_size=1000), ttl=120)
 
     def resolve_all_zoho_inventory_sales_orders(self, info, start_date=None, end_date=None, **kwargs):
-        sales_orders = ZohoInventoryShipmentSalesOrder.objects.annotate(
-            salesorder_id_int=Cast('salesorder_id', BigIntegerField())
-        ).order_by('-salesorder_id_int')
-        
+        qs = ZohoInventoryShipmentSalesOrder.objects.all().order_by(F('salesorder_id_int').desc(nulls_last=True), F('salesorder_id').desc())
         if start_date and end_date:
-            try:
-                start_date_parsed = datetime.strptime(start_date, '%Y-%m-%d')
-                end_date_parsed = datetime.strptime(end_date, '%Y-%m-%d')
-                return sales_orders.filter(date__range=(start_date_parsed, end_date_parsed))
-            except ValueError:
-                raise Exception("Formato de fecha inválido. Usa 'YYYY-MM-DD'.")
-        
-        return get_or_build_list(
-            f"gql:all_zoho_inventory_sales_orders:{start_date}:{end_date}:v1",
-            lambda: fetch_all_streamed(sales_orders, chunk_size=2000),
-            ttl=180
-        )
-    
+            y1,m1,d1 = map(int, start_date.split('-'))
+            y2,m2,d2 = map(int, end_date.split('-'))
+            return qs.filter(date__range=(date(y1,m1,d1), date(y2,m2,d2))).iterator(chunk_size=1000)
+        return get_or_build_list(f"gql:all_zoho_inventory_sales_orders:{start_date}:{end_date}:v3", lambda: fetch_all_streamed(qs, chunk_size=1000), ttl=180)
+
     def resolve_all_zoho_shipment_orders(self, info, start_date=None, end_date=None, **kwargs):
-        shipment_orders = ZohoShipmentOrder.objects.annotate(
-            shipment_id_int=Cast('shipment_id', BigIntegerField())
-        ).order_by('-shipment_id_int')
-        
+        qs = ZohoShipmentOrder.objects.all().order_by(F('shipment_id_int').desc(nulls_last=True), F('shipment_id').desc())
         if start_date and end_date:
-            try:
-                start_date_parsed = datetime.strptime(start_date, '%Y-%m-%d')
-                end_date_parsed = datetime.strptime(end_date, '%Y-%m-%d')
-                return shipment_orders.filter(date__range=(start_date_parsed, end_date_parsed))
-            except ValueError:
-                raise Exception("Formato de fecha inválido. Usa 'YYYY-MM-DD'.")
-            
+            y1,m1,d1 = map(int, start_date.split('-'))
+            y2,m2,d2 = map(int, end_date.split('-'))
+            return qs.filter(date__range=(date(y1,m1,d1), date(y2,m2,d2))).iterator(chunk_size=1000)
         elif start_date:
-            try:
-                start_date_parsed = datetime.strptime(start_date, '%Y-%m-%d')
-                return shipment_orders.filter(date__gte=start_date_parsed)
-            except ValueError:
-                raise Exception("Formato de fecha inválido. Usa 'YYYY-MM-DD'.")
-        
+            y,m,d = map(int, start_date.split('-'))
+            return qs.filter(date__gte=date(y,m,d)).iterator(chunk_size=1000)
         elif end_date:
-            try:
-                end_date_parsed = datetime.strptime(end_date, '%Y-%m-%d')
-                return shipment_orders.filter(date__lte=end_date_parsed)
-            except ValueError:
-                raise Exception("Formato de fecha inválido. Usa 'YYYY-MM-DD'.")
-        
-        return get_or_build_list(
-            f"gql:all_zoho_shipment_orders:{start_date}:{end_date}:v1",
-            lambda: fetch_all_streamed(shipment_orders, chunk_size=2000),
-            ttl=180
-        )
-    
-    
+            y,m,d = map(int, end_date.split('-'))
+            return qs.filter(date__lte=date(y,m,d)).iterator(chunk_size=1000)
+        return get_or_build_list(f"gql:all_zoho_shipment_orders:{start_date}:{end_date}:v3", lambda: fetch_all_streamed(qs, chunk_size=1000), ttl=180)
+
     def resolve_all_zoho_item_assets_track(self, info, item_id=None, list_ids=None, **kwargs):
         qs = ZohoItemAssetsTrack.objects.all()
         if item_id:
             qs = qs.filter(item_id=item_id)
         elif list_ids:
             qs = qs.filter(item_id__in=list_ids)
-
-        qs = qs.order_by('item_id', 'created_time', 'id').annotate(
-            next_assets=Window(
-                expression=Lead('assets'),
-                partition_by=[F('item_id')],
-                order_by=F('created_time').asc(),
-            )
-        )
-
-        # recorre en streaming para no cargar todo a RAM
+        qs = qs.order_by('item_id', 'created_time', 'id')
         result = []
-        for _item_id, group in groupby(qs.iterator(chunk_size=2000), key=attrgetter('item_id')):
-            group_list = list(group)  # (ya viene particionado y ordenado)
-            historial = []
-            previous_serials = set()
-            for track in group_list:
-                current_serials = {a.get('serialNumber') for a in (track.assets or []) if a.get('serialNumber')}
-                news = list(current_serials - previous_serials)
-                losts = list(previous_serials - current_serials)
-                track_created_time = track.created_time
-                if timezone.is_naive(track_created_time):
-                    track_created_time = timezone.make_aware(track_created_time, timezone.get_current_timezone())
-                historial.append(HistoryDifferencesSerialsType(
-                    date=track_created_time,
-                    differences=DifferencesSerialsType(news=news, losts=losts),
-                ))
-                previous_serials = current_serials
-
+        cur_item = None
+        previous_serials = set()
+        historial = []
+        last_track = None
+        for track in qs.iterator(chunk_size=1000):
+            if cur_item is not None and track.item_id != cur_item:
+                if last_track:
+                    historial.reverse()
+                    last_track.historial_differences = historial
+                    result.append(last_track)
+                historial = []
+                previous_serials = set()
+            cur_item = track.item_id
+            current_serials = {a.get('serialNumber') for a in (track.assets or []) if a.get('serialNumber')}
+            news = list(current_serials - previous_serials)
+            losts = list(previous_serials - current_serials)
+            track_created_time = track.created_time
+            if timezone.is_naive(track_created_time):
+                track_created_time = timezone.make_aware(track_created_time, timezone.get_current_timezone())
+            historial.append(HistoryDifferencesSerialsType(date=track_created_time, differences=DifferencesSerialsType(news=news, losts=losts)))
+            previous_serials = current_serials
+            last_track = track
+        if last_track:
             historial.reverse()
-            most_recent = group_list[-1]
-            # ya tienes next_assets gracias al Lead(); lo usa resolve_differences()
-            most_recent.historial_differences = historial
-            result.append(most_recent)
+            last_track.historial_differences = historial
+            result.append(last_track)
+        return get_or_build_list(f"gql:all_zoho_item_assets_track:{item_id}:{','.join(list_ids or [])}:v3", lambda: result, ttl=180)
 
-        return get_or_build_list(
-            f"gql:all_zoho_item_assets_track:{item_id}:{','.join(list_ids or [])}:v1",
-            lambda: result,
-            ttl=180
-        )
-    
-    # def resolve_all_zoho_item_assets_track(self, info, item_id=None, list_ids=None, **kwargs):
-    #     from itertools import groupby
-    #     from operator import attrgetter
-    #     from django.utils import timezone
-
-    #     if item_id:
-    #         queryset = ZohoItemAssetsTrack.objects.filter(item_id=item_id)
-    #     elif list_ids:
-    #         queryset = ZohoItemAssetsTrack.objects.filter(item_id__in=list_ids)
-    #     else:
-    #         queryset = ZohoItemAssetsTrack.objects.all()
-
-    #     queryset = queryset.order_by('item_id', 'created_time', 'id')
-    #     tracks = list(queryset)
-    #     grouped = groupby(tracks, key=attrgetter('item_id'))
-    #     result = []
-
-    #     for item_id, group in grouped:
-    #         group_list = list(group)
-    #         historial = []
-    #         previous_serials = set()
-    #         for track in group_list:
-    #             if timezone.is_naive(track.created_time):
-    #                 track_created_time = timezone.make_aware(
-    #                     track.created_time, 
-    #                     timezone.get_current_timezone()
-    #                 )
-    #             else:
-    #                 track_created_time = track.created_time
-    #             current_serials = set(
-    #                 asset.get('serialNumber') for asset in track.assets 
-    #                 if asset.get('serialNumber')
-    #             )
-    #             news = list(current_serials - previous_serials)
-    #             losts = list(previous_serials - current_serials)
-    #             historial.append(
-    #                 HistoryDifferencesSerialsType(
-    #                     date=track_created_time,
-    #                     differences=DifferencesSerialsType(news=news, losts=losts)
-    #                 )
-    #             )
-    #             previous_serials = current_serials
-    #         historial.reverse()
-    #         most_recent_track = group_list[-1]
-    #         most_recent_track.historial_differences = historial
-    #         result.append(most_recent_track)
-
-    #     return result
-    
     def resolve_all_manual_updating_jobs(self, info, id=None, **kwargs):
         if id:
             return ManualUpdatingJobs.objects.filter(id=id).first()

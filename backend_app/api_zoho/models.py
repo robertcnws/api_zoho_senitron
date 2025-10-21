@@ -1,42 +1,28 @@
+# models.py
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db.models import JSONField
 from django.utils import timezone
 
-
 class AppConfig(models.Model):
     id = models.AutoField(primary_key=True)
-    # Zoho API connection fields
     zoho_client_id = models.CharField(max_length=255, blank=True, null=True)
     zoho_client_secret = models.CharField(max_length=255, blank=True, null=True)
     zoho_org_id = models.CharField(max_length=255, blank=True, null=True)
     zoho_redirect_uri = models.CharField(max_length=255, blank=True, null=True)
     zoho_refresh_time = models.DurationField(blank=True, null=True)
-    zoho_refresh_token = models.CharField(max_length=255, blank=True, null=True)  
-    zoho_connection_configured = models.BooleanField(default=False)  
+    zoho_refresh_token = models.CharField(max_length=255, blank=True, null=True)
+    zoho_connection_configured = models.BooleanField(default=False)
     zoho_last_sync_time = models.DateTimeField(blank=True, null=True)
-
     def save(self, *args, **kwargs):
         if not self.pk and AppConfig.objects.exists():
             self.pk = AppConfig.objects.get().pk
-        
-        required_fields = [
-            self.zoho_client_id,
-            self.zoho_client_secret,
-            self.zoho_org_id,
-            self.zoho_redirect_uri,
-        ]
-        
-        self.zoho_connection_configured = all(
-            field is not None and field != "" for field in required_fields
-        )
-
+        required_fields = [self.zoho_client_id, self.zoho_client_secret, self.zoho_org_id, self.zoho_redirect_uri]
+        self.zoho_connection_configured = all(field is not None and field != "" for field in required_fields)
         super(AppConfig, self).save(*args, **kwargs)
-
     def __str__(self):
         return f"App Configuration for {self.zoho_org_id}"
-    
-    
+
 class CustomUserManager(BaseUserManager):
     def create_user(self, username, password=None, **extra_fields):
         if not username:
@@ -45,13 +31,11 @@ class CustomUserManager(BaseUserManager):
         user.set_password(password)
         user.save(using=self._db)
         return user
-
     def create_superuser(self, username, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_superuser', True)
-
         return self.create_user(username, password, **extra_fields)
 
 class LoginUser(AbstractBaseUser, PermissionsMixin):
@@ -69,20 +53,17 @@ class LoginUser(AbstractBaseUser, PermissionsMixin):
     address = models.CharField(max_length=255, blank=True, null=True)
     zip_code = models.CharField(max_length=50, blank=True, null=True)
     gender = models.CharField(max_length=50, blank=True, null=True)
-
     objects = CustomUserManager()
-
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = []
-
     def __str__(self):
         return self.username
-    
 
 class ZohoInventoryItem(models.Model):
     group_id = models.BigIntegerField()
     group_name = models.CharField(max_length=255)
     item_id = models.CharField(max_length=255, unique=True)
+    item_id_int = models.BigIntegerField(null=True, blank=True, db_index=True)
     name = models.CharField(max_length=255)
     status = models.CharField(max_length=50)
     source = models.CharField(max_length=255)
@@ -118,15 +99,16 @@ class ZohoInventoryItem(models.Model):
     hsn_or_sac = models.BigIntegerField(null=True, blank=True)
     sat_item_key_code = models.CharField(max_length=255, null=True, blank=True)
     unitkey_code = models.CharField(max_length=255, null=True, blank=True)
-    synced_with_senitron = models.BooleanField(default=False)   
-    ignore_errors = models.BooleanField(default=False) 
-
+    synced_with_senitron = models.BooleanField(default=False)
+    ignore_errors = models.BooleanField(default=False)
     def __str__(self):
         return self.name
-    
-    
+    class Meta:
+        indexes = [models.Index(fields=['created_time']), models.Index(fields=['last_modified_time'])]
+
 class ZohoInventoryShipmentSalesOrder(models.Model):
     salesorder_id = models.CharField(max_length=255, unique=True)
+    salesorder_id_int = models.BigIntegerField(null=True, blank=True, db_index=True)
     salesorder_number = models.CharField(max_length=255, null=True, blank=True)
     date = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=100, null=True, blank=True)
@@ -153,26 +135,20 @@ class ZohoInventoryShipmentSalesOrder(models.Model):
     notes = models.TextField(null=True, blank=True)
     payment_terms = models.IntegerField(default=0)
     payment_terms_label = models.CharField(max_length=255, null=True, blank=True)
-    
-    line_items = JSONField(default=list, null=True, blank=True) 
+    line_items = JSONField(default=list, null=True, blank=True)
     shipping_address = JSONField(null=True, blank=True)
     billing_address = JSONField(null=True, blank=True)
     warehouses = JSONField(default=list, null=True, blank=True)
-    custom_fields = JSONField(default=dict, null=True, blank=True) 
+    custom_fields = JSONField(default=dict, null=True, blank=True)
     order_sub_statuses = JSONField(default=list, null=True, blank=True)
     shipment_sub_statuses = JSONField(default=list, null=True, blank=True)
-    
     created_time = models.DateTimeField(null=True, blank=True)
     last_modified_time = models.DateTimeField(null=True, blank=True)
-
-    class Meta:
-        verbose_name = 'Zoho Inventory Sales Order'
-        verbose_name_plural = 'Zoho Inventory Sales Orders'
-
     def __str__(self):
         return f"Sales Order {self.salesorder_number} - {self.customer_name}"
-    
-    
+    class Meta:
+        indexes = [models.Index(fields=['date']), models.Index(fields=['created_time'])]
+
 class ZohoSkuTrackInfo(models.Model):
     id = models.AutoField(primary_key=True)
     sku_tracked = models.IntegerField(default=0)
@@ -180,13 +156,14 @@ class ZohoSkuTrackInfo(models.Model):
     sku_missing = models.IntegerField(default=0)
     sku_excess = models.IntegerField(default=0)
     date = models.DateTimeField(default=timezone.now)
-    
     def __str__(self):
         return f"SKU Tracking Info for {self.date}"
-  
-    
+    class Meta:
+        indexes = [models.Index(fields=['date'])]
+
 class ZohoShipmentOrder(models.Model):
     shipment_id = models.CharField(max_length=50, primary_key=True)
+    shipment_id_int = models.BigIntegerField(null=True, blank=True, db_index=True)
     salesorder_id = models.CharField(max_length=50, blank=True, null=True)
     salesorder_number = models.CharField(max_length=50, blank=True, null=True)
     salesorder_date = models.DateField()
@@ -250,7 +227,6 @@ class ZohoShipmentOrder(models.Model):
     associated_packages_count = models.IntegerField(default=0)
     created_by_id = models.CharField(max_length=50, blank=True, null=True)
     last_modified_by_id = models.CharField(max_length=50, blank=True, null=True)
-    
     contact_persons = models.JSONField(blank=True, null=True)
     invoices = models.JSONField(blank=True, null=True)
     line_items = models.JSONField(blank=True, null=True)
@@ -263,20 +239,20 @@ class ZohoShipmentOrder(models.Model):
     taxes = models.JSONField(blank=True, null=True)
     tracking_statuses = models.JSONField(blank=True, null=True)
     multipiece_shipments = models.JSONField(blank=True, null=True)
-
     def __str__(self):
         return f"ShipmentOrder {self.shipment_number}"
-    
+    class Meta:
+        indexes = [models.Index(fields=['date']), models.Index(fields=['created_time'])]
 
 class ZohoPackage(models.Model):
     package_id = models.CharField(max_length=50, primary_key=True)
-    salesorder_id = models.CharField(max_length=50, blank=True, null=True)
+    salesorder_id = models.CharField(max_length=50, blank=True, null=True, db_index=True)
     salesorder_number = models.CharField(max_length=50, blank=True, null=True)
     salesorder_date = models.DateField(blank=True, null=True)
     sales_channel = models.CharField(max_length=50, blank=True, null=True)
     sales_channel_formatted = models.CharField(max_length=50, blank=True, null=True)
     salesorder_fulfilment_status = models.CharField(max_length=50, blank=True, null=True)
-    shipment_id = models.CharField(max_length=50, blank=True, null=True)
+    shipment_id = models.CharField(max_length=50, blank=True, null=True, db_index=True)
     shipment_number = models.CharField(max_length=50, blank=True, null=True)
     shipment_order = models.JSONField(blank=True, null=True)
     package_number = models.CharField(max_length=50, blank=True, null=True)
@@ -321,35 +297,31 @@ class ZohoPackage(models.Model):
     template_name = models.CharField(max_length=100, blank=True, null=True)
     template_type = models.CharField(max_length=50, blank=True, null=True)
     zoho_shipment = models.ForeignKey(ZohoShipmentOrder, on_delete=models.CASCADE, blank=True, null=True)
-    
     def __str__(self):
         return f"ZohoPackage {self.package_number}"
-    
-    
+    class Meta:
+        indexes = [models.Index(fields=['date'])]
+
 class ZohoItemAssetsTrack(models.Model):
     id = models.AutoField(primary_key=True)
-    item_id = models.CharField(max_length=255, null=True, blank=True)
+    item_id = models.CharField(max_length=255, null=True, blank=True, db_index=True)
     sku = models.CharField(max_length=255, null=True, blank=True)
     assets = models.JSONField(default=list, null=True, blank=True)
     created_time = models.DateTimeField(default=timezone.now)
-    
     def __str__(self):
         return f"ItemAssetsTrack {self.item_id} - Created on {self.created_time}"
-    
-    
+    class Meta:
+        indexes = [models.Index(fields=['item_id', 'created_time'])]
+
 class JobsUpdatingTimes(models.Model):
     id = models.AutoField(primary_key=True)
     last_updated = models.DateTimeField(default=timezone.now)
-    
     def __str__(self):
         return f"Job Last Updated on {self.last_updated}"
-    
-    
+
 class ManualUpdatingJobs(models.Model):
     id = models.AutoField(primary_key=True)
     is_running = models.BooleanField(default=False)
     last_updated = models.DateTimeField(default=timezone.now)
-    
     def __str__(self):
         return f"Manual Job {self.is_running}"
-
