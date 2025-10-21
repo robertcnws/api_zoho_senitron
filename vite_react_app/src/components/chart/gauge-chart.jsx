@@ -137,8 +137,9 @@ const MatchGauge = ({ percentage }) => {
     return (
         <Box
             sx={{
-                ml: 5,
-                mb: 5,
+                // ml: 5,
+                mt: 1,
+                mb: 2,
                 textAlign: 'center',
                 width: size,
                 height: size,

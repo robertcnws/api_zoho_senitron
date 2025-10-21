@@ -168,7 +168,7 @@ export function AnalyticsCurrentVisits({
         <ChartLegends
           labels={chartOptions?.labels}
           colors={chartOptions?.colors}
-          sx={{ p: 3, justifyContent: 'center' }}
+          sx={{ p: 1, justifyContent: 'center' }}
         />
       </Card>
 

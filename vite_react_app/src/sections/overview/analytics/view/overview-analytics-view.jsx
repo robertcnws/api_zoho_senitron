@@ -611,14 +611,29 @@ export function OverviewAnalyticsView() {
                 />
               </Grid>
 
-              {percentage && (
-                <Grid xs={12} md={6} lg={4}>
+              <Box
+                display="flex"
+                flexDirection={{ xs: 'column', md: 'row' }}
+                justifyContent="space-between"
+                sx={{
+                  width: '100%',
+                  gap: 2,
+                  alignItems: 'stretch',
+                  '& > *': {
+                    flex: '1 1 0',
+                    minWidth: { xs: '100%', md: 0 },
+                    height: '100%',
+                  },
+                }}
+              >
+
+                {!!percentage && (
 
                   <Card>
                     <CardHeader title="SKU Tracked totals" />
                     <Stack direction="column" sx={{ p: 0, textAlign: 'center' }} alignItems="center">
                       {percentage > 0 ? (
-                        <>
+                        <Box display='flex' flexDirection='column' alignItems='center' sx={{ p: 0, width: '100%', ml: -15 }}>
                           <MatchGauge percentage={percentage} />
                           <Box sx={{ mt: 0, p: 0 }}>
                             <TableContainer>
@@ -648,7 +663,7 @@ export function OverviewAnalyticsView() {
                               </Table>
                             </TableContainer>
                           </Box>
-                        </>
+                        </Box>
                       ) : (
                         <TableContainer sx={{ maxHeight: 350 }}>
                           <Table size='medium' stickyHeader>
@@ -660,11 +675,9 @@ export function OverviewAnalyticsView() {
                       )}
                     </Stack>
                   </Card>
-                </Grid>
-              )}
+                )}
 
-              {series && (
-                <Grid xs={12} md={6} lg={4}>
+                {series && (
 
                   <AnalyticsCurrentVisits title="SKUs and RFID count match"
                     subheader="Number of items by percentage range"
@@ -698,19 +711,18 @@ export function OverviewAnalyticsView() {
                     isIgnore={isIgnore}
                     setIsIgnore={setIsIgnore}
                   />
-                </Grid>
-              )}
+                )}
 
-              {timelineItems && (
-                <Grid xs={12} md={6} lg={4}>
+                {timelineItems && (
                   <AnalyticsOrderTimeline
                     title="Items timeline"
                     list={itemsTimelineData || timelineItems}
                     isMobile={isMobile}
                     onViewDetails={handleViewRow}
                   />
-                </Grid>
-              )}
+                )}
+
+              </Box>
 
               <Grid xs={12} md={12} lg={12}>
                 <ItemListShortView updating={updating} setUpdating={setUpdating} setTitleLinearProgress={setTitleLinearProgress} />
