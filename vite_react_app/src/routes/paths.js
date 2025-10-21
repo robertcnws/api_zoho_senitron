@@ -169,6 +169,7 @@ export const paths = {
       root: `${ROOTS.DASHBOARD}/shipment`,
       list: `${ROOTS.DASHBOARD}/shipment/list`,
       listBySku: `${ROOTS.DASHBOARD}/shipment/listBySku`,
+      skuHistory: `${ROOTS.DASHBOARD}/shipment/sku-history`,
       details: (id) => `${ROOTS.DASHBOARD}/shipment/${id}`,
       demo: {
         details: `${ROOTS.DASHBOARD}/shipment/${MOCK_ID}`,

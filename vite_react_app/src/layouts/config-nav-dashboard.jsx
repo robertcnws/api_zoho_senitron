@@ -115,6 +115,10 @@ export const navData = (countLostItems) => [
             title: 'List By SKUs',
             path: paths.dashboard.shipment.listBySku,
           },
+          {
+            title: 'History',
+            path: paths.dashboard.shipment.skuHistory,
+          },
         ],
       },
       // {

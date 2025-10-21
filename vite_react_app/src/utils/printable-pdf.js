@@ -1,7 +1,7 @@
 import 'jspdf-autotable';
 import { jsPDF as JsPDF } from 'jspdf';
 
-import { fDateTime } from './format-time';
+import { fDate, fDateTime } from './format-time';
 import logoBase64 from '../../public/files/color_white_background/icon_with_text/PNG.png';
 
 export const generatePrintablePDF = ({ data, title }) => {
@@ -181,7 +181,7 @@ export const generateItemPrintablePDF = ({ item, senitronItem }) => {
 
 // ----------------------------------------------------------------------
 
-export const generateItemShipmentPrintablePDF = ({ data }) => {
+export const generateItemShipmentPrintablePDF = ({ data, isHistory = false, filters = null }) => {
     const doc = new JsPDF('p', 'pt', 'a4');
 
     const margin = 40;
@@ -193,11 +193,19 @@ export const generateItemShipmentPrintablePDF = ({ data }) => {
         doc.addImage(logoBase64, 'PNG', margin, currentY, logoWidth, logoHeight);
     }
 
-    const title = 'Items in Shipments';
+    const title = isHistory ? 'Items in Shipments History' : 'Items in Shipments';
 
     doc.setFontSize(16);
     // doc.setFont('helvetica', 'bold');
     doc.text(title, margin + logoWidth + 10, currentY + 25);
+
+    if (isHistory) {
+        doc.setFontSize(10);
+        doc.text('From: ', margin + logoWidth + 10, currentY + 40);
+        doc.text(fDate(filters.state.startDate), margin + logoWidth + 40, currentY + 40);
+        doc.text('to: ', margin + logoWidth + 100, currentY + 40);
+        doc.text(fDate(filters.state.endDate), margin + logoWidth + 115, currentY + 40);
+    }
 
     const date = new Date().toLocaleDateString();
     doc.setFontSize(10);
@@ -222,8 +230,9 @@ export const generateItemShipmentPrintablePDF = ({ data }) => {
             doc.text(title, margin + logoWidth + 10, currentY + 25);
 
             doc.setFontSize(10);
-            // doc.setFont('helvetica', 'normal');
-            doc.text(`Date: ${date}`, doc.internal.pageSize.getWidth() - margin - 100, currentY + 25);
+            if (!isHistory) {
+                doc.text(`Date: ${date}`, doc.internal.pageSize.getWidth() - margin - 100, currentY + 25);
+            }
 
             currentY += logoHeight + 30;
         }
@@ -235,25 +244,31 @@ export const generateItemShipmentPrintablePDF = ({ data }) => {
         doc.setFont('helvetica', 'normal');
         doc.text(`SKU: ${item.sku}`, margin, currentY);
         currentY += 15;
-        doc.text(`Date: ${item.date}`, margin, currentY);
-        currentY += 15;
+        if (!isHistory) {
+            doc.text(`Date: ${item.date}`, margin, currentY);
+            currentY += 15;
+        }
         doc.text(`Total Quantity: ${item.itemTotalQty}`, margin, currentY);
         currentY += 15;
 
         const packagesData = item.linePackages.map(pkg => ({
-            packageId: pkg.packageId,
+            // packageId: pkg.packageId,
             packageNumber: pkg.packageNumber,
             quantity: pkg.quantity,
-            shipmentId: pkg.shipmentId,
+            // shipmentId: pkg.shipmentId,
             shipmentNumber: pkg.shipmentNumber,
+            ...isHistory ? {
+                date: fDate(pkg.date)
+            } : {}
         }));
 
         const packageColumns = [
-            { header: 'Package ID', dataKey: 'packageId' },
+            // { header: 'Package ID', dataKey: 'packageId' },
             { header: '# Package', dataKey: 'packageNumber' },
             { header: 'Quantity', dataKey: 'quantity' },
-            { header: 'Shipment ID', dataKey: 'shipmentId' },
+            // { header: 'Shipment ID', dataKey: 'shipmentId' },
             { header: '# Shipment', dataKey: 'shipmentNumber' },
+            ...isHistory ? [{ header: 'Date', dataKey: 'date' }] : []
         ];
 
         doc.autoTable({

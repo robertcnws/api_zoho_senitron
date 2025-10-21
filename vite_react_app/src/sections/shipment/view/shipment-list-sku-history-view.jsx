@@ -1,4 +1,7 @@
 import dayjs from 'dayjs';
+import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+
 import { useMemo, useState, useEffect, useContext, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
@@ -42,20 +45,24 @@ import {
 
 import { LoadingContext } from 'src/auth/context/loading-context';
 
-import { ShipmentTableRowListBySku } from '../shipment-table-row-list-by-sku';
-import { ShipmentTableToolbarListBySku } from '../shipment-table-toolbar-list-by-sku';
-import { ShipmentTableFiltersResultListBySku } from '../shipment-table-filters-result-list-by-sku';
+import { ShipmentTableRowListSkuHistory } from '../shipment-table-row-list-sku-history';
+import { ShipmentTableToolbarListSkuHistory } from '../shipment-table-toolbar-list-sku-history';
+import { ShipmentTableFiltersResultListSkuHistory } from '../shipment-table-filters-result-list-sku-history';
 
 const STATUS_OPTIONS = [{ value: 'all', label: 'All' }, ...SHIPMENTS_STATUS_OPTIONS];
 
-export function ShipmentListBySkuView() {
-  const start = localStorage.getItem('startDate') || String(dayjs().format('YYYY-MM-DD'));
-  const end = localStorage.getItem('endDate') || String(dayjs().format('YYYY-MM-DD'));
+dayjs.extend(isSameOrAfter);
+dayjs.extend(isSameOrBefore);
+
+export function ShipmentListSkuHistoryView() {
+  const start = String(dayjs().format('YYYY-MM-DD'));
+  const end = String(dayjs().format('YYYY-MM-DD'));
 
   const filters = useSetState({
     sku: '',
     startDate: dayjs(start),
     endDate: dayjs(end),
+    ignoreMull: false,
   });
 
   const parseLineItems = useCallback((lineItems) => {
@@ -82,10 +89,19 @@ export function ShipmentListBySkuView() {
     return (packages || []).filter((pkg) => pkg.package_id).map((pkg) => ({ ...pkg, date }));
   }, []);
 
+  const isWithinRange = useCallback((d, startDate, endDate) => {
+    const dd = dayjs(d);
+    const s = startDate ? dayjs(startDate) : null;
+    const e = endDate ? dayjs(endDate) : null;
+    const afterS = s ? dd.isSameOrAfter(s, 'day') : true;
+    const beforeE = e ? dd.isSameOrBefore(e, 'day') : true;
+    return afterS && beforeE;
+  }, []);
+
   const { isMobile } = useContext(LoadingContext);
   const [updating, setUpdating] = useState(false);
   const [titleLinearProgress, setTitleLinearProgress] = useState('Loading data...');
-  const table = useTable({ defaultOrderBy: 'sku', defaultDense: true });
+  const table = useTable({ defaultOrderBy: 'itemTotalQty', defaultDense: true, defaultOrder: 'desc' });
   const router = useRouter();
   const confirm = useBoolean();
 
@@ -109,11 +125,8 @@ export function ShipmentListBySkuView() {
 
   const allPackages = useMemo(() => {
     if (!allShipments?.length) return null;
-    const startDate = String(filters.state.startDate.format('YYYY-MM-DD'));
-    return allShipments
-      .filter((shipment) => shipment?.date === startDate)
-      .map((shipment) => parsePackages(shipment.packages, shipment.date));
-  }, [allShipments, filters.state.startDate, parsePackages]);
+    return allShipments.map((shipment) => parsePackages(shipment.packages, shipment.date));
+  }, [allShipments, parsePackages]);
 
   const packageIds = useMemo(
     () => allPackages?.flatMap((pkgs) => pkgs.map((pkg) => pkg.package_id)) || null,
@@ -165,32 +178,52 @@ export function ShipmentListBySkuView() {
 
   const finalGroupedArray = useMemo(() => {
     if (!mergeItems?.length) return [];
-    const acc = mergeItems.reduce((m, it) => {
-      const key = `${it.itemId}-${it.date}`;
-      if (!m[key]) {
-        m[key] = {
-          itemId: it.itemId,
-          name: it.name,
-          sku: it.sku,
-          date: it.date,
-          itemTotalQty: 0,
-          linePackages: [],
-        };
-      }
-      m[key].itemTotalQty += it.quantity;
-      m[key].linePackages.push({
-        packageId: it.packageId,
-        packageNumber: it.packageNumber,
-        shipmentId: it.shipmentId,
-        shipmentNumber: it.shipmentNumber,
-        quantity: it.quantity,
-      });
-      return m;
-    }, {});
-    return Object.values(acc);
-  }, [mergeItems]);
+    const s = filters.state.startDate;
+    const e = filters.state.endDate;
+    const acc = mergeItems
+      .filter((it) => isWithinRange(it.date, s, e))
+      .reduce((m, it) => {
+        if (!m[it.itemId]) {
+          m[it.itemId] = {
+            itemId: it.itemId,
+            name: it.name,
+            sku: it.sku,
+            itemTotalQty: 0,
+            packages: {},
+          };
+        }
+        m[it.itemId].itemTotalQty += it.quantity;
+        if (!m[it.itemId].packages[it.packageId]) {
+          m[it.itemId].packages[it.packageId] = {
+            packageId: it.packageId,
+            packageNumber: it.packageNumber,
+            shipmentId: it.shipmentId,
+            shipmentNumber: it.shipmentNumber,
+            quantity: 0,
+            date: it.date,
+          };
+        }
+        m[it.itemId].packages[it.packageId].quantity += it.quantity;
+        return m;
+      }, {});
+    return Object.values(acc).map((g) => ({
+      itemId: g.itemId,
+      name: g.name,
+      sku: g.sku,
+      itemTotalQty: g.itemTotalQty,
+      linePackages: Object.values(g.packages).map(p => ({
+        packageId: p.packageId,
+        packageNumber: p.packageNumber,
+        shipmentId: p.shipmentId,
+        shipmentNumber: p.shipmentNumber,
+        quantity: p.quantity,
+        date: p.date,
+      })),
+    }));
+  }, [mergeItems, filters.state.startDate, filters.state.endDate, isWithinRange]);
 
-  const dateError = fIsAfter(null, filters.state.endDate);
+
+  const dateError = fIsAfter(filters.state.startDate, filters.state.endDate);
 
   const dataFiltered = useMemo(
     () =>
@@ -284,28 +317,28 @@ export function ShipmentListBySkuView() {
   }
 
   const TABLE_HEAD = [
-    { id: 'sku', label: 'SKU', width: isMobile ? 50 : 140 },
-    { id: 'date', label: 'Date', width: isMobile ? 50 : 110 },
+    { id: 'sku', label: 'SKU', width: isMobile ? 50 : 200 },
+    { id: 'name', label: 'Item', width: 50 },
     { id: 'itemTotalQty', label: 'Total Qty Shipped', width: isMobile ? 50 : 140 },
     { id: '', width: isMobile ? 30 : 68 },
   ];
-  const TABLE_HEAD_MOBILE = [{ id: 'info', label: 'SKUs in Shipments' }];
+  const TABLE_HEAD_MOBILE = [{ id: 'info', label: 'History SKU Shipments' }];
 
   return (
     <>
       <DashboardContent>
         <CustomBreadcrumbs
-          heading="List By SKU"
+          heading="SKU's Shipment History"
           links={[
             { name: 'Dashboard', href: paths.dashboard.general.analytics },
             { name: 'Shipment', href: paths.dashboard.shipment.listBySku },
-            { name: 'List By SKU' },
+            { name: 'History' },
           ]}
           sx={{ mb: { xs: 3, md: 5 } }}
         />
 
         <Card>
-          <ShipmentTableToolbarListBySku
+          <ShipmentTableToolbarListSkuHistory
             filters={filters}
             onResetPage={table.onResetPage}
             dataFiltered={dataFiltered}
@@ -315,7 +348,7 @@ export function ShipmentListBySkuView() {
           />
 
           {canReset && (
-            <ShipmentTableFiltersResultListBySku
+            <ShipmentTableFiltersResultListSkuHistory
               filters={filters}
               totalResults={dataFiltered?.length}
               onResetPage={table.onResetPage}
@@ -365,7 +398,7 @@ export function ShipmentListBySkuView() {
                     {dataFiltered
                       ?.slice(table.page * table.rowsPerPage, table.page * table.rowsPerPage + table.rowsPerPage)
                       .map((row, index) => (
-                        <ShipmentTableRowListBySku
+                        <ShipmentTableRowListSkuHistory
                           key={`${row.itemId}-${index}`}
                           row={row}
                           selected={table.selected.includes(row.itemId)}
@@ -430,7 +463,7 @@ export function ShipmentListBySkuView() {
 }
 
 function applyFilter({ inputData, comparator, filters, dateError }) {
-  const { sku } = filters;
+  const { sku, ignoreMull } = filters;
   const stabilizedThis = inputData?.map((el, index) => [el, index]);
   stabilizedThis?.sort((a, b) => {
     const order = comparator(a[0], b[0]);
@@ -446,6 +479,12 @@ function applyFilter({ inputData, comparator, filters, dateError }) {
         ship.name.toLowerCase().includes(q) ||
         ship.linePackages.some((pkg) => pkg.packageNumber.toLowerCase().includes(q)) ||
         ship.linePackages.some((pkg) => pkg.shipmentNumber.toLowerCase().includes(q))
+    );
+  }
+  if (ignoreMull){
+    out = out?.filter(
+      (ship) =>
+        ship.sku.toLowerCase().includes('mull-') === false
     );
   }
   return out;

@@ -73,6 +73,7 @@ const ItemDetailsPage = lazy(() => import('src/pages/dashboard/item/details'));
 const ShipmentListPage = lazy(() => import('src/pages/dashboard/shipment/list'));
 const ShipmentDetailsPage = lazy(() => import('src/pages/dashboard/shipment/details'));
 const ShipmentListBySkuPage = lazy(() => import('src/pages/dashboard/shipment/listBySku'));
+const ShipmentListSkuHistoryPage = lazy(() => import('src/pages/dashboard/shipment/list-sku-history'));
 
 // ----------------------------------------------------------------------
 
@@ -142,6 +143,7 @@ export const dashboardRoutes = [
           { element: <ShipmentListPage />, index: true },
           { path: 'list', element: <ShipmentListPage /> },
           { path: 'listBySku', element: <ShipmentListBySkuPage /> },
+          { path: 'sku-history', element: <ShipmentListSkuHistoryPage /> },
           { path: ':id', element: <ShipmentDetailsPage /> },
         ],
       },
