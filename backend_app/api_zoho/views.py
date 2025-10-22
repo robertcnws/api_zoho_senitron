@@ -45,6 +45,9 @@ from datetime import timedelta
 from django.utils import timezone
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from api_zoho.auth_serializers import CustomTokenObtainPairSerializer, CustomTokenRefreshSerializer
+from .services import (
+    sync_inventory_items, sync_inventory_sales_orders, sync_inventory_shipments, get_access_token
+)
 import logging
 import time
 import utils.authorization_utils as auth_utils
@@ -205,52 +208,6 @@ def generate_auth_url(request):
     auth_url = f"https://accounts.zoho.com/oauth/v2/auth?scope={scopes}&client_id={client_id}&response_type=code&access_type=offline&redirect_uri={redirect_uri}"
     return JsonResponse({'auth_url': auth_url}, status=200)
 
-
-#############################################
-# GET ACCESS TOKEN
-#############################################
-
-def get_access_token(client_id, client_secret, refresh_token):
-    logger.info('Getting access token')
-    token_url = "https://accounts.zoho.com/oauth/v2/token"
-    if not refresh_token:
-        raise Exception("Refresh token is missing")
-        # refresh_token = get_refresh_token()
-    payload = {
-        "client_id": client_id,
-        "client_secret": client_secret,
-        "refresh_token": refresh_token,
-        "grant_type": "refresh_token",
-    }
-    response = requests.post(token_url, data=payload)
-    if response.status_code == 200:
-        access_token = response.json()["access_token"]
-    else:
-        raise Exception("Error retrieving access token")
-    return access_token
-
-
-#############################################
-# REFRESH ZOHO ACCESS TOKEN
-#############################################
-
-def refresh_zoho_access_token():
-    app_config = AppConfig.objects.first()
-    refresh_url = "https://accounts.zoho.com/oauth/v2/token"
-    payload = {
-        'refresh_token': app_config.zoho_refresh_token,
-        'client_id': app_config.zoho_client_id,
-        'client_secret': app_config.zoho_client_secret,
-        'grant_type': 'refresh_token'
-    }
-    response = requests.post(refresh_url, data=payload)
-    if response.status_code == 200:
-        new_token = response.json().get('access_token')
-        return new_token
-    else:
-        raise Exception("Failed to refresh Zoho token")
-
-
 #############################################
 # GET REFRESH TOKEN
 #############################################
@@ -341,24 +298,6 @@ def zoho_api_connect(request):
     else:
         messages.warning(request, "Zoho API connection is not configured yet.")
     return JsonResponse({'message': 'Zoho API connected successfully.'}, status=200)
-    
-
-#############################################
-# CONFIG HEADERS
-#############################################
-
-def config_headers():
-    app_config = AppConfig.objects.first()
-    access_token = get_access_token(
-        app_config.zoho_client_id,
-        app_config.zoho_client_secret,
-        app_config.zoho_refresh_token,
-    )
-    headers = {
-        "Authorization": f"Zoho-oauthtoken {access_token}"
-    }
-    return headers
-
 
 #############################################
 # LOAD FROM ZOHO FUNCTIONS
@@ -367,178 +306,198 @@ def config_headers():
 # GET ALL INVENTORY ITEMS
 #############################################
 
+# @api_view(['POST'])
+# @permission_classes([AllowAny])
+# def load_inventory_items(request):
+#     app_config = AppConfig.objects.first()
+#     logger.debug(f"AppConfig: {app_config}")
+
+#     try:
+#         headers = config_headers()
+#     except Exception as e:
+#         logger.error(f"Error connecting to Zoho API: {str(e)}")
+#         return JsonResponse({'error': f"Error connecting to Zoho API (Load Items): {str(e)}"}, status=500)
+
+#     data = json.loads(request.body) if request.body else {}
+#     item_number = data.get('item_number')
+#     username = data.get('username', None)
+
+#     if item_number:
+#         params = {
+#             'organization_id': app_config.zoho_org_id,
+#         }
+#         url = f"{settings.ZOHO_INVENTORY_ITEMS_URL}/{item_number}"
+#     else:
+#         params = {
+#             'organization_id': app_config.zoho_org_id,
+#             'per_page': 200,
+#             'page': 1
+#         }
+#         url = settings.ZOHO_INVENTORY_ITEMS_URL
+
+#     items_to_get = []
+
+#     retry_strategy = Retry(
+#         total=3,
+#         status_forcelist=[429, 500, 502, 503, 504],
+#         allowed_methods=["GET", "POST"]
+#     )
+#     adapter = HTTPAdapter(max_retries=retry_strategy)
+
+#     with requests.Session() as session:
+#         session.mount("https://", adapter)
+#         session.mount("http://", adapter)
+
+#         def fetch_page(single_url, single_headers, single_params):
+#             try:
+#                 response = session.get(single_url, headers=single_headers, params=single_params)
+#                 if response.status_code == 401:
+#                     new_token = refresh_zoho_access_token()
+#                     single_headers['Authorization'] = f'Zoho-oauthtoken {new_token}'
+#                     response = session.get(single_url, headers=single_headers, params=single_params)
+#                 response.raise_for_status()
+#                 data = response.json()
+#                 items = data.get('items', [])
+#                 page_context = data.get('page_context', {})
+#                 has_more_page = page_context.get('has_more_page', False)
+#                 return items, has_more_page
+#             except requests.RequestException as e:
+#                 logger.error(f"Error fetching data: {e}")
+#                 return [], False
+
+#         def fetch_single(single_url, single_headers, single_params):
+#             try:
+#                 response = session.get(single_url, headers=single_headers, params=single_params)
+#                 if response.status_code == 401:
+#                     new_token = refresh_zoho_access_token()
+#                     single_headers['Authorization'] = f'Zoho-oauthtoken {new_token}'
+#                     response = session.get(single_url, headers=single_headers, params=single_params)
+#                 response.raise_for_status()
+#                 data = response.json()
+#                 return data.get('item', {})
+#             except requests.RequestException as e:
+#                 logger.error(f"Error fetching single item: {e}")
+#                 return {}
+
+#         if not item_number:
+#             page = 1
+#             has_more_page = True
+#             while has_more_page:
+#                 current_params = params.copy()
+#                 current_params['page'] = page
+#                 page_items, has_more_page = fetch_page(url, headers.copy(), current_params)
+#                 items_to_get.extend(page_items)
+#                 page += 1
+#         else:
+#             single_item = fetch_single(url, headers.copy(), params.copy())
+#             if single_item:
+#                 items_to_get.append(single_item)
+
+#     logger.debug(f"Total items fetched: {len(items_to_get)}")
+
+#     item_ids = [item['item_id'] for item in items_to_get]
+#     existing_items = ZohoInventoryItem.objects.filter(item_id__in=item_ids)
+#     existing_items_map = {item.item_id: item for item in existing_items}
+
+#     new_items = []
+#     items_to_update = []
+#     timeline_items = []
+
+#     for data_item in items_to_get:
+#         new_item = create_inventory_item_instance(logger, data_item)
+#         prev_item = existing_items_map.get(new_item.item_id)
+#         senitron_item = SenitronItem.objects.filter(item_number=new_item.item_id).first()
+
+#         if prev_item:
+#             items_to_update.append(new_item)
+
+#             if prev_item.status != new_item.status:
+#                 timeline_items.append(
+#                     TimelineItem(
+#                         item_number=new_item.item_id,
+#                         previous_status_zoho=prev_item.status,
+#                         date_previous_status_zoho=prev_item.last_modified_time or prev_item.created_time,
+#                         actual_status_zoho=new_item.status,
+#                         date_actual_status_zoho=new_item.last_modified_time or new_item.created_time,
+#                         zoho_item=new_item,
+#                         senitron_item=senitron_item,
+#                         text=f"{new_item.sku or '-'} status changed -> From {prev_item.status} to {new_item.status}"
+#                     )
+#                 )
+
+#             if int(prev_item.stock_on_hand) != int(new_item.stock_on_hand):
+#                 change = 'added' if new_item.stock_on_hand > prev_item.stock_on_hand else 'removed'
+#                 abs_value = abs(new_item.stock_on_hand - prev_item.stock_on_hand)
+#                 timeline_items.append(
+#                     TimelineItem(
+#                         item_number=new_item.item_id,
+#                         previous_stock_on_hand=prev_item.stock_on_hand,
+#                         date_previous_stock_on_hand=prev_item.last_modified_time or prev_item.created_time,
+#                         actual_stock_on_hand=new_item.stock_on_hand,
+#                         date_actual_stock_on_hand=new_item.last_modified_time or new_item.created_time,
+#                         zoho_item=new_item,
+#                         senitron_item=senitron_item,
+#                         text=f"{new_item.sku or '-'} : {int(abs_value)} unit(s) {change} -> New stock on hand: {int(new_item.stock_on_hand)}"
+#                     )
+#                 )
+#         else:
+#             new_items.append(new_item)
+#             timeline_items.append(
+#                 TimelineItem(
+#                     item_number=new_item.item_id,
+#                     actual_stock_on_hand=new_item.stock_on_hand,
+#                     date_actual_stock_on_hand=new_item.last_modified_time or new_item.created_time,
+#                     actual_status_zoho=new_item.status,
+#                     date_actual_status_zoho=new_item.last_modified_time or new_item.created_time,
+#                     zoho_item=new_item,
+#                     senitron_item=senitron_item,
+#                     text=f"{new_item.sku or '-'} created -> On hand: {int(new_item.stock_on_hand)}, Status: {new_item.status}"
+#                 )
+#             )
+
+#     with transaction.atomic():
+#         if new_items:
+#             ZohoInventoryItem.objects.bulk_create(new_items, batch_size=200, ignore_conflicts=True)
+#         if items_to_update:
+#             fields_to_update = [
+#                 'status', 'stock_on_hand', 'last_modified_time'
+#             ]
+#             ZohoInventoryItem.objects.bulk_update(
+#                 items_to_update,
+#                 fields=fields_to_update,
+#                 batch_size=200
+#             )
+#         if timeline_items:
+#             TimelineItem.objects.bulk_create(timeline_items, batch_size=200, ignore_conflicts=True)
+            
+#     previous_day = timezone.now()
+            
+#     JobsUpdatingTimes.objects.filter(last_updated__lt=previous_day).delete()
+            
+#     JobsUpdatingTimes.objects.create(last_updated=timezone.now())
+
+#     logger.info(f"Items processed successfully: {len(new_items)} created, {len(items_to_update)} updated")
+    
+#     if username:
+#         module='zoho_item'
+#         info='has loaded new info from Zoho Items'
+#         type='load'
+#         create_notification(module, info, type, username)
+    
+#         module='system_timeline'
+#         info='has added new info about timelines in Zoho Items'
+#         type='create_timeline'
+#         create_notification(module, info, type, username)
+    
+#     return JsonResponse({'message': 'Items loaded successfully'}, status=200)
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def load_inventory_items(request):
-    app_config = AppConfig.objects.first()
-    logger.debug(f"AppConfig: {app_config}")
-
-    try:
-        headers = config_headers()
-    except Exception as e:
-        logger.error(f"Error connecting to Zoho API: {str(e)}")
-        return JsonResponse({'error': f"Error connecting to Zoho API (Load Items): {str(e)}"}, status=500)
-
     data = json.loads(request.body) if request.body else {}
     item_number = data.get('item_number')
-    username = data.get('username', None)
-
-    if item_number:
-        params = {
-            'organization_id': app_config.zoho_org_id,
-        }
-        url = f"{settings.ZOHO_INVENTORY_ITEMS_URL}/{item_number}"
-    else:
-        params = {
-            'organization_id': app_config.zoho_org_id,
-            'per_page': 200,
-            'page': 1
-        }
-        url = settings.ZOHO_INVENTORY_ITEMS_URL
-
-    items_to_get = []
-
-    retry_strategy = Retry(
-        total=3,
-        status_forcelist=[429, 500, 502, 503, 504],
-        allowed_methods=["GET", "POST"]
-    )
-    adapter = HTTPAdapter(max_retries=retry_strategy)
-
-    with requests.Session() as session:
-        session.mount("https://", adapter)
-        session.mount("http://", adapter)
-
-        def fetch_page(single_url, single_headers, single_params):
-            try:
-                response = session.get(single_url, headers=single_headers, params=single_params)
-                if response.status_code == 401:
-                    new_token = refresh_zoho_access_token()
-                    single_headers['Authorization'] = f'Zoho-oauthtoken {new_token}'
-                    response = session.get(single_url, headers=single_headers, params=single_params)
-                response.raise_for_status()
-                data = response.json()
-                items = data.get('items', [])
-                page_context = data.get('page_context', {})
-                has_more_page = page_context.get('has_more_page', False)
-                return items, has_more_page
-            except requests.RequestException as e:
-                logger.error(f"Error fetching data: {e}")
-                return [], False
-
-        def fetch_single(single_url, single_headers, single_params):
-            try:
-                response = session.get(single_url, headers=single_headers, params=single_params)
-                if response.status_code == 401:
-                    new_token = refresh_zoho_access_token()
-                    single_headers['Authorization'] = f'Zoho-oauthtoken {new_token}'
-                    response = session.get(single_url, headers=single_headers, params=single_params)
-                response.raise_for_status()
-                data = response.json()
-                return data.get('item', {})
-            except requests.RequestException as e:
-                logger.error(f"Error fetching single item: {e}")
-                return {}
-
-        if not item_number:
-            page = 1
-            has_more_page = True
-            while has_more_page:
-                current_params = params.copy()
-                current_params['page'] = page
-                page_items, has_more_page = fetch_page(url, headers.copy(), current_params)
-                items_to_get.extend(page_items)
-                page += 1
-        else:
-            single_item = fetch_single(url, headers.copy(), params.copy())
-            if single_item:
-                items_to_get.append(single_item)
-
-    logger.debug(f"Total items fetched: {len(items_to_get)}")
-
-    item_ids = [item['item_id'] for item in items_to_get]
-    existing_items = ZohoInventoryItem.objects.filter(item_id__in=item_ids)
-    existing_items_map = {item.item_id: item for item in existing_items}
-
-    new_items = []
-    items_to_update = []
-    timeline_items = []
-
-    for data_item in items_to_get:
-        new_item = create_inventory_item_instance(logger, data_item)
-        prev_item = existing_items_map.get(new_item.item_id)
-        senitron_item = SenitronItem.objects.filter(item_number=new_item.item_id).first()
-
-        if prev_item:
-            items_to_update.append(new_item)
-
-            if prev_item.status != new_item.status:
-                timeline_items.append(
-                    TimelineItem(
-                        item_number=new_item.item_id,
-                        previous_status_zoho=prev_item.status,
-                        date_previous_status_zoho=prev_item.last_modified_time or prev_item.created_time,
-                        actual_status_zoho=new_item.status,
-                        date_actual_status_zoho=new_item.last_modified_time or new_item.created_time,
-                        zoho_item=new_item,
-                        senitron_item=senitron_item,
-                        text=f"{new_item.sku or '-'} status changed -> From {prev_item.status} to {new_item.status}"
-                    )
-                )
-
-            if int(prev_item.stock_on_hand) != int(new_item.stock_on_hand):
-                change = 'added' if new_item.stock_on_hand > prev_item.stock_on_hand else 'removed'
-                abs_value = abs(new_item.stock_on_hand - prev_item.stock_on_hand)
-                timeline_items.append(
-                    TimelineItem(
-                        item_number=new_item.item_id,
-                        previous_stock_on_hand=prev_item.stock_on_hand,
-                        date_previous_stock_on_hand=prev_item.last_modified_time or prev_item.created_time,
-                        actual_stock_on_hand=new_item.stock_on_hand,
-                        date_actual_stock_on_hand=new_item.last_modified_time or new_item.created_time,
-                        zoho_item=new_item,
-                        senitron_item=senitron_item,
-                        text=f"{new_item.sku or '-'} : {int(abs_value)} unit(s) {change} -> New stock on hand: {int(new_item.stock_on_hand)}"
-                    )
-                )
-        else:
-            new_items.append(new_item)
-            timeline_items.append(
-                TimelineItem(
-                    item_number=new_item.item_id,
-                    actual_stock_on_hand=new_item.stock_on_hand,
-                    date_actual_stock_on_hand=new_item.last_modified_time or new_item.created_time,
-                    actual_status_zoho=new_item.status,
-                    date_actual_status_zoho=new_item.last_modified_time or new_item.created_time,
-                    zoho_item=new_item,
-                    senitron_item=senitron_item,
-                    text=f"{new_item.sku or '-'} created -> On hand: {int(new_item.stock_on_hand)}, Status: {new_item.status}"
-                )
-            )
-
-    with transaction.atomic():
-        if new_items:
-            ZohoInventoryItem.objects.bulk_create(new_items, batch_size=200, ignore_conflicts=True)
-        if items_to_update:
-            fields_to_update = [
-                'status', 'stock_on_hand', 'last_modified_time'
-            ]
-            ZohoInventoryItem.objects.bulk_update(
-                items_to_update,
-                fields=fields_to_update,
-                batch_size=200
-            )
-        if timeline_items:
-            TimelineItem.objects.bulk_create(timeline_items, batch_size=200, ignore_conflicts=True)
-            
-    previous_day = timezone.now()
-            
-    JobsUpdatingTimes.objects.filter(last_updated__lt=previous_day).delete()
-            
-    JobsUpdatingTimes.objects.create(last_updated=timezone.now())
-
-    logger.info(f"Items processed successfully: {len(new_items)} created, {len(items_to_update)} updated")
-    
+    username = data.get('username')
+    out = sync_inventory_items(item_number=item_number, username=username, updated_since=None)
     if username:
         module='zoho_item'
         info='has loaded new info from Zoho Items'
@@ -549,8 +508,7 @@ def load_inventory_items(request):
         info='has added new info about timelines in Zoho Items'
         type='create_timeline'
         create_notification(module, info, type, username)
-    
-    return JsonResponse({'message': 'Items loaded successfully'}, status=200)
+    return JsonResponse({'message': 'Items loaded successfully', **out}, status=200)
     
 
 #############################################
@@ -558,451 +516,483 @@ def load_inventory_items(request):
 #############################################
 
 
-def fetch_sales_order_details(item, session, headers):
-    try:
-        url = f'{settings.ZOHO_INVENTORY_SALESORDERS_URL}/{item["salesorder_id"]}'
-        response = session.get(url, headers=headers, params={})
-        if response.status_code == 401:
-            new_token = refresh_zoho_access_token()
-            headers['Authorization'] = f'Zoho-oauthtoken {new_token}'
-            response = session.get(url, headers=headers, params={})
-        response.raise_for_status()
-        full_item = response.json()
-        return full_item.get('salesorder', None)
-    except Exception as e:
-        logger.error(f"Error fetching details for sales order {item['salesorder_id']}: {e}")
-        return None
+# def fetch_sales_order_details(item, session, headers):
+#     try:
+#         url = f'{settings.ZOHO_INVENTORY_SALESORDERS_URL}/{item["salesorder_id"]}'
+#         response = session.get(url, headers=headers, params={})
+#         if response.status_code == 401:
+#             new_token = refresh_zoho_access_token()
+#             headers['Authorization'] = f'Zoho-oauthtoken {new_token}'
+#             response = session.get(url, headers=headers, params={})
+#         response.raise_for_status()
+#         full_item = response.json()
+#         return full_item.get('salesorder', None)
+#     except Exception as e:
+#         logger.error(f"Error fetching details for sales order {item['salesorder_id']}: {e}")
+#         return None
     
+
+# @api_view(['POST'])
+# @permission_classes([AllowAny])
+# def load_inventory_sales_orders(request):
+#     MAX_WORKERS = 10
+#     app_config = AppConfig.objects.first()
+#     logger.debug(app_config)
+#     try:
+#         headers = config_headers()
+#     except Exception as e:
+#         logger.error(f"Error connecting to Zoho API: {str(e)}")
+#         return JsonResponse({'error': f"Error connecting to Zoho API (Load Items): {str(e)}"}, status=500)
+
+#     data = json.loads(request.body)
+#     start_date = data.get('start_date')
+#     end_date = data.get('end_date')
+#     username = data.get('username', None)
+
+#     if not start_date:
+#         return JsonResponse({'error': 'Date is missing'}, status=400)
+#     try:
+#         dt.strptime(start_date, '%Y-%m-%d')
+#         if end_date:
+#             dt.strptime(end_date, '%Y-%m-%d')
+#     except ValueError:
+#         return JsonResponse({'error': 'Invalid date format'}, status=400)
+    
+#     params = {
+#         'organization_id': app_config.zoho_org_id,
+#         'per_page': 200,
+#         'page': 1
+#     }
+#     if end_date:
+#         params.update({'date_start': start_date, 'date_end': end_date})
+#     else:
+#         params['date'] = start_date
+
+#     url = settings.ZOHO_INVENTORY_SALESORDERS_URL
+#     items_to_get = []
+#     session = requests.Session()
+
+#     while True:
+#         try:
+#             response = session.get(url, headers=headers, params=params)
+#             if response.status_code == 401:
+#                 new_token = refresh_zoho_access_token()
+#                 headers['Authorization'] = f'Zoho-oauthtoken {new_token}'
+#                 response = session.get(url, headers=headers, params=params)
+#             response.raise_for_status()
+#             items = response.json()
+#             items_to_get.extend(items.get('salesorders', []))
+#             if not items.get('page_context', {}).get('has_more_page', False):
+#                 break
+#             params['page'] += 1
+#         except requests.exceptions.RequestException as e:
+#             logger.error(f"Error fetching sales orders: {e}")
+#             return JsonResponse({'error': 'Failed to fetch sales orders'}, status=500)
+    
+#     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+#         futures = [executor.submit(fetch_sales_order_details, item, session, headers) for item in items_to_get]
+#         full_items_to_get = [future.result() for future in as_completed(futures) if future.result()]
+    
+#     salesorder_ids = [item['salesorder_id'] for item in full_items_to_get]
+#     existing_orders = ZohoInventoryShipmentSalesOrder.objects.filter(salesorder_id__in=salesorder_ids)
+#     existing_salesorder_ids = set(existing_orders.values_list('salesorder_id', flat=True))
+
+#     new_sales_orders = []
+#     sales_orders_to_update = []
+    
+#     for data in full_items_to_get:
+#         new_item = create_inventory_sales_order_instance(logger, data)
+#         if new_item.salesorder_id in existing_salesorder_ids:
+#             sales_orders_to_update.append(new_item)
+#         else:
+#             new_sales_orders.append(new_item)
+
+#     with transaction.atomic():
+#         if new_sales_orders:
+#             ZohoInventoryShipmentSalesOrder.objects.bulk_create(new_sales_orders, ignore_conflicts=True, batch_size=200)
+#         if sales_orders_to_update:
+#             ZohoInventoryShipmentSalesOrder.objects.bulk_update(
+#                 sales_orders_to_update,
+#                 fields=[
+#                     'salesorder_number', 'date', 'status', 'customer_id', 'customer_name',
+#                     'is_taxable', 'tax_id', 'tax_name', 'tax_percentage', 'currency_id',
+#                     'currency_code', 'currency_symbol', 'exchange_rate', 'delivery_method',
+#                     'total_quantity', 'sub_total', 'tax_total', 'total', 'created_by_email',
+#                     'created_by_name', 'salesperson_id', 'salesperson_name', 'is_test_order',
+#                     'notes', 'payment_terms', 'payment_terms_label', 'line_items',
+#                     'shipping_address', 'billing_address', 'warehouses', 'custom_fields',
+#                     'order_sub_statuses', 'shipment_sub_statuses', 'created_time',
+#                     'last_modified_time'
+#                 ],
+#                 batch_size=200
+#             )
+#     if username:        
+#         module='zoho_sales_orders'
+#         info='has loaded new info from Zoho Sales Orders'
+#         type='load'
+#         create_notification(module, info, type, username)
+    
+#     return JsonResponse({'message': 'Sales Orders loaded successfully'}, status=200)
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def load_inventory_sales_orders(request):
-    MAX_WORKERS = 10
-    app_config = AppConfig.objects.first()
-    logger.debug(app_config)
-    try:
-        headers = config_headers()
-    except Exception as e:
-        logger.error(f"Error connecting to Zoho API: {str(e)}")
-        return JsonResponse({'error': f"Error connecting to Zoho API (Load Items): {str(e)}"}, status=500)
-
     data = json.loads(request.body)
     start_date = data.get('start_date')
     end_date = data.get('end_date')
-    username = data.get('username', None)
-
+    username = data.get('username')
     if not start_date:
         return JsonResponse({'error': 'Date is missing'}, status=400)
-    try:
-        dt.strptime(start_date, '%Y-%m-%d')
-        if end_date:
-            dt.strptime(end_date, '%Y-%m-%d')
-    except ValueError:
-        return JsonResponse({'error': 'Invalid date format'}, status=400)
-    
-    params = {
-        'organization_id': app_config.zoho_org_id,
-        'per_page': 200,
-        'page': 1
-    }
-    if end_date:
-        params.update({'date_start': start_date, 'date_end': end_date})
-    else:
-        params['date'] = start_date
-
-    url = settings.ZOHO_INVENTORY_SALESORDERS_URL
-    items_to_get = []
-    session = requests.Session()
-
-    while True:
-        try:
-            response = session.get(url, headers=headers, params=params)
-            if response.status_code == 401:
-                new_token = refresh_zoho_access_token()
-                headers['Authorization'] = f'Zoho-oauthtoken {new_token}'
-                response = session.get(url, headers=headers, params=params)
-            response.raise_for_status()
-            items = response.json()
-            items_to_get.extend(items.get('salesorders', []))
-            if not items.get('page_context', {}).get('has_more_page', False):
-                break
-            params['page'] += 1
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error fetching sales orders: {e}")
-            return JsonResponse({'error': 'Failed to fetch sales orders'}, status=500)
-    
-    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        futures = [executor.submit(fetch_sales_order_details, item, session, headers) for item in items_to_get]
-        full_items_to_get = [future.result() for future in as_completed(futures) if future.result()]
-    
-    salesorder_ids = [item['salesorder_id'] for item in full_items_to_get]
-    existing_orders = ZohoInventoryShipmentSalesOrder.objects.filter(salesorder_id__in=salesorder_ids)
-    existing_salesorder_ids = set(existing_orders.values_list('salesorder_id', flat=True))
-
-    new_sales_orders = []
-    sales_orders_to_update = []
-    
-    for data in full_items_to_get:
-        new_item = create_inventory_sales_order_instance(logger, data)
-        if new_item.salesorder_id in existing_salesorder_ids:
-            sales_orders_to_update.append(new_item)
-        else:
-            new_sales_orders.append(new_item)
-
-    with transaction.atomic():
-        if new_sales_orders:
-            ZohoInventoryShipmentSalesOrder.objects.bulk_create(new_sales_orders, ignore_conflicts=True, batch_size=200)
-        if sales_orders_to_update:
-            ZohoInventoryShipmentSalesOrder.objects.bulk_update(
-                sales_orders_to_update,
-                fields=[
-                    'salesorder_number', 'date', 'status', 'customer_id', 'customer_name',
-                    'is_taxable', 'tax_id', 'tax_name', 'tax_percentage', 'currency_id',
-                    'currency_code', 'currency_symbol', 'exchange_rate', 'delivery_method',
-                    'total_quantity', 'sub_total', 'tax_total', 'total', 'created_by_email',
-                    'created_by_name', 'salesperson_id', 'salesperson_name', 'is_test_order',
-                    'notes', 'payment_terms', 'payment_terms_label', 'line_items',
-                    'shipping_address', 'billing_address', 'warehouses', 'custom_fields',
-                    'order_sub_statuses', 'shipment_sub_statuses', 'created_time',
-                    'last_modified_time'
-                ],
-                batch_size=200
-            )
+    out = sync_inventory_sales_orders(start_date=start_date, end_date=end_date, username=username)
     if username:        
         module='zoho_sales_orders'
         info='has loaded new info from Zoho Sales Orders'
         type='load'
         create_notification(module, info, type, username)
-    
-    return JsonResponse({'message': 'Sales Orders loaded successfully'}, status=200)
+    return JsonResponse({'message': 'Sales Orders loaded successfully', **out}, status=200)
 
 
 #############################################
 # FETCH SHIPMENTS AND PACKAGES
 #############################################
 
-@retry(
-    retry=retry_if_exception_type(requests.exceptions.RequestException),
-    wait=wait_exponential(multiplier=1, min=4, max=60),
-    stop=stop_after_attempt(5)
-)
-def fetch_package(package_id, session, headers):
-    url = f'{settings.ZOHO_INVENTORY_PACKAGES_URL}/{package_id}'
-    try:
-        response = session.get(url, headers=headers, params={})
-        if response.status_code == 401:
-            new_token = refresh_zoho_access_token()
-            headers['Authorization'] = f'Zoho-oauthtoken {new_token}'
-            response = session.get(url, headers=headers, params={})
-        if response.status_code == 429:
-            logger.warning(f"Rate limit exceeded when fetching package {package_id}. Retrying...")
-            time.sleep(10)
-            response.raise_for_status()
-        if response.status_code >= 400:
-            logger.error(f"Error 1 fetching the package: {response.text}")
-            return JsonResponse({'error': 'Failed to fetch shipments'}, status=500)
-        response.raise_for_status()
-        item = response.json()
-        return item.get('package', None)
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error 2 fetching shipments: {e}")
-        raise
-        # return JsonResponse({'error': 'Failed to fetch shipments'}, status=500)
+# @retry(
+#     retry=retry_if_exception_type(requests.exceptions.RequestException),
+#     wait=wait_exponential(multiplier=1, min=4, max=60),
+#     stop=stop_after_attempt(5)
+# )
+# def fetch_package(package_id, session, headers):
+#     url = f'{settings.ZOHO_INVENTORY_PACKAGES_URL}/{package_id}'
+#     try:
+#         response = session.get(url, headers=headers, params={})
+#         if response.status_code == 401:
+#             new_token = refresh_zoho_access_token()
+#             headers['Authorization'] = f'Zoho-oauthtoken {new_token}'
+#             response = session.get(url, headers=headers, params={})
+#         if response.status_code == 429:
+#             logger.warning(f"Rate limit exceeded when fetching package {package_id}. Retrying...")
+#             time.sleep(10)
+#             response.raise_for_status()
+#         if response.status_code >= 400:
+#             logger.error(f"Error 1 fetching the package: {response.text}")
+#             return JsonResponse({'error': 'Failed to fetch shipments'}, status=500)
+#         response.raise_for_status()
+#         item = response.json()
+#         return item.get('package', None)
+#     except requests.exceptions.RequestException as e:
+#         logger.error(f"Error 2 fetching shipments: {e}")
+#         raise
+#         # return JsonResponse({'error': 'Failed to fetch shipments'}, status=500)
     
-@retry(
-    retry=retry_if_exception_type(requests.exceptions.RequestException),
-    wait=wait_exponential(multiplier=1, min=4, max=60),
-    stop=stop_after_attempt(5)
-)
-def fetch_shipment_details(item, session, headers):
-    try:
-        url = f'{settings.ZOHO_INVENTORY_SHIPMENTS_URL}/{item["shipment_id"]}'
-        response = session.get(url, headers=headers, params={})
-        if response.status_code == 401:
-            new_token = refresh_zoho_access_token()
-            headers['Authorization'] = f'Zoho-oauthtoken {new_token}'
-            response = session.get(url, headers=headers, params={})
-        if response.status_code == 429:
-            logger.warning(f"Rate limit exceeded when fetching shipment {item['shipment_id']}. Retrying...")
-            time.sleep(10)
-            response.raise_for_status()
-        response.raise_for_status()
-        full_item = response.json()
-        return full_item.get('shipmentorder', None)
-    except Exception as e:
-        logger.error(f"Error fetching details for shipment {item['shipment_id']}: {e}")
-        raise
-        # return None
+# @retry(
+#     retry=retry_if_exception_type(requests.exceptions.RequestException),
+#     wait=wait_exponential(multiplier=1, min=4, max=60),
+#     stop=stop_after_attempt(5)
+# )
+# def fetch_shipment_details(item, session, headers):
+#     try:
+#         url = f'{settings.ZOHO_INVENTORY_SHIPMENTS_URL}/{item["shipment_id"]}'
+#         response = session.get(url, headers=headers, params={})
+#         if response.status_code == 401:
+#             new_token = refresh_zoho_access_token()
+#             headers['Authorization'] = f'Zoho-oauthtoken {new_token}'
+#             response = session.get(url, headers=headers, params={})
+#         if response.status_code == 429:
+#             logger.warning(f"Rate limit exceeded when fetching shipment {item['shipment_id']}. Retrying...")
+#             time.sleep(10)
+#             response.raise_for_status()
+#         response.raise_for_status()
+#         full_item = response.json()
+#         return full_item.get('shipmentorder', None)
+#     except Exception as e:
+#         logger.error(f"Error fetching details for shipment {item['shipment_id']}: {e}")
+#         raise
+#         # return None
     
+
+# @api_view(['POST'])
+# @permission_classes([AllowAny])
+# def load_inventory_shipments(request):
+#     MAX_WORKERS = 5
+#     app_config = AppConfig.objects.first()
+#     logger.debug(app_config)
+#     try:
+#         headers = config_headers()
+#     except Exception as e:
+#         logger.error(f"Error connecting to Zoho API: {str(e)}")
+#         return JsonResponse({'error': f"Error connecting to Zoho API (Load Shipments): {str(e)}"}, status=500)
+
+#     data = json.loads(request.body)
+#     start_date = data.get('start_date', None)
+#     end_date = data.get('end_date', None)
+#     username = data.get('username', None)
+    
+#     logger.debug(f"Start date: {start_date}, End date: {end_date}")
+    
+#     try:
+#         if start_date:
+#             dt.strptime(start_date, '%Y-%m-%d')
+#         if end_date:
+#             dt.strptime(end_date, '%Y-%m-%d')
+#     except ValueError:
+#         logger.error('Invalid date format')
+#         return JsonResponse({'error': 'Invalid date format'}, status=400)
+    
+#     params = {
+#         'organization_id': app_config.zoho_org_id,
+#         'per_page': 200,
+#         'page': 1,
+#     }
+#     if end_date and start_date:
+#         params.update({'date_start': start_date, 'date_end': end_date})
+#     elif start_date:
+#         params['date'] = start_date
+
+#     url = settings.ZOHO_INVENTORY_SHIPMENTS_URL
+#     items_to_get = []
+#     session = requests.Session()
+    
+#     while True:
+#         try:
+#             response = session.get(url, headers=headers, params=params)
+#             if response.status_code == 401:
+#                 new_token = refresh_zoho_access_token()
+#                 headers['Authorization'] = f'Zoho-oauthtoken {new_token}'
+#                 response = session.get(url, headers=headers, params=params)
+#             if response.status_code >= 400:
+#                 logger.error(f"Error fetching shipments: {response.text}")
+#                 return JsonResponse({'error': 'Failed to fetch shipments'}, status=500)
+#             items = response.json()
+#             items_to_get.extend(items.get('shipmentorders', []))
+#             if not items.get('page_context', {}).get('has_more_page', False):
+#                 break
+#             params['page'] += 1
+#         except requests.exceptions.RequestException as e:
+#             logger.error(f"Error fetching shipments: {e}")
+#             return JsonResponse({'error': 'Failed to fetch shipments'}, status=500)
+    
+#     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+#         futures = [executor.submit(fetch_shipment_details, item, session, headers) for item in items_to_get]
+#         full_items_to_get = [future.result() for future in as_completed(futures) if future.result()]
+    
+#     all_package_ids = []
+#     for data in full_items_to_get:
+#         pkg_info = data.get('packages', [])
+#         if pkg_info:
+#             package_ids = [pkg.get('package_id') for pkg in pkg_info if pkg.get('package_id')]
+#             all_package_ids.extend(package_ids)
+    
+#     all_package_ids = list(set(all_package_ids))
+    
+#     existing_packages = ZohoPackage.objects.filter(package_id__in=all_package_ids)
+#     existing_packages_ids = set(existing_packages.values_list('package_id', flat=True))
+    
+#     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+#         future_to_package_id = {executor.submit(fetch_package, pkg_id, session, headers): pkg_id for pkg_id in all_package_ids}
+#         all_packages_data = []
+#         for future in as_completed(future_to_package_id):
+#             pkg_id = future_to_package_id[future]
+#             try:
+#                 pkg_data = future.result()
+#                 if pkg_data:
+#                     all_packages_data.append(pkg_data)
+#             except Exception as exc:
+#                 logger.error(f"Error fetching package {pkg_id}: {exc}")
+    
+#     new_packages = []
+#     packages_to_update = []
+#     for pkg_data in all_packages_data:
+#         new_pkg = create_inventory_package_instance(logger, pkg_data)
+#         if new_pkg.package_id in existing_packages_ids:
+#             packages_to_update.append(new_pkg)
+#         else:
+#             new_packages.append(new_pkg)
+    
+#     shipments_ids = [item['shipment_id'] for item in full_items_to_get if item.get('shipment_id')]
+#     existing_shipments = ZohoShipmentOrder.objects.filter(shipment_id__in=shipments_ids)
+#     existing_shipments_ids = set(existing_shipments.values_list('shipment_id', flat=True))
+
+#     new_shipments = []
+#     shipments_to_update = []
+#     for data in full_items_to_get:
+#         new_item = create_inventory_shipment_instance(logger, data)
+#         if new_item.shipment_id in existing_shipments_ids:
+#             shipments_to_update.append(new_item)
+#         else:
+#             new_shipments.append(new_item)
+    
+#     shipment_fields_to_update = [
+#                     'salesorder_id',
+#                     'salesorder_number',
+#                     'salesorder_date',
+#                     'salesorder_fulfilment_status',
+#                     'sales_channel',
+#                     'sales_channel_formatted',
+#                     'shipment_number',
+#                     'date',
+#                     'shipment_status',
+#                     'shipment_sub_status',
+#                     'status',
+#                     'detailed_status',
+#                     'status_message',
+#                     'carrier',
+#                     'tracking_carrier_code',
+#                     'service',
+#                     'delivery_days',
+#                     'source_id',
+#                     'label_format',
+#                     'source_name',
+#                     'delivery_guarantee',
+#                     'reference_number',
+#                     'customer_id',
+#                     'customer_name',
+#                     'is_taxable',
+#                     'tax_id',
+#                     'tax_name',
+#                     'tax_percentage',
+#                     'currency_id',
+#                     'currency_code',
+#                     'currency_symbol',
+#                     'exchange_rate',
+#                     'discount',
+#                     'is_discount_before_tax',
+#                     'discount_type',
+#                     'estimate_id',
+#                     'delivery_method',
+#                     'delivery_method_id',
+#                     'tracking_number',
+#                     'tracking_link',
+#                     'last_tracking_update_date',
+#                     'expected_delivery_date',
+#                     'shipment_delivered_date',
+#                     'shipment_type',
+#                     'is_carrier_shipment',
+#                     'is_tracking_enabled',
+#                     'is_forms_available',
+#                     'is_email_notification_enabled',
+#                     'shipping_charge',
+#                     'sub_total',
+#                     'tax_total',
+#                     'total',
+#                     'price_precision',
+#                     'is_emailed',
+#                     'notes',
+#                     'template_id',
+#                     'template_name',
+#                     'template_type',
+#                     'created_time',
+#                     'last_modified_time',
+#                     'associated_packages_count',
+#                     'created_by_id',
+#                     'last_modified_by_id',
+#                     'contact_persons',
+#                     'invoices',
+#                     'line_items',
+#                     'packages',
+#                     'billing_address',
+#                     'shipping_address',
+#                     'custom_fields',
+#                     'custom_field_hash',
+#                     'documents',
+#                     'taxes',
+#                     'tracking_statuses',
+#                     'multipiece_shipments',
+#     ]
+#     package_fields_to_update = [
+#                     'salesorder_id',
+#                     'salesorder_number',
+#                     'salesorder_date',
+#                     'sales_channel',
+#                     'sales_channel_formatted',
+#                     'salesorder_fulfilment_status',
+#                     'shipment_id',
+#                     'shipment_number',
+#                     'shipment_order',
+#                     'package_number',
+#                     'date',
+#                     'shipping_date',
+#                     'delivery_method',
+#                     'delivery_method_id',
+#                     'tracking_number',
+#                     'tracking_link',
+#                     'expected_delivery_date',
+#                     'shipment_delivered_date',
+#                     'status',
+#                     'detailed_status',
+#                     'status_message',
+#                     'carrier',
+#                     'service',
+#                     'delivery_days',
+#                     'delivery_guarantee',
+#                     'total_quantity',
+#                     'customer_id',
+#                     'customer_name',
+#                     'email',
+#                     'phone',
+#                     'mobile',
+#                     'contact_persons',
+#                     'created_by_id',
+#                     'last_modified_by_id',
+#                     'created_time',
+#                     'last_modified_time',
+#                     'notes',
+#                     'terms',
+#                     'is_emailed',
+#                     'is_advanced_tracking_missing',
+#                     'line_items',
+#                     'custom_fields',
+#                     'custom_field_hash',
+#                     'shipmentorder_custom_fields',
+#                     'billing_address',
+#                     'shipping_address',
+#                     'picklists',
+#                     'template_id',
+#                     'template_name',
+#                     'template_type',
+#     ]
+    
+#     logger.info(f"New shipments: {len(new_shipments)}, Shipments to update: {len(shipments_to_update)}")
+
+#     with transaction.atomic():
+#         if new_shipments:
+#             ZohoShipmentOrder.objects.bulk_create(new_shipments, ignore_conflicts=True, batch_size=200)
+#         if shipments_to_update:
+#             ZohoShipmentOrder.objects.bulk_update(shipments_to_update, fields=shipment_fields_to_update, batch_size=200)
+#         if new_packages:
+#             ZohoPackage.objects.bulk_create(new_packages, ignore_conflicts=True, batch_size=200)
+#         if packages_to_update:
+#             ZohoPackage.objects.bulk_update(packages_to_update, fields=package_fields_to_update, batch_size=200)
+            
+#     previous_day = timezone.now()
+    
+#     JobsUpdatingTimes.objects.filter(last_updated__lt=previous_day).delete()
+            
+#     JobsUpdatingTimes.objects.create(last_updated=timezone.now())
+    
+#     if username:
+#         module='zoho_shipment'
+#         info='has loaded new info from Zoho Shipments'
+#         type='load'
+#         create_notification(module, info, type, username)
+            
+#     logger.info(f"Shipments processed successfully: {len(new_shipments)} created, {len(shipments_to_update)} updated")
+
+#     return JsonResponse({'message': 'Shipments loaded successfully'}, status=200)
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def load_inventory_shipments(request):
-    MAX_WORKERS = 5
-    app_config = AppConfig.objects.first()
-    logger.debug(app_config)
-    try:
-        headers = config_headers()
-    except Exception as e:
-        logger.error(f"Error connecting to Zoho API: {str(e)}")
-        return JsonResponse({'error': f"Error connecting to Zoho API (Load Shipments): {str(e)}"}, status=500)
-
     data = json.loads(request.body)
-    start_date = data.get('start_date', None)
-    end_date = data.get('end_date', None)
-    username = data.get('username', None)
-    
-    logger.debug(f"Start date: {start_date}, End date: {end_date}")
-    
-    try:
-        if start_date:
-            dt.strptime(start_date, '%Y-%m-%d')
-        if end_date:
-            dt.strptime(end_date, '%Y-%m-%d')
-    except ValueError:
-        logger.error('Invalid date format')
-        return JsonResponse({'error': 'Invalid date format'}, status=400)
-    
-    params = {
-        'organization_id': app_config.zoho_org_id,
-        'per_page': 200,
-        'page': 1,
-    }
-    if end_date and start_date:
-        params.update({'date_start': start_date, 'date_end': end_date})
-    elif start_date:
-        params['date'] = start_date
-
-    url = settings.ZOHO_INVENTORY_SHIPMENTS_URL
-    items_to_get = []
-    session = requests.Session()
-    
-    while True:
-        try:
-            response = session.get(url, headers=headers, params=params)
-            if response.status_code == 401:
-                new_token = refresh_zoho_access_token()
-                headers['Authorization'] = f'Zoho-oauthtoken {new_token}'
-                response = session.get(url, headers=headers, params=params)
-            if response.status_code >= 400:
-                logger.error(f"Error fetching shipments: {response.text}")
-                return JsonResponse({'error': 'Failed to fetch shipments'}, status=500)
-            items = response.json()
-            items_to_get.extend(items.get('shipmentorders', []))
-            if not items.get('page_context', {}).get('has_more_page', False):
-                break
-            params['page'] += 1
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error fetching shipments: {e}")
-            return JsonResponse({'error': 'Failed to fetch shipments'}, status=500)
-    
-    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        futures = [executor.submit(fetch_shipment_details, item, session, headers) for item in items_to_get]
-        full_items_to_get = [future.result() for future in as_completed(futures) if future.result()]
-    
-    all_package_ids = []
-    for data in full_items_to_get:
-        pkg_info = data.get('packages', [])
-        if pkg_info:
-            package_ids = [pkg.get('package_id') for pkg in pkg_info if pkg.get('package_id')]
-            all_package_ids.extend(package_ids)
-    
-    all_package_ids = list(set(all_package_ids))
-    
-    existing_packages = ZohoPackage.objects.filter(package_id__in=all_package_ids)
-    existing_packages_ids = set(existing_packages.values_list('package_id', flat=True))
-    
-    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        future_to_package_id = {executor.submit(fetch_package, pkg_id, session, headers): pkg_id for pkg_id in all_package_ids}
-        all_packages_data = []
-        for future in as_completed(future_to_package_id):
-            pkg_id = future_to_package_id[future]
-            try:
-                pkg_data = future.result()
-                if pkg_data:
-                    all_packages_data.append(pkg_data)
-            except Exception as exc:
-                logger.error(f"Error fetching package {pkg_id}: {exc}")
-    
-    new_packages = []
-    packages_to_update = []
-    for pkg_data in all_packages_data:
-        new_pkg = create_inventory_package_instance(logger, pkg_data)
-        if new_pkg.package_id in existing_packages_ids:
-            packages_to_update.append(new_pkg)
-        else:
-            new_packages.append(new_pkg)
-    
-    shipments_ids = [item['shipment_id'] for item in full_items_to_get if item.get('shipment_id')]
-    existing_shipments = ZohoShipmentOrder.objects.filter(shipment_id__in=shipments_ids)
-    existing_shipments_ids = set(existing_shipments.values_list('shipment_id', flat=True))
-
-    new_shipments = []
-    shipments_to_update = []
-    for data in full_items_to_get:
-        new_item = create_inventory_shipment_instance(logger, data)
-        if new_item.shipment_id in existing_shipments_ids:
-            shipments_to_update.append(new_item)
-        else:
-            new_shipments.append(new_item)
-    
-    shipment_fields_to_update = [
-                    'salesorder_id',
-                    'salesorder_number',
-                    'salesorder_date',
-                    'salesorder_fulfilment_status',
-                    'sales_channel',
-                    'sales_channel_formatted',
-                    'shipment_number',
-                    'date',
-                    'shipment_status',
-                    'shipment_sub_status',
-                    'status',
-                    'detailed_status',
-                    'status_message',
-                    'carrier',
-                    'tracking_carrier_code',
-                    'service',
-                    'delivery_days',
-                    'source_id',
-                    'label_format',
-                    'source_name',
-                    'delivery_guarantee',
-                    'reference_number',
-                    'customer_id',
-                    'customer_name',
-                    'is_taxable',
-                    'tax_id',
-                    'tax_name',
-                    'tax_percentage',
-                    'currency_id',
-                    'currency_code',
-                    'currency_symbol',
-                    'exchange_rate',
-                    'discount',
-                    'is_discount_before_tax',
-                    'discount_type',
-                    'estimate_id',
-                    'delivery_method',
-                    'delivery_method_id',
-                    'tracking_number',
-                    'tracking_link',
-                    'last_tracking_update_date',
-                    'expected_delivery_date',
-                    'shipment_delivered_date',
-                    'shipment_type',
-                    'is_carrier_shipment',
-                    'is_tracking_enabled',
-                    'is_forms_available',
-                    'is_email_notification_enabled',
-                    'shipping_charge',
-                    'sub_total',
-                    'tax_total',
-                    'total',
-                    'price_precision',
-                    'is_emailed',
-                    'notes',
-                    'template_id',
-                    'template_name',
-                    'template_type',
-                    'created_time',
-                    'last_modified_time',
-                    'associated_packages_count',
-                    'created_by_id',
-                    'last_modified_by_id',
-                    'contact_persons',
-                    'invoices',
-                    'line_items',
-                    'packages',
-                    'billing_address',
-                    'shipping_address',
-                    'custom_fields',
-                    'custom_field_hash',
-                    'documents',
-                    'taxes',
-                    'tracking_statuses',
-                    'multipiece_shipments',
-    ]
-    package_fields_to_update = [
-                    'salesorder_id',
-                    'salesorder_number',
-                    'salesorder_date',
-                    'sales_channel',
-                    'sales_channel_formatted',
-                    'salesorder_fulfilment_status',
-                    'shipment_id',
-                    'shipment_number',
-                    'shipment_order',
-                    'package_number',
-                    'date',
-                    'shipping_date',
-                    'delivery_method',
-                    'delivery_method_id',
-                    'tracking_number',
-                    'tracking_link',
-                    'expected_delivery_date',
-                    'shipment_delivered_date',
-                    'status',
-                    'detailed_status',
-                    'status_message',
-                    'carrier',
-                    'service',
-                    'delivery_days',
-                    'delivery_guarantee',
-                    'total_quantity',
-                    'customer_id',
-                    'customer_name',
-                    'email',
-                    'phone',
-                    'mobile',
-                    'contact_persons',
-                    'created_by_id',
-                    'last_modified_by_id',
-                    'created_time',
-                    'last_modified_time',
-                    'notes',
-                    'terms',
-                    'is_emailed',
-                    'is_advanced_tracking_missing',
-                    'line_items',
-                    'custom_fields',
-                    'custom_field_hash',
-                    'shipmentorder_custom_fields',
-                    'billing_address',
-                    'shipping_address',
-                    'picklists',
-                    'template_id',
-                    'template_name',
-                    'template_type',
-    ]
-    
-    logger.info(f"New shipments: {len(new_shipments)}, Shipments to update: {len(shipments_to_update)}")
-
-    with transaction.atomic():
-        if new_shipments:
-            ZohoShipmentOrder.objects.bulk_create(new_shipments, ignore_conflicts=True, batch_size=200)
-        if shipments_to_update:
-            ZohoShipmentOrder.objects.bulk_update(shipments_to_update, fields=shipment_fields_to_update, batch_size=200)
-        if new_packages:
-            ZohoPackage.objects.bulk_create(new_packages, ignore_conflicts=True, batch_size=200)
-        if packages_to_update:
-            ZohoPackage.objects.bulk_update(packages_to_update, fields=package_fields_to_update, batch_size=200)
-            
-    previous_day = timezone.now()
-    
-    JobsUpdatingTimes.objects.filter(last_updated__lt=previous_day).delete()
-            
-    JobsUpdatingTimes.objects.create(last_updated=timezone.now())
-    
+    start_date = data.get('start_date')
+    end_date = data.get('end_date')
+    username = data.get('username')
+    out = sync_inventory_shipments(start_date=start_date, end_date=end_date, username=username, updated_since=None)
     if username:
         module='zoho_shipment'
         info='has loaded new info from Zoho Shipments'
         type='load'
         create_notification(module, info, type, username)
-            
-    logger.info(f"Shipments processed successfully: {len(new_shipments)} created, {len(shipments_to_update)} updated")
-
-    return JsonResponse({'message': 'Shipments loaded successfully'}, status=200)
+    return JsonResponse({'message': 'Shipments loaded successfully', **out}, status=200)
 
 
 #############################################
