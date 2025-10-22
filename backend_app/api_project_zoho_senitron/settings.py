@@ -378,17 +378,22 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'America/New_York'
 CELERY_ENABLE_UTC = False
 
+SCHEDULE_POLL_ZOHO_ITEMS_INTERVAL = int(os.getenv("SCHEDULE_POLL_ZOHO_ITEMS_INTERVAL", "600"))  # cada 10 minutos
+SCHEDULE_POLL_ZOHO_SHIPMENTS_INTERVAL = int(os.getenv("SCHEDULE_POLL_ZOHO_SHIPMENTS_INTERVAL", "630"))  # cada 10 minutos + 30 segundos
+SCHEDULE_POLL_SENITRON_ASSETS_INTERVAL = int(os.getenv("SCHEDULE_POLL_SENITRON_ASSETS_INTERVAL", "620"))  # cada 10 minutos + 20 segundos
+SCHEDULE_POLL_SENITRON_ASSET_LOGS_INTERVAL = int(os.getenv("SCHEDULE_POLL_SENITRON_ASSET_LOGS_INTERVAL", "645"))  # cada 10 minutos + 45 segundos
+
 # CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 CELERY_BEAT_SCHEDULE = {
      "poll-zoho-items": {
         "task": "api_zoho.tasks.task_load_inventory_items",
-        "schedule": 600,   # cada 10 minutos
+        "schedule": SCHEDULE_POLL_ZOHO_ITEMS_INTERVAL,
         "kwargs": {"username": "System Job"},
     },
     "poll-zoho-shipments": {
         "task": "api_zoho.tasks.task_load_inventory_shipments",
-        "schedule": 630,  # cada 10 minutos + 30 segundos
+        "schedule": SCHEDULE_POLL_ZOHO_SHIPMENTS_INTERVAL,
         "kwargs": {"username": "System Job"},
     },
     "force-rollback-manual-update": {
@@ -397,11 +402,11 @@ CELERY_BEAT_SCHEDULE = {
     },
     "poll-senitron-assets": {
         "task": "api_senitron.tasks.task_load_senitron_inventory_item_assets",
-        "schedule": 620,  # cada 10 minutos + 20 segundos 
+        "schedule": SCHEDULE_POLL_SENITRON_ASSETS_INTERVAL,
     },
     "poll-senitron-asset-logs": {
         "task": "api_senitron.tasks.task_load_senitron_inventory_item_assets_logs",
-        "schedule": 645,  # cada 10 minutos + 45 segundos
+        "schedule": SCHEDULE_POLL_SENITRON_ASSET_LOGS_INTERVAL,
     },
     "cleanup-senitron-asset-logs-daily": {
         "task": "api_senitron.tasks.task_remove_old_senitron_items_assets_logs",
