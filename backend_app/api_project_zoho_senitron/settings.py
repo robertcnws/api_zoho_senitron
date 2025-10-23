@@ -378,70 +378,37 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'America/New_York'
 CELERY_ENABLE_UTC = False
 
-SCHEDULE_POLL_ZOHO_ITEMS_INTERVAL = int(os.getenv("SCHEDULE_POLL_ZOHO_ITEMS_INTERVAL", "1800"))  # cada 30 minutos
-SCHEDULE_POLL_ZOHO_SHIPMENTS_INTERVAL = int(os.getenv("SCHEDULE_POLL_ZOHO_SHIPMENTS_INTERVAL", "1830"))  # cada 30 minutos + 30 segundos
-SCHEDULE_POLL_SENITRON_ASSETS_INTERVAL = int(os.getenv("SCHEDULE_POLL_SENITRON_ASSETS_INTERVAL", "620"))  # cada 10 minutos + 20 segundos
-SCHEDULE_POLL_SENITRON_ASSET_LOGS_INTERVAL = int(os.getenv("SCHEDULE_POLL_SENITRON_ASSET_LOGS_INTERVAL", "645"))  # cada 10 minutos + 45 segundos
-
-# CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
-
 CELERY_BEAT_SCHEDULE = {
-     "poll-zoho-items": {
-        "task": "api_zoho.tasks.task_load_inventory_items",
-        "schedule": SCHEDULE_POLL_ZOHO_ITEMS_INTERVAL,
-        "kwargs": {"username": "System Job"},
-    },
-    "poll-zoho-shipments": {
-        "task": "api_zoho.tasks.task_load_inventory_shipments",
-        "schedule": SCHEDULE_POLL_ZOHO_SHIPMENTS_INTERVAL,
-        "kwargs": {"username": "System Job"},
-    },
-    "force-rollback-manual-update": {
-        "task": "api_zoho.tasks.task_force_rollback_manual_update",
-        "schedule": 60,
-    },
-    "poll-senitron-assets": {
-        "task": "api_senitron.tasks.task_load_senitron_inventory_item_assets",
-        "schedule": SCHEDULE_POLL_SENITRON_ASSETS_INTERVAL,
-    },
-    "poll-senitron-asset-logs": {
-        "task": "api_senitron.tasks.task_load_senitron_inventory_item_assets_logs",
-        "schedule": SCHEDULE_POLL_SENITRON_ASSET_LOGS_INTERVAL,
-    },
-    "cleanup-senitron-asset-logs-daily": {
-        "task": "api_senitron.tasks.task_remove_old_senitron_items_assets_logs",
-        "schedule": crontab(minute=0, hour=3),
-    },
-    "cleanup-notifications-daily": {
-        "task": "api_senitron.tasks.task_remove_old_notifications",
-        "schedule": crontab(minute=10, hour=3),
-    },
     # Lunes a Sábado
-    # 'run-task-sequence-every-2-min-mon-sat': {
-    #     'task': 'api_project_zoho_senitron_async_sequence.tasks.task_sequence_2_min',
-    #     'schedule': crontab(minute='*/10', hour='7-17', day_of_week='mon-sat'),
-    # },
-    # 'run-task-sequence-every-45-min-mon-sat': {
-    #     'task': 'api_project_zoho_senitron_async_sequence.tasks.task_sequence_45_min',
-    #     'schedule': crontab(minute='*/30', hour='7-17', day_of_week='mon-sat'),
-    # },
+    'run-task-sequence-data-from-senitron-mon-sat': {
+        'task': 'api_project_zoho_senitron_async_sequence.tasks.task_sequence_data_from_senitron',
+        'schedule': crontab(minute='*/10', hour='7-17', day_of_week='mon-sat'),
+    },
+    'run-task-sequence-data-from-zoho-mon-sat': {
+        'task': 'api_project_zoho_senitron_async_sequence.tasks.task_sequence_data_from_zoho',
+        'schedule': crontab(minute='*/30', hour='7-17', day_of_week='mon-sat'),
+    },
 
-    # # Domingo
-    # 'run-task-sequence-every-2-hours-sun': {
-    #     'task': 'api_project_zoho_senitron_async_sequence.tasks.task_sequence_2_min',
-    #     'schedule': crontab(minute=0, hour='*/2', day_of_week='sun'),
-    # },
-    # 'run-task-sequence-every-2-hours-sun-45-min': {
-    #     'task': 'api_project_zoho_senitron_async_sequence.tasks.task_sequence_45_min',
-    #     'schedule': crontab(minute=0, hour='*/2', day_of_week='sun'),
-    # },
-    # # General Tasks
-    # 'call-task-remove-old-senitron-items-assets-logs-every-day-8am': {
-    #     'task': 'api_senitron.tasks.task_remove_old_senitron_items_assets_logs',
-    #     'schedule': crontab(hour=8, minute=0),
-    # },
-    # 'call-task-remove-old-notifications-every-day-8am': {
-    #     'task': 'api_senitron.tasks.task_remove_old_notifications',
-    #     'schedule': crontab(hour=8, minute=30),
-    # },
+    # Domingo
+    'run-task-sequence-data-from-senitron-sun': {
+        'task': 'api_project_zoho_senitron_async_sequence.tasks.task_sequence_data_from_senitron',
+        'schedule': crontab(minute=0, hour='*/2', day_of_week='sun'),
+    },
+    'run-task-sequence-data-from-zoho-sun': {
+        'task': 'api_project_zoho_senitron_async_sequence.tasks.task_sequence_data_from_zoho',
+        'schedule': crontab(minute=0, hour='*/2', day_of_week='sun'),
+    },
+    # General Tasks
+    "run-force-rollback-manual-update-every-2-minutes": {
+        "task": "api_zoho.tasks.task_force_rollback_manual_update",
+        "schedule": crontab(minute='*/2', hour='7-17', day_of_week='mon-sat'),
+    },
+    'run-task-remove-old-senitron-items-assets-logs-every-day-8am': {
+        'task': 'api_senitron.tasks.task_remove_old_senitron_items_assets_logs',
+        'schedule': crontab(hour=8, minute=0),
+    },
+    'run-task-remove-old-notifications-every-day-8am': {
+        'task': 'api_senitron.tasks.task_remove_old_notifications',
+        'schedule': crontab(hour=8, minute=30),
+    },
 }
