@@ -107,12 +107,12 @@ export function ShipmentListView() {
 
   useEffect(() => {
     if (refetch) {
-      refetch?.().then(() => {
-        setTableData(data);
+      refetch?.().then((result) => {
+        setTableData(result.data.allZohoShipmentOrders);
         setUpdating(false);
       });
     }
-  }, [filters, refetch, data]);
+  }, [filters, refetch]);
 
   useEffect(() => {
     localStorage.removeItem('routeShipmentByLiveMonitor');
@@ -130,7 +130,7 @@ export function ShipmentListView() {
     if (data && data?.length > 0) {
       setTableData(data);
     }
-  }, [data, loading, error]);
+  }, [data]);
 
 
   const baseWsUrl = `${CONFIG.websocketProtocol}://${CONFIG.apiHost}:${CONFIG.apiPort}/${CONFIG.apiDomain}/ws`;
