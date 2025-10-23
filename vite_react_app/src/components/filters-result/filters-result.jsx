@@ -13,14 +13,14 @@ export const chipProps = {
 export function FiltersResult({ totalResults, onReset, sx, children }) {
   return (
     <Box sx={sx}>
-      <Box sx={{ mb: 1.5, typography: 'body2' }}>
+      <Box sx={{ mb: 0, typography: 'body2' }}>
         <strong>{totalResults}</strong>
         <Box component="span" sx={{ color: 'text.secondary', ml: 0.25 }}>
           results found
         </Box>
       </Box>
 
-      <Box flexGrow={1} gap={1} display="flex" flexWrap="wrap" alignItems="center">
+      <Box flexGrow={0} gap={0} display="flex" alignItems="center">
         {children}
 
         <Button

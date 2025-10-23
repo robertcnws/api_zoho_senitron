@@ -25,7 +25,6 @@ import { useManualUpdatingJobsQuery } from 'src/_mock/_manualUpdatingJobs';
 const DataContext = createContext();
 export const useDataContext = () => useContext(DataContext);
 
-// ---------- utils locales
 const collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
 
 function sortBySku(items) {

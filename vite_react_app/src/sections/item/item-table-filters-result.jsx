@@ -35,7 +35,7 @@ export function ItemTableFiltersResult({ filters, onResetPage, totalResults, has
   }, [filters, onResetPage, hasNotAll]);
 
   return (
-    <FiltersResult totalResults={totalResults} onReset={handleReset} sx={sx}>
+    <FiltersResult totalResults={totalResults} onReset={handleReset} sx={{ ...sx }}>
       <FiltersBlock label="Status:" isShow={filters.state.status !== 'all'}>
         <Chip
           {...chipProps}

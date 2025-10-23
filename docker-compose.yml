@@ -40,6 +40,18 @@ services:
     networks:
       - shared-network
 
+  redis_commander:
+    image: ghcr.io/joeferner/redis-commander:latest
+    container_name: redis_commander
+    ports: ["8081:8081"]
+    restart: unless-stopped
+    environment:
+      - REDIS_HOSTS=channels:redis_installation:6379:6,cache:redis_installation:6379:7
+    depends_on:
+      - redis_installation
+    networks:
+      - shared-network
+
 volumes:
   postgres_data:
   redis_data:

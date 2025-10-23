@@ -119,13 +119,11 @@ def sync_senitron_inventory_item_assets(item_number=None, assets_hint=None):
     if item_number:
         params["item_number"] = item_number
 
+    # caches base
     existing_statuses = SenitronStatus.objects.all()
     status_cache = {(s.name, s.senitron_id): s for s in existing_statuses}
 
-    item_numbers = set()
-    for it in data_assets_hint:
-        if "item_number" in it:
-            item_numbers.add(it["item_number"])
+    item_numbers = {it["item_number"] for it in data_assets_hint if "item_number" in it}
     existing_items = SenitronItem.objects.filter(item_number__in=item_numbers)
     item_cache = {it.item_number: it for it in existing_items}
 
@@ -141,7 +139,7 @@ def sync_senitron_inventory_item_assets(item_number=None, assets_hint=None):
         if "item_number" in page_params and item_numbers:
             items = [it for it in items if it.get("item_number") in item_numbers]
         return items, len(items) > 0
-
+    
     page = 1
     has_more = True
     raw_assets = []
@@ -156,59 +154,110 @@ def sync_senitron_inventory_item_assets(item_number=None, assets_hint=None):
                 if ok:
                     has_more = True
             page += MAX_WORKERS
-
+    
     key_list = []
     assets_to_insert = []
     for raw in raw_assets:
         obj = create_inventory_item_asset_instance(logger, raw, status_cache, item_cache)
         if not obj:
             continue
+        
+        if getattr(obj, "location", None) and not getattr(obj, "last_zone", None):
+            obj.last_zone = getattr(obj, "location")
+        
+        if getattr(obj, "updated_time", None) and not getattr(obj, "updated_at", None):
+            obj.updated_at = getattr(obj, "updated_time")
+        
+        if getattr(obj, "read", None) is None:
+            obj.read = False
+
         key = (obj.serial_number, obj.item_number)
         key_list.append(key)
         assets_to_insert.append(obj)
-
-    existing_q = Q()
-    for sn, inum in key_list[:1000]:
-        existing_q |= Q(serial_number=sn, item_number=inum)
+    
     existing_map = {}
+    
     if key_list:
-        qs = SenitronItemAsset.objects.filter(existing_q) if existing_q else SenitronItemAsset.objects.none()
-        for a in qs:
-            existing_map[(a.serial_number, a.item_number)] = a
+        for i in range(0, len(key_list), BATCH_SIZE):
+            chunk = key_list[i:i + BATCH_SIZE]
+            cond = Q()
+            for sn, inum in chunk:
+                cond |= Q(serial_number=sn, item_number=inum)
+            for a in SenitronItemAsset.objects.filter(cond):
+                existing_map[(a.serial_number, a.item_number)] = a
 
     to_create, to_update = [], []
+    
+    scope_item_numbers = {inum for _, inum in key_list if inum}
+
     for obj in assets_to_insert:
         k = (obj.serial_number, obj.item_number)
         prev = existing_map.get(k)
         if prev:
-            prev.status = obj.status
-            prev.status_id = obj.status_id
-            prev.location = obj.location
-            prev.read = getattr(obj, "read", True)
-            prev.updated_time = obj.updated_time
+            if getattr(obj, "status", None) is not None:
+                prev.status = obj.status
+            elif getattr(obj, "status_id", None) is not None:
+                prev.status_id = obj.status_id
+            
+            if getattr(obj, "last_zone", None) is not None:
+                prev.last_zone = obj.last_zone
+
+            if getattr(obj, "read", None) is not None:
+                prev.read = bool(obj.read)
+
+            if getattr(obj, "updated_at", None) is not None:
+                prev.updated_at = obj.updated_at
+
+            if getattr(obj, "date_read", None) is not None:
+                prev.date_read = obj.date_read
+                
+            for attr in ("first_seen", "last_seen", "last_seen_antenna", "epc", "alt_serial"):
+                if getattr(obj, attr, None) is not None:
+                    setattr(prev, attr, getattr(obj, attr))
+
             to_update.append(prev)
         else:
             to_create.append(obj)
 
     with transaction.atomic():
         if to_create:
-            SenitronItemAsset.objects.bulk_create(to_create, batch_size=BATCH_SIZE, ignore_conflicts=True)
+            SenitronItemAsset.objects.bulk_create(
+                to_create, batch_size=BATCH_SIZE, ignore_conflicts=True
+            )
+
         if to_update:
             SenitronItemAsset.objects.bulk_update(
                 to_update,
-                fields=["status", "status_id", "location", "read", "updated_time"],
+                fields=[
+                    "status",          
+                    "last_zone",       
+                    "read",
+                    "updated_at",      
+                    "date_read",
+                    "first_seen",
+                    "last_seen",
+                    "last_seen_antenna",
+                    "epc",
+                    "alt_serial",
+                ],
                 batch_size=BATCH_SIZE,
             )
-        if key_list:
-            cond = Q()
-            for sn, inum in key_list[:1000]:
-                cond |= Q(serial_number=sn, item_number=inum)
-            keep = list({(sn, inum) for sn, inum in key_list})
-            if keep:
-                SenitronItemAsset.objects.exclude(
-                    Q(serial_number__in=[k[0] for k in keep]) & Q(item_number__in=[k[1] for k in keep])
-                ).delete()
+        
+        if key_list and scope_item_numbers:
+            keep_pairs = set(key_list)
+            
+            ids_to_delete = []
+            for inum in scope_item_numbers:
+                qs = SenitronItemAsset.objects.filter(item_number=inum).only("id", "serial_number", "item_number")
+                for a in qs:
+                    if (a.serial_number, a.item_number) not in keep_pairs:
+                        ids_to_delete.append(a.id)
+            
+            for i in range(0, len(ids_to_delete), BATCH_SIZE):
+                chunk = ids_to_delete[i:i + BATCH_SIZE]
+                SenitronItemAsset.objects.filter(id__in=chunk).delete()
 
+        # housekeeping
         JobsUpdatingTimes.objects.filter(last_updated__lt=timezone.now()).delete()
         JobsUpdatingTimes.objects.create(last_updated=timezone.now())
 
