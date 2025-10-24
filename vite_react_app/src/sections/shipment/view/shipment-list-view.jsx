@@ -91,7 +91,6 @@ export function ShipmentListView() {
     endDate: dayjs(end),
   });
 
-
   const table = useTable({ defaultOrderBy: 'shipmentNumber', defaultDense: true });
 
   const router = useRouter();
@@ -106,15 +105,6 @@ export function ShipmentListView() {
   );
 
   useEffect(() => {
-    if (refetch) {
-      refetch?.().then((result) => {
-        setTableData(result.data.allZohoShipmentOrders);
-        setUpdating(false);
-      });
-    }
-  }, [filters, refetch]);
-
-  useEffect(() => {
     localStorage.removeItem('routeShipmentByLiveMonitor');
     const page = localStorage.getItem('orderPage');
     if (page) {
@@ -127,7 +117,7 @@ export function ShipmentListView() {
   }, [table]);
 
   useEffect(() => {
-    if (data && data?.length > 0) {
+    if (data && data?.length) {
       setTableData(data);
     }
   }, [data]);
@@ -137,8 +127,14 @@ export function ShipmentListView() {
 
 
   const onMessage = useCallback((m) => {
-    if (['created', 'updated', 'deleted'].includes(m.type)) refetch?.();
-  }, [refetch]);
+    const currentVars = {
+      startDate: filters.state.startDate.format('YYYY-MM-DD'),
+      endDate: filters.state.endDate.format('YYYY-MM-DD'),
+    };
+    if (['created', 'updated', 'deleted'].includes(m.type)) {
+      refetch?.(currentVars);
+    }
+  }, [refetch, filters.state.startDate, filters.state.endDate]);
 
   useWebsocket(`${baseWsUrl}/shipment_orders/`, onMessage);
 
@@ -203,7 +199,7 @@ export function ShipmentListView() {
 
   // console.log("shipment-list-view.jsx: dataFiltered", dataFiltered);
 
-  if (updating) {
+  if (loading) {
     return (
       <DashboardContent>
         <Box
@@ -292,6 +288,7 @@ export function ShipmentListView() {
             dateError={dateError}
             setUpdating={setUpdating}
             setTitleLinearProgress={setTitleLinearProgress}
+            setTableData={setTableData}
           />
 
           {canReset && (

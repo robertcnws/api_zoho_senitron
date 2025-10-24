@@ -365,6 +365,11 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50 MB en bytes
 
 # Celery
 
+SCHEDULE_MON_SAT_POLL_ZOHO_MIN_INTERVAL=env('SCHEDULE_MON_SAT_POLL_ZOHO_MIN_INTERVAL', default=30)
+SCHEDULE_MON_SAT_POLL_SENITRON_MIN_INTERVAL=env('SCHEDULE_MON_SAT_POLL_SENITRON_MIN_INTERVAL', default=10) 
+SCHEDULE_SUN_POLL_ZOHO_HOUR_INTERVAL=env('SCHEDULE_SUN_POLL_ZOHO_HOUR_INTERVAL', default=2)
+SCHEDULE_SUN_POLL_SENITRON_HOUR_INTERVAL=env('SCHEDULE_SUN_POLL_SENITRON_HOUR_INTERVAL', default=2)
+
 CELERY_BROKER_URL = env('CELERY_BROKER_URL')
 CELERY_TASK_DEFAULT_QUEUE = 'api_project_zoho_senitron_queue'
 CELERY_TASK_ROUTES = {
@@ -382,21 +387,21 @@ CELERY_BEAT_SCHEDULE = {
     # Lunes a Sábado
     'run-task-sequence-data-from-senitron-mon-sat': {
         'task': 'api_project_zoho_senitron_async_sequence.tasks.task_sequence_data_from_senitron',
-        'schedule': crontab(minute='*/10', hour='7-17', day_of_week='mon-sat'),
+        'schedule': crontab(minute=f'*/{SCHEDULE_MON_SAT_POLL_SENITRON_MIN_INTERVAL}', hour='7-17', day_of_week='mon-sat'),
     },
     'run-task-sequence-data-from-zoho-mon-sat': {
         'task': 'api_project_zoho_senitron_async_sequence.tasks.task_sequence_data_from_zoho',
-        'schedule': crontab(minute='*/30', hour='7-17', day_of_week='mon-sat'),
+        'schedule': crontab(minute=f'*/{SCHEDULE_MON_SAT_POLL_ZOHO_MIN_INTERVAL}', hour='7-17', day_of_week='mon-sat'),
     },
 
     # Domingo
     'run-task-sequence-data-from-senitron-sun': {
         'task': 'api_project_zoho_senitron_async_sequence.tasks.task_sequence_data_from_senitron',
-        'schedule': crontab(minute=0, hour='*/2', day_of_week='sun'),
+        'schedule': crontab(minute=0, hour=f'*/{SCHEDULE_SUN_POLL_SENITRON_HOUR_INTERVAL}', day_of_week='sun'),
     },
     'run-task-sequence-data-from-zoho-sun': {
         'task': 'api_project_zoho_senitron_async_sequence.tasks.task_sequence_data_from_zoho',
-        'schedule': crontab(minute=0, hour='*/2', day_of_week='sun'),
+        'schedule': crontab(minute=0, hour=f'*/{SCHEDULE_SUN_POLL_ZOHO_HOUR_INTERVAL}', day_of_week='sun'),
     },
     # General Tasks
     "run-force-rollback-manual-update-every-2-minutes": {

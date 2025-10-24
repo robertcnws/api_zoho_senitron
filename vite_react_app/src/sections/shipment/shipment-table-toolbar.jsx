@@ -21,7 +21,14 @@ import { LoadingContext } from 'src/auth/context/loading-context';
 
 // ----------------------------------------------------------------------
 
-export function ShipmentTableToolbar({ filters, onResetPage, dateError, setUpdating, setTitleLinearProgress }) {
+export function ShipmentTableToolbar({ 
+  filters, 
+  onResetPage, 
+  dateError, 
+  setUpdating, 
+  setTitleLinearProgress,
+  setTableData,
+ }) {
   const popover = usePopover();
 
   const userLogged = useMemo(() => JSON.parse(localStorage.getItem('userLogged')), []);
@@ -34,8 +41,8 @@ export function ShipmentTableToolbar({ filters, onResetPage, dateError, setUpdat
   }, [setComponent]);
 
   useEffect(() => {
-    if (localStorage.getItem('startDate')) filters.setState({ startDate: dayjs(localStorage.getItem('startDate')) });
-    if (localStorage.getItem('endDate')) filters.setState({ endDate: dayjs(localStorage.getItem('endDate')) });
+    // if (localStorage.getItem('startDate')) filters.setState({ startDate: dayjs(localStorage.getItem('startDate')) });
+    // if (localStorage.getItem('endDate')) filters.setState({ endDate: dayjs(localStorage.getItem('endDate')) });
     const today = dayjs();
     if (!filters.state.startDate && !filters.state.endDate) {
       filters.setState({
@@ -70,9 +77,10 @@ export function ShipmentTableToolbar({ filters, onResetPage, dateError, setUpdat
       const isoString = newValue.toISOString();
       localStorage.setItem('startDate', isoString);
       localStorage.setItem('endDate', isoString);
+      setTableData([]); // Clear table data to show loading state
       filters.setState({ endDate: dayjs(isoString), startDate: dayjs(isoString) });
     },
-    [filters, onResetPage, setUpdating]
+    [filters, onResetPage, setUpdating, setTableData]
   );
 
   return (
