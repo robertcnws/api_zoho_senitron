@@ -6,7 +6,8 @@ from django.db import transaction
 from django.utils import timezone
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
-from tenacity import retry, wait_exponential, stop_after_attempt, retry_if_exception_type
+from requests.exceptions import HTTPError, Timeout, ConnectionError
+from tenacity import retry, wait_exponential, stop_after_attempt, retry_if_exception
 from django.core.cache import cache
 
 from .models import (
@@ -22,7 +23,8 @@ from .manage_instances import (
 from common.rate_limit import (
     sleep_until_allowed, 
     daily_quota_allow, 
-    daily_quota_inc
+    daily_quota_inc,
+    token_bucket
 )
 from api_senitron.views import create_notification
 
@@ -277,34 +279,60 @@ def sync_inventory_sales_orders(*, start_date: str, end_date: str | None, userna
         create_notification('zoho_sales_orders', 'has loaded new info from Zoho Sales Orders', 'load', username)
     return {"changed": changed, "max_ts": None}
 
-@retry(retry=retry_if_exception_type(requests.exceptions.RequestException),
+def _retryable(exc: Exception) -> bool:
+    if isinstance(exc, HTTPError):
+        status = getattr(getattr(exc, "response", None), "status_code", None)
+        return status == 429 or (status is not None and 500 <= status < 600)
+    return isinstance(exc, (Timeout, ConnectionError))
+
+def _zoho_get_throttled(session, url, headers, params):
+    ZOHO_SHIP_RATE_PER_MIN = 12
+    while not token_bucket("zoho:shipments:http", rate=ZOHO_SHIP_RATE_PER_MIN, per=60):
+        time.sleep(0.2)
+    return zoho_get(session, url, headers, params)
+
+@retry(retry=retry_if_exception(_retryable),
        wait=wait_exponential(multiplier=1, min=4, max=60),
        stop=stop_after_attempt(5))
 def _fetch_package(package_id, session, headers):
     u = f'{settings.ZOHO_INVENTORY_PACKAGES_URL}/{package_id}'
-    r = zoho_get(session, u, headers, {})
-    if r.status_code == 429:
-        time.sleep(10)
-    r.raise_for_status()
+    r = _zoho_get_throttled(session, u, headers, {})
+    try:
+        r.raise_for_status()
+    except requests.HTTPError as e:
+        if r.status_code == 429:
+            time.sleep(max(int(r.headers.get("Retry-After", "10")), 5))
+        e.response = r
+        raise
     js = r.json()
     return js.get("package", None)
 
-@retry(retry=retry_if_exception_type(requests.exceptions.RequestException),
+@retry(retry=retry_if_exception(_retryable),
        wait=wait_exponential(multiplier=1, min=4, max=60),
        stop=stop_after_attempt(5))
 def _fetch_shipment_detail(it, session, headers):
     u = f'{settings.ZOHO_INVENTORY_SHIPMENTS_URL}/{it["shipment_id"]}'
-    r = zoho_get(session, u, headers, {})
-    if r.status_code == 429:
-        time.sleep(10)
-    r.raise_for_status()
+    r = _zoho_get_throttled(session, u, headers, {})
+    try:
+        r.raise_for_status()
+    except requests.HTTPError as e:
+        if r.status_code == 429:
+            time.sleep(max(int(r.headers.get("Retry-After", "10")), 5))
+        e.response = r
+        raise
     js = r.json()
     return js.get("shipmentorder", None)
 
 def sync_inventory_shipments(*, start_date: str | None, end_date: str | None, username=None, updated_since=None):
     app_config = AppConfig.objects.first()
     headers = config_headers()
-    params = {"organization_id": app_config.zoho_org_id, "per_page": 200, "page": 1}
+    params = {
+        "organization_id": app_config.zoho_org_id,
+        "per_page": 200,
+        "page": 1,
+        "sort_column": "last_modified_time",
+        "sort_order": "descending",
+    }
     if end_date and start_date:
         params.update({"date_start": start_date, "date_end": end_date})
     elif start_date:
@@ -317,7 +345,7 @@ def sync_inventory_shipments(*, start_date: str | None, end_date: str | None, us
     while True:
         if pages_fetched >= ZOHO_MAX_PAGES_PER_RUN:
             break
-        r = zoho_get(session, url, headers, params)
+        r = _zoho_get_throttled(session, url, headers, params)
         if r.status_code >= 400:
             _raise_if_rate_limited(r)
             raise requests.RequestException(r.text)
@@ -341,28 +369,68 @@ def sync_inventory_shipments(*, start_date: str | None, end_date: str | None, us
         params["page"] += 1
         pages_fetched += 1
         time.sleep(float(os.getenv("ZOHO_PAGE_SLEEP", "0.25")))
-
+        
+    existing_shipments = ZohoShipmentOrder.objects.filter(
+            shipment_id__in=[it["shipment_id"] for it in items if it.get("shipment_id")]
+        ).only("shipment_id", "last_modified_time")
+    local_ts = {s.shipment_id: s.last_modified_time for s in existing_shipments}
+    
+    def _iso_to_dt(v):
+        return _iso_to_aware(v) if v else None
+    
+    def _needs_detail(it):
+        sid = it.get("shipment_id")
+        ts_remote = _iso_to_dt(it.get("last_modified_time") or it.get("created_time"))
+        ts_local = local_ts.get(sid)
+        return ts_local is None or (ts_remote and ts_local and ts_remote > ts_local)
+    
+    items_to_fetch = [it for it in items if _needs_detail(it)]
+    
     max_workers = int(os.getenv("ZOHO_MAX_WORKERS", "2"))
-    with ThreadPoolExecutor(max_workers=max_workers) as ex:
-        details = [f.result() for f in as_completed([ex.submit(_fetch_shipment_detail, it, session, headers) for it in items]) if f.result()]
+    details = []
+    if items_to_fetch:
+        with ThreadPoolExecutor(max_workers=max_workers) as ex:
+            futures = [ex.submit(_fetch_shipment_detail, it, session, headers) for it in items_to_fetch]
+            for f in as_completed(futures):
+                v = f.result()
+                if v:
+                    details.append(v)
 
-    all_pkg_ids = []
+    all_pkg_ids = set()
+    remote_pkg_ts = {}
     for d in details:
-        pkg = d.get("packages", [])
-        if pkg:
-            all_pkg_ids.extend([p.get("package_id") for p in pkg if p.get("package_id")])
-    all_pkg_ids = list(set(all_pkg_ids))
+        for p in (d.get("packages") or []):
+            pid = p.get("package_id")
+            if not pid:
+                continue
+            all_pkg_ids.add(pid)
+            rts = _iso_to_aware(p.get("last_modified_time") or p.get("created_time"))
+            if rts and (pid not in remote_pkg_ts or rts > remote_pkg_ts[pid]):
+                remote_pkg_ts[pid] = rts
 
-    existing_packages = ZohoPackage.objects.filter(package_id__in=all_pkg_ids)
+    existing_packages = ZohoPackage.objects.filter(package_id__in=list(all_pkg_ids)).only("package_id")
     existing_packages_ids = set(existing_packages.values_list("package_id", flat=True))
-
-    with ThreadPoolExecutor(max_workers=max_workers) as ex:
-        pkgs_full = []
-        for f in as_completed([ex.submit(_fetch_package, pid, session, headers) for pid in all_pkg_ids]):
-            v = f.result()
-            if v:
-                pkgs_full.append(v)
-
+    local_pkg_ts = {p.package_id: p.last_modified_time for p in existing_packages}
+    
+    pkg_ids_to_fetch = []
+    for pid in all_pkg_ids:
+        if pid not in existing_packages_ids:
+            pkg_ids_to_fetch.append(pid)
+            continue
+        rts = remote_pkg_ts.get(pid)
+        lts = local_pkg_ts.get(pid)
+        if rts and lts and rts > lts:
+            pkg_ids_to_fetch.append(pid)
+            
+    pkgs_full = []
+    if pkg_ids_to_fetch:
+        with ThreadPoolExecutor(max_workers=max_workers) as ex:
+            futures = [ex.submit(_fetch_package, pid, session, headers) for pid in pkg_ids_to_fetch]
+            for f in as_completed(futures):
+                v = f.result()
+                if v:
+                    pkgs_full.append(v)
+                    
     new_packages, upd_packages = [], []
     for p in pkgs_full:
         obj = create_inventory_package_instance(None, p)

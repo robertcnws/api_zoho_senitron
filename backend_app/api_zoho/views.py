@@ -40,7 +40,6 @@ from django.contrib.auth import authenticate, login as auth_login
 from django.forms.models import model_to_dict
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
-from tenacity import retry, wait_exponential, stop_after_attempt, retry_if_exception_type
 from datetime import timedelta
 from django.utils import timezone
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
