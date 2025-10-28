@@ -1,30 +1,147 @@
-from datetime import datetime as dt
-from django.utils import timezone
-from .models import ZohoInventoryItem, ZohoInventoryShipmentSalesOrder, ZohoShipmentOrder, ZohoPackage, ZohoItemAssetsTrack
-from django.db.utils import IntegrityError
+# manage_instances.py (create instances)
 
-#############################################
+from datetime import datetime as dt, date as date_cls
+from django.utils import timezone
+from django.db.utils import IntegrityError
+from .models import (
+    ZohoInventoryItem,
+    ZohoInventoryShipmentSalesOrder,
+    ZohoShipmentOrder,
+    ZohoPackage,
+    ZohoItemAssetsTrack,
+)
+
+import re
+
+# -------------------------
+# Helpers de parseo flexibles
+# -------------------------
+
+_ISO_NO_TZ_RE = re.compile(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?$')
+
+def _log(logger, level, msg):
+    try:
+        if logger:
+            getattr(logger, level, None) and getattr(logger, level)(msg)
+    except Exception:
+        pass
+
+def _ensure_iso_with_tz(s: str) -> str:
+    """
+    Si llega ISO con 'T' pero sin zona, asume UTC (+00:00).
+    Si trae 'Z', lo convierte a '+00:00' por uniformidad.
+    No recorta contenido.
+    """
+    if not isinstance(s, str):
+        return s
+    t = s.strip()
+    if 'T' not in t:
+        return t
+    if t.endswith('Z'):
+        return t[:-1] + '+00:00'
+    tail = t[-6:]
+    if ('+' in tail or '-' in tail) and ':' in tail:
+        return t  # ya tiene offset
+    if _ISO_NO_TZ_RE.match(t):
+        return t + '+00:00'
+    if '+' not in t and '-' not in t[-6:] and not t.endswith('+00:00'):
+        return t + '+00:00'
+    return t
+
+def _parse_dt_any(v, logger=None):
+    """
+    Devuelve datetime aware (timezone actual).
+    - v puede ser str / datetime / date / None
+    - Strings ISO con 'T' sin zona → +00:00 (UTC) antes de parsear
+    - Datetimes naive → se localizan a la tz actual
+    """
+    if v is None:
+        return None
+
+    tz = timezone.get_current_timezone()
+
+    if isinstance(v, dt):
+        return v if v.tzinfo else tz.localize(v)
+
+    if isinstance(v, date_cls):
+        # subirlo a datetime a medianoche de ese día (aware)
+        return tz.localize(dt.combine(v, dt.min.time()))
+
+    if isinstance(v, str):
+        try:
+            vv = _ensure_iso_with_tz(v) if 'T' in v else v
+            # dt.fromisoformat acepta 'YYYY-MM-DD' y 'YYYY-MM-DDTHH:MM:SS[.fff][±HH:MM]'
+            parsed = dt.fromisoformat(vv)
+            if parsed.tzinfo:
+                # Convertimos a tz actual para consistencia con tu código previo
+                return parsed.astimezone(tz)
+            return tz.localize(parsed)
+        except Exception:
+            # Compatibilidad: intenta formatos comunes
+            for fmt in ('%Y-%m-%dT%H:%M:%S%z',
+                        '%Y-%m-%d %H:%M:%S%z',
+                        '%Y-%m-%dT%H:%M:%S',
+                        '%Y-%m-%d %H:%M:%S',
+                        '%Y-%m-%d'):
+                try:
+                    parsed = dt.strptime(v, fmt)
+                    if fmt.endswith('%z'):
+                        return parsed.astimezone(tz)
+                    return tz.localize(parsed)
+                except Exception:
+                    continue
+            _log(logger, 'error', f"Could not parse datetime: {v}")
+            return None
+
+    _log(logger, 'error', f"Unsupported datetime type: {type(v)}")
+    return None
+
+def _parse_date_any(v, logger=None):
+    """
+    Devuelve date (no datetime).
+    - v puede ser str / datetime / date / None
+    - Si llega datetime (o string con T), devuelve sólo la parte de fecha.
+    """
+    if v is None:
+        return None
+
+    if isinstance(v, date_cls) and not isinstance(v, dt):
+        return v
+
+    if isinstance(v, dt):
+        return v.date()
+
+    if isinstance(v, str):
+        try:
+            if 'T' in v:
+                vv = _ensure_iso_with_tz(v)
+                return dt.fromisoformat(vv).date()
+            # Acepta 'YYYY-MM-DD'
+            return dt.fromisoformat(v[:10]).date()
+        except Exception:
+            for fmt in ('%Y-%m-%d', '%Y/%m/%d', '%d-%m-%Y'):
+                try:
+                    return dt.strptime(v[:10], fmt).date()
+                except Exception:
+                    continue
+            _log(logger, 'error', f"Could not parse date: {v}")
+            return None
+
+    _log(logger, 'error', f"Unsupported date type: {type(v)}")
+    return None
+
+# =========================================================
 # CREATE ITEM INVENTORY INSTANCE
-#############################################
+# =========================================================
 
 def create_inventory_item_instance(logger, data):
-    
     current_timezone = timezone.get_current_timezone()
-    
-    created_time_str = data.get('created_time', None)
-    created_time = dt.strptime(created_time_str, '%Y-%m-%dT%H:%M:%S%z') if created_time_str else None
-    
-    if created_time and created_time.tzinfo is None:
-        created_time = current_timezone.localize(created_time)
-    
-    last_modified_time_str = data.get('last_modified_time', None)
-    last_modified_time = dt.strptime(last_modified_time_str, '%Y-%m-%dT%H:%M:%S%z') if last_modified_time_str else None
-    
-    if last_modified_time and last_modified_time.tzinfo is None:
-        last_modified_time = current_timezone.localize(last_modified_time)
-    
-    item_id=data.get('item_id', '')
-    
+
+    created_time = _parse_dt_any(data.get('created_time'), logger)
+    last_modified_time = _parse_dt_any(data.get('last_modified_time'), logger)
+
+    item_id = data.get('item_id', '')
+
     try:
         obj, _ = ZohoInventoryItem.objects.update_or_create(
             item_id=item_id,
@@ -71,33 +188,22 @@ def create_inventory_item_instance(logger, data):
         )
         return obj
     except IntegrityError:
-        logger.error(f"Integrity error for item_id={item_id}. Skipping.")
+        _log(logger, 'error', f"Integrity error for item_id={item_id}. Skipping.")
         return None
 
-
-#############################################
+# =========================================================
 # CREATE SALES ORDER INVENTORY INSTANCE
-#############################################
+# =========================================================
 
 def create_inventory_sales_order_instance(logger, data):
-    
     current_timezone = timezone.get_current_timezone()
-    
-    date_str = data.get('date', None)
-    date = dt.strptime(date_str, '%Y-%m-%d').date() if date_str else None
-    
-    created_time_str = data.get('created_time', None)
-    created_time = dt.strptime(created_time_str, '%Y-%m-%dT%H:%M:%S%z') if created_time_str else None
-    
-    if created_time and created_time.tzinfo is None:
-        created_time = current_timezone.localize(created_time)
-    
-    last_modified_time_str = data.get('last_modified_time', None)
-    last_modified_time = dt.strptime(last_modified_time_str, '%Y-%m-%dT%H:%M:%S%z') if last_modified_time_str else None
-    
-    if last_modified_time and last_modified_time.tzinfo is None:
-        last_modified_time = current_timezone.localize(last_modified_time)
-    
+
+    # 'date' es date-only en el modelo ⇒ convertir a date si viene datetime/str
+    date_value = _parse_date_any(data.get('date'), logger)
+
+    created_time = _parse_dt_any(data.get('created_time'), logger)
+    last_modified_time = _parse_dt_any(data.get('last_modified_time'), logger)
+
     salesorder_id = data.get('salesorder_id', '')
     salesorder_number = data.get('salesorder_number', '')
     status = data.get('status', '')
@@ -133,13 +239,13 @@ def create_inventory_sales_order_instance(logger, data):
     custom_fields = data.get('custom_fields', {})
     order_sub_statuses = data.get('order_sub_statuses', [])
     shipment_sub_statuses = data.get('shipment_sub_statuses', [])
-    
+
     try:
         obj, _ = ZohoInventoryShipmentSalesOrder.objects.update_or_create(
             salesorder_id=salesorder_id,
             defaults={
                 'salesorder_number': salesorder_number,
-                'date': date,
+                'date': date_value,  # DateField
                 'status': status,
                 'customer_id': customer_id,
                 'customer_name': customer_name,
@@ -177,50 +283,26 @@ def create_inventory_sales_order_instance(logger, data):
         )
         return obj
     except IntegrityError:
-        logger.error(f"Integrity error for salesorder_id={salesorder_id}. Skipping.")
+        _log(logger, 'error', f"Integrity error for salesorder_id={salesorder_id}. Skipping.")
         return None
-    
 
-#############################################
+# =========================================================
 # CREATE SHIPMENT INVENTORY INSTANCE
-############################################# 
+# =========================================================
 
 def create_inventory_shipment_instance(logger, data):
-    
     current_timezone = timezone.get_current_timezone()
 
-    # Parse 'created_time'
-    created_time_str = data.get('created_time', None)
-    created_time = dt.strptime(created_time_str, '%Y-%m-%dT%H:%M:%S%z') if created_time_str else None
+    created_time = _parse_dt_any(data.get('created_time'), logger)
+    last_modified_time = _parse_dt_any(data.get('last_modified_time'), logger)
 
-    if created_time and created_time.tzinfo is None:
-        created_time = current_timezone.localize(created_time)
-    elif created_time and created_time.tzinfo is not None:
-        # Convert to current timezone
-        created_time = created_time.astimezone(current_timezone)
+    # En tu modelo usas DateTimeField para 'salesorder_date' y 'date' (según tu código original).
+    # Mantengo la misma estrategia: si llega sólo fecha, la hago aware a medianoche.
+    salesorder_date_raw = data.get('salesorder_date')
+    date_raw = data.get('date')
 
-    # Parse 'last_modified_time'
-    last_modified_time_str = data.get('last_modified_time', None)
-    last_modified_time = dt.strptime(last_modified_time_str, '%Y-%m-%dT%H:%M:%S%z') if last_modified_time_str else None
-
-    if last_modified_time and last_modified_time.tzinfo is None:
-        last_modified_time = current_timezone.localize(last_modified_time)
-    elif last_modified_time and last_modified_time.tzinfo is not None:
-        # Convert to current timezone
-        last_modified_time = last_modified_time.astimezone(current_timezone)
-
-    # Parse 'salesorder_date' and 'date'
-    salesorder_date_str = data.get('salesorder_date', None)
-    salesorder_date = dt.strptime(salesorder_date_str, '%Y-%m-%d') if salesorder_date_str else None
-
-    if salesorder_date:
-        salesorder_date = timezone.make_aware(dt.combine(salesorder_date, dt.min.time()), timezone=current_timezone)
-
-    date_str = data.get('date', None)
-    date = dt.strptime(date_str, '%Y-%m-%d') if date_str else None
-
-    if date:
-        date = timezone.make_aware(dt.combine(date, dt.min.time()), timezone=current_timezone)
+    salesorder_date_dt = _parse_dt_any(salesorder_date_raw, logger)  # datetime aware (si llega date, sube a 00:00)
+    date_dt = _parse_dt_any(date_raw, logger)
 
     shipment_id = data.get('shipment_id', '')
 
@@ -230,12 +312,12 @@ def create_inventory_shipment_instance(logger, data):
             defaults={
                 'salesorder_id': data.get('salesorder_id', ''),
                 'salesorder_number': data.get('salesorder_number', ''),
-                'salesorder_date': salesorder_date,
+                'salesorder_date': salesorder_date_dt,
                 'salesorder_fulfilment_status': data.get('salesorder_fulfilment_status', ''),
                 'sales_channel': data.get('sales_channel', ''),
                 'sales_channel_formatted': data.get('sales_channel_formatted', ''),
                 'shipment_number': data.get('shipment_number', ''),
-                'date': date,
+                'date': date_dt,
                 'shipment_status': data.get('shipment_status', ''),
                 'shipment_sub_status': data.get('shipment_sub_status', ''),
                 'status': data.get('status', ''),
@@ -268,9 +350,9 @@ def create_inventory_shipment_instance(logger, data):
                 'delivery_method_id': data.get('delivery_method_id', ''),
                 'tracking_number': data.get('tracking_number', ''),
                 'tracking_link': data.get('tracking_link', ''),
-                'last_tracking_update_date': data.get('last_tracking_update_date', ''),
-                'expected_delivery_date': data.get('expected_delivery_date', ''),
-                'shipment_delivered_date': data.get('shipment_delivered_date', ''),
+                'last_tracking_update_date': _parse_dt_any(data.get('last_tracking_update_date'), logger),
+                'expected_delivery_date': _parse_dt_any(data.get('expected_delivery_date'), logger),
+                'shipment_delivered_date': _parse_dt_any(data.get('shipment_delivered_date'), logger),
                 'shipment_type': data.get('shipment_type', ''),
                 'is_carrier_shipment': data.get('is_carrier_shipment', False),
                 'is_tracking_enabled': data.get('is_tracking_enabled', False),
@@ -308,60 +390,26 @@ def create_inventory_shipment_instance(logger, data):
         )
         return obj
     except IntegrityError:
-        logger.error(f"Integrity error for shipment_id={shipment_id}. Skipping.")
+        _log(logger, 'error', f"Integrity error for shipment_id={shipment_id}. Skipping.")
         return None
     except Exception as e:
-        logger.error(f"Error creating shipment order instance: {e}")
+        _log(logger, 'error', f"Error creating shipment order instance: {e}")
         return None
 
+# =========================================================
+# CREATE PACKAGE INVENTORY INSTANCE
+# =========================================================
 
 def create_inventory_package_instance(logger, data, zoho_shipment=None):
     current_timezone = timezone.get_current_timezone()
-    
-    def parse_date(date_str):
-        if date_str:
-            try:
-                return dt.strptime(date_str, '%Y-%m-%d').date()
-            except ValueError:
-                logger.error(f"Invalid date format: {date_str}")
-        return None
 
-    def parse_datetime(datetime_str):
-        if datetime_str:
-            try:
-                return dt.strptime(datetime_str, '%Y-%m-%dT%H:%M:%S%z')
-            except ValueError:
-                logger.error(f"Invalid datetime format: {datetime_str}")
-        return None
-    
-    salesorder_date = parse_date(data.get('salesorder_date'))
-    date = parse_date(data.get('date'))
-    shipping_date = parse_date(data.get('shipping_date'))
-    created_time = parse_datetime(data.get('created_time'))
-    last_modified_time = parse_datetime(data.get('last_modified_time'))
+    # Estos campos son DateField en tu modelo (según tu implementación previa).
+    salesorder_date = _parse_date_any(data.get('salesorder_date'), logger)
+    date_value = _parse_date_any(data.get('date'), logger)
+    shipping_date = _parse_date_any(data.get('shipping_date'), logger)
 
-    if created_time:
-        created_time = created_time.astimezone(current_timezone)
-    else:
-        created_time = timezone.now()
-
-    if last_modified_time:
-        last_modified_time = last_modified_time.astimezone(current_timezone)
-    else:
-        last_modified_time = timezone.now()
-    
-    # shipment_id = data.get('shipment_id')
-    # if zoho_shipment is None and shipment_id:
-    #     if shipment_id:
-    #         try:
-    #             zoho_shipment = ZohoShipmentOrder.objects.filter(shipment_id=shipment_id).first()
-    #         except ZohoShipmentOrder.DoesNotExist:
-    #             logger.warning(f"ZohoShipmentOrder with shipment_id {shipment_id} does not exist.")
-    #             shipment_order_data = data.get('shipment_order')
-    #             if shipment_order_data:
-    #                 zoho_shipment = create_inventory_shipment_instance(logger, shipment_order_data)
-    #             else:
-    #                 zoho_shipment = None
+    created_time = _parse_dt_any(data.get('created_time'), logger) or timezone.now()
+    last_modified_time = _parse_dt_any(data.get('last_modified_time'), logger) or timezone.now()
 
     package_id = data.get('package_id', '')
 
@@ -371,7 +419,7 @@ def create_inventory_package_instance(logger, data, zoho_shipment=None):
             defaults={
                 'salesorder_id': data.get('salesorder_id', ''),
                 'salesorder_number': data.get('salesorder_number', ''),
-                'salesorder_date': salesorder_date,
+                'salesorder_date': salesorder_date,       # DateField
                 'sales_channel': data.get('sales_channel', ''),
                 'sales_channel_formatted': data.get('sales_channel_formatted', ''),
                 'salesorder_fulfilment_status': data.get('salesorder_fulfilment_status', ''),
@@ -379,14 +427,14 @@ def create_inventory_package_instance(logger, data, zoho_shipment=None):
                 'shipment_number': data.get('shipment_number', ''),
                 'shipment_order': data.get('shipment_order', {}),
                 'package_number': data.get('package_number', ''),
-                'date': date,
-                'shipping_date': shipping_date,
+                'date': date_value,                       # DateField
+                'shipping_date': shipping_date,           # DateField
                 'delivery_method': data.get('delivery_method', ''),
                 'delivery_method_id': data.get('delivery_method_id', ''),
                 'tracking_number': data.get('tracking_number', ''),
                 'tracking_link': data.get('tracking_link', ''),
-                'expected_delivery_date': data.get('expected_delivery_date', ''),
-                'shipment_delivered_date': data.get('shipment_delivered_date', ''),
+                'expected_delivery_date': _parse_dt_any(data.get('expected_delivery_date'), logger),
+                'shipment_delivered_date': _parse_dt_any(data.get('shipment_delivered_date'), logger),
                 'status': data.get('status', ''),
                 'detailed_status': data.get('detailed_status', ''),
                 'status_message': data.get('status_message', ''),
@@ -424,12 +472,15 @@ def create_inventory_package_instance(logger, data, zoho_shipment=None):
         )
         return package
     except IntegrityError:
-        logger.error(f"Integrity error for package_id={package_id}. Skipping.")
+        _log(logger, 'error', f"Integrity error for package_id={package_id}. Skipping.")
         return None
     except Exception as e:
-        logger.error(f"Error creating package instance: {e}")
+        _log(logger, 'error', f"Error creating package instance: {e}")
         return None
-    
+
+# =========================================================
+# CREATE ITEM ASSETS TRACK INSTANCE
+# =========================================================
 
 def create_zoho_item_assets_track_instance(logger, data, date):
     item_id = data.get('itemId', '')
@@ -440,13 +491,12 @@ def create_zoho_item_assets_track_instance(logger, data, date):
             item_id=item_id,
             sku=sku,
             assets=assets,
-            created_time=date,   
+            created_time=_parse_dt_any(date, logger) or timezone.now(),
         )
         return obj
     except IntegrityError:
-        logger.error(f"Integrity error for ZohoItemAssetsTrack item_id={item_id}. Skipping.")
+        _log(logger, 'error', f"Integrity error for ZohoItemAssetsTrack item_id={item_id}. Skipping.")
         return None
     except Exception as e:
-        logger.error(f"Error creating ZohoItemAssetsTrack instance: {e}")
+        _log(logger, 'error', f"Error creating ZohoItemAssetsTrack instance: {e}")
         return None
-    

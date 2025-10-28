@@ -44,8 +44,12 @@ from datetime import timedelta
 from django.utils import timezone
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from api_zoho.auth_serializers import CustomTokenObtainPairSerializer, CustomTokenRefreshSerializer
-from .services import (
-    sync_inventory_items, sync_inventory_sales_orders, sync_inventory_shipments, get_access_token
+from .services_from_main_load import (
+    sync_inventory_items, sync_inventory_sales_orders, sync_inventory_shipments
+)
+from .services_from_zoho import (
+    get_access_token,
+    refresh_zoho_access_token,
 )
 import logging
 import time
@@ -494,9 +498,8 @@ def zoho_api_connect(request):
 @permission_classes([AllowAny])
 def load_inventory_items(request):
     data = json.loads(request.body) if request.body else {}
-    item_number = data.get('item_number')
     username = data.get('username')
-    out = sync_inventory_items(item_number=item_number, username=username, updated_since=None)
+    out = sync_inventory_items()
     if username:
         module='zoho_item'
         info='has loaded new info from Zoho Items'
@@ -1107,34 +1110,45 @@ def create_zoho_sku_track_info(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def create_zoho_items_assets_track(request):
-    data = json.loads(request.body)
-    info = data.get('items', [])
-    if len(info) > 0:
-        latest_created_time = ZohoItemAssetsTrack.objects.aggregate(Max('created_time'))['created_time__max']
-        if latest_created_time:
-            if timezone.is_naive(latest_created_time):
-                latest_created_time = timezone.make_aware(latest_created_time, timezone.get_current_timezone())
-            previous_day = latest_created_time - timedelta(days=1)
-                
-        date = dt.now()
-        items_to_insert = []
-        for data in info:
-            new_item = create_zoho_item_assets_track_instance(logger, data, date)
-            items_to_insert.append(new_item)
-        if items_to_insert:
-            with transaction.atomic():
-                print('latest_created_time', latest_created_time)
-                print('previous_day', previous_day)
-                if latest_created_time:
-                    deleted_count, _ = ZohoItemAssetsTrack.objects.filter(created_time__lt=previous_day).delete()
-                    logger.info(f"Deleted {deleted_count} old ZohoItemAssetsTrack records.")
-                    
-                ZohoItemAssetsTrack.objects.bulk_create(items_to_insert, batch_size=200, ignore_conflicts=True)
-            message = 'Items Assets Info saved successfully'
-        message = 'Items Assets Info saved successfully'
-    else:
-        message = 'No Items Assets Info to save'
-    return JsonResponse({'message': message}, status=201)
+    try:
+        payload = json.loads(request.body or "{}")
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+    info = payload.get('items', []) or []
+    if not info:
+        return JsonResponse({'message': 'No Items Assets Info to save'}, status=201)
+
+    latest_created_time = ZohoItemAssetsTrack.objects.aggregate(Max('created_time'))['created_time__max']
+    previous_day = None
+    if latest_created_time:
+        if timezone.is_naive(latest_created_time):
+            latest_created_time = timezone.make_aware(latest_created_time, timezone.get_current_timezone())
+        previous_day = latest_created_time - timedelta(days=1)
+
+    now_ts = timezone.now()
+
+    items_to_insert = []
+    for row in info:
+        obj = create_zoho_item_assets_track_instance(logger, row, now_ts)
+        if obj is not None:                      # <-- evita meter None
+            items_to_insert.append(obj)
+
+    if not items_to_insert:
+        return JsonResponse({'message': 'No valid Items Assets Info to save'}, status=201)
+
+    with transaction.atomic():
+        if previous_day is not None:
+            deleted_count, _ = ZohoItemAssetsTrack.objects.filter(created_time__lt=previous_day).delete()
+            logger.info(f"Deleted {deleted_count} old ZohoItemAssetsTrack records.")
+        
+        ZohoItemAssetsTrack.objects.bulk_create(
+            items_to_insert,
+            batch_size=200,
+            ignore_conflicts=True,
+        )
+
+    return JsonResponse({'message': 'Items Assets Info saved successfully'}, status=201)
 
 
 #############################################

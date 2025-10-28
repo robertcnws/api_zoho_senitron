@@ -1,41 +1,56 @@
 from celery import shared_task
 from django.utils import timezone
+from django.conf import settings
 from datetime import timedelta
 
-from .services import (
+from .services_from_main_load import (
     sync_inventory_items,
     sync_inventory_shipments,
 )
 from .views import force_rollback_manual_update
-from .models import JobsUpdatingTimes
 
-from common.sync_state import get_cursor, set_cursor, _run_lock, _release_lock, _jitter_sleep
+from common.sync_state import _run_lock, _release_lock, _jitter_sleep
 from common.rate_limit import token_bucket, backoff
 import requests
 
 DEFAULT_SYSTEM_USERNAME = "System Job"
-ZOHO_ITEMS_RATE_PER_MIN = 20
-ZOHO_SHIP_RATE_PER_MIN = 12
+
+# Ajusta las cuotas a tus límites reales de API
+API_ITEMS_RATE_PER_MIN = 20
+API_SHIP_RATE_PER_MIN = 12
+
+def _today_ymd() -> str:
+    """Devuelve la fecha actual en YYYY-MM-DD (ej. 2020-10-27)."""
+    return timezone.now().date().strftime("%Y-%m-%d")
+
 
 @shared_task(bind=True, max_retries=7)
-def task_load_inventory_items(self, username=DEFAULT_SYSTEM_USERNAME, force_full=False):
+def task_load_inventory_items(self, username=DEFAULT_SYSTEM_USERNAME):
+    """
+    Carga de ITEMS desde la nueva API.
+    - Usa start_date=YYYY-MM-DD (hoy).
+    - No usa cursor ni updated_since (la API ya devuelve lo necesario).
+    """
     if self.request.retries == 0:
         _jitter_sleep(8.0)
-    lock = _run_lock("zoho:items", ttl=240)
+
+    lock = _run_lock("api:items", ttl=240)
     if lock is None:
         return
-    try:
-        if not token_bucket("zoho:items", rate=40, per=60):
-            raise self.retry(countdown=1)
-        cursor = None if force_full else get_cursor("zoho:items")
-        if cursor is None:
-            cursor = timezone.now() - timedelta(days=1)
 
-        out = sync_inventory_items(updated_since=cursor, username=username)
-        if out.get("changed"):
-            JobsUpdatingTimes.objects.create(last_updated=timezone.now())
-        if out.get("max_ts"):
-            set_cursor("zoho:items", out["max_ts"])
+    try:
+        # rate-limit general para esta tarea
+        if not token_bucket("api:items", rate=API_ITEMS_RATE_PER_MIN, per=60):
+            raise self.retry(countdown=1)
+
+        difference = timedelta(days=settings.DIFF_DAYS_FOR_FULL_SYNC)
+        start_date = (timezone.now() - difference).date().strftime("%Y-%m-%d")
+        end_date = (timezone.now()).date().strftime("%Y-%m-%d")
+        out = sync_inventory_items(start_date=start_date, end_date=end_date, username=username)
+        # Si quieres forzar algo adicional cuando hay cambios:
+        # if out.get("changed"):
+        #     JobsUpdatingTimes.objects.create(last_updated=timezone.now())
+
     except requests.RequestException as e:
         raise self.retry(exc=e, countdown=backoff(self.request.retries))
     except Exception as e:
@@ -45,23 +60,31 @@ def task_load_inventory_items(self, username=DEFAULT_SYSTEM_USERNAME, force_full
 
 
 @shared_task(bind=True, max_retries=7)
-def task_load_inventory_shipments(self, username=DEFAULT_SYSTEM_USERNAME, force_full=False):
+def task_load_inventory_shipments(self, username=DEFAULT_SYSTEM_USERNAME):
+    """
+    Carga de SHIPMENTS & PACKAGES desde la nueva API.
+    - Usa start_date=YYYY-MM-DD (hoy).
+    - No usa cursor ni updated_since (lista ya viene completa).
+    - Packages se resuelven en bulk dentro de la service.
+    """
     if self.request.retries == 0:
         _jitter_sleep(12.0)
-    lock = _run_lock("zoho:shipments", ttl=240)
+
+    lock = _run_lock("api:shipments", ttl=240)
     if lock is None:
         return
+
     try:
-        if not token_bucket("zoho:shipments", rate=30, per=60):
+        if not token_bucket("api:shipments", rate=API_SHIP_RATE_PER_MIN, per=60):
             raise self.retry(countdown=1)
-        cursor = None if force_full else get_cursor("zoho:shipments")
-        if cursor is None:
-            cursor = timezone.now() - timedelta(days=1)
-        out = sync_inventory_shipments(start_date=None, end_date=None, updated_since=cursor, username=username)
-        if out.get("changed"):
-            JobsUpdatingTimes.objects.create(last_updated=timezone.now())
-        if out.get("max_ts"):
-            set_cursor("zoho:shipments", out["max_ts"])
+
+        difference = timedelta(days=settings.DIFF_DAYS_FOR_FULL_SYNC)
+        start_date = (timezone.now() - difference).date().strftime("%Y-%m-%d")
+        end_date = (timezone.now()).date().strftime("%Y-%m-%d")
+        out = sync_inventory_shipments(start_date=start_date, end_date=end_date, updated_since=None, username=username)
+        # if out.get("changed"):
+        #     JobsUpdatingTimes.objects.create(last_updated=timezone.now())
+
     except requests.RequestException as e:
         raise self.retry(exc=e, countdown=backoff(self.request.retries))
     except Exception as e:
@@ -73,37 +96,3 @@ def task_load_inventory_shipments(self, username=DEFAULT_SYSTEM_USERNAME, force_
 @shared_task
 def task_force_rollback_manual_update():
     force_rollback_manual_update()
-
-
-
-# from celery import shared_task
-# from datetime import datetime
-# from django.http import HttpRequest
-# from django.utils import timezone
-# from .views import load_inventory_shipments, load_inventory_items, force_rollback_manual_update
-# from .models import JobsUpdatingTimes
-# import json
-    
-# @shared_task
-# def task_load_inventory_items():
-#     request = HttpRequest()
-#     request.method = 'POST'
-#     request.content_type = 'application/json'
-#     request._body = json.dumps({}).encode('utf-8')
-#     load_inventory_items(request)
-    
-# @shared_task
-# def task_load_inventory_shipments():
-#     start_date = datetime.now().strftime("%Y-%m-%d")
-#     data = {'start_date': start_date}
-#     request = HttpRequest()
-#     request.method = 'POST'
-#     request.content_type = 'application/json'
-#     request._body = json.dumps(data).encode('utf-8')
-#     load_inventory_shipments(request)
-#     JobsUpdatingTimes.objects.create(last_updated=timezone.now())
-    
-
-# @shared_task    
-# def task_force_rollback_manual_update():
-#     force_rollback_manual_update()

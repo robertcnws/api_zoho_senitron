@@ -4,6 +4,7 @@ from django.db.models import F
 from graphene_django.types import DjangoObjectType
 from datetime import date
 from django.utils import timezone
+from utils.schema_helper import _day_bounds_aware, datetime_to_timezone, _parse_yyyy_mm_dd
 
 from .models import (
     LoginUser,
@@ -54,7 +55,6 @@ class ZohoShipmentOrderType(DjangoObjectType):
     class Meta:
         model = ZohoShipmentOrder
         fields = "__all__"
-
 
 class ZohoPackageType(DjangoObjectType):
     class Meta:
@@ -228,18 +228,22 @@ class Query(graphene.ObjectType):
 
     def resolve_all_zoho_shipment_orders(self, info, start_date=None, end_date=None, **kwargs):
         qs = ZohoShipmentOrder.objects.order_by(
-            F("shipment_id_int").desc(nulls_last=True), F("shipment_id").desc()
+            F("shipment_id_int").desc(nulls_last=True), 
+            F("shipment_id").desc()
         )
         if start_date and end_date:
-            y1, m1, d1 = map(int, start_date.split("-"))
-            y2, m2, d2 = map(int, end_date.split("-"))
-            return qs.filter(date__range=(date(y1, m1, d1), date(y2, m2, d2))).iterator(chunk_size=1000)
+            start = _parse_yyyy_mm_dd(start_date)
+            end = _parse_yyyy_mm_dd(end_date)
+            return qs.filter(date__range=(start, end)).iterator(chunk_size=1000)
+
         elif start_date:
-            y, m, d = map(int, start_date.split("-"))
-            return qs.filter(date__gte=date(y, m, d)).iterator(chunk_size=1000)
+            start = _parse_yyyy_mm_dd(start_date)
+            return qs.filter(date=start).iterator(chunk_size=1000)
+
         elif end_date:
-            y, m, d = map(int, end_date.split("-"))
-            return qs.filter(date__lte=date(y, m, d)).iterator(chunk_size=1000)
+            end = _parse_yyyy_mm_dd(end_date)
+            return qs.filter(date__lte=end).iterator(chunk_size=1000)
+
 
         cache_key = f"gql:all_zoho_shipment_orders:{start_date}:{end_date}:v3"
         return get_or_build_list(cache_key, lambda: fetch_all_streamed(qs, chunk_size=1000), ttl=180)
