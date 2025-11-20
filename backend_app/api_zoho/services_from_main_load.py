@@ -57,7 +57,7 @@ def sync_inventory_items(*, start_date: str | None = None, end_date: str | None 
         params["start_last_modified_time"] = sd
     if ed:
         params["end_last_modified_time"] = ed
-        
+
     logger.info(f"SYNC ITEMS PARAMS: {params}")
 
     r = api_get(session, url, params=params)
@@ -65,86 +65,119 @@ def sync_inventory_items(*, start_date: str | None = None, end_date: str | None 
     items = data.get("items") or data.get("results") or data.get("data") or []
     if not isinstance(items, list):
         items = []
-        
+
     logger.info(f"  -> fetched {len(items)} items from API")
 
     item_ids = [it.get("item_id") or it.get("id") for it in items if (it.get("item_id") or it.get("id"))]
-    existing = ZohoInventoryItem.objects.filter(item_id__in=item_ids)
-    existing_map = {it.item_id: it for it in existing}
+    existing_qs = ZohoInventoryItem.objects.filter(item_id__in=item_ids)
+    existing_map = {it.item_id: it for it in existing_qs}
 
-    objs_to_upsert = []
     timelines = []
     changed = False
     max_ts = None
 
+    to_create: list[ZohoInventoryItem] = []
+    to_update: list[ZohoInventoryItem] = []
+
     for data_item in items:
-        _sanitize_datetime_strings_inplace(data_item)  # solo zona; no recorte
+        _sanitize_datetime_strings_inplace(data_item)
+
+        # Creamos un "nuevo" objeto con los datos que vienen del API
         new_obj = create_inventory_item_instance(None, data_item)
-        prev = existing_map.get(new_obj.item_id)
         senitron_item = SenitronItem.objects.filter(item_number=new_obj.item_id).first()
 
-        lm = _iso_to_aware(getattr(new_obj, "last_modified_time", None) or getattr(new_obj, "created_time", None))
+        lm = _iso_to_aware(
+            getattr(new_obj, "last_modified_time", None)
+            or getattr(new_obj, "created_time", None)
+        )
         if lm and (max_ts is None or lm > max_ts):
             max_ts = lm
 
-        objs_to_upsert.append(new_obj)
+        prev = existing_map.get(new_obj.item_id)
 
-        # Timelines por cambios
         if prev:
+            # ==== Timelines ====
             if getattr(prev, "status", None) != getattr(new_obj, "status", None):
-                timelines.append(TimelineItem(
-                    item_number=new_obj.item_id,
-                    previous_status_zoho=prev.status,
-                    date_previous_status_zoho=prev.last_modified_time or prev.created_time,
-                    actual_status_zoho=new_obj.status,
-                    date_actual_status_zoho=new_obj.last_modified_time or new_obj.created_time,
-                    zoho_item=new_obj,
-                    senitron_item=senitron_item,
-                    text=f"{getattr(new_obj, 'sku', None) or '-'} status changed -> From {prev.status} to {new_obj.status}"
-                ))
+                timelines.append(
+                    TimelineItem(
+                        item_number=new_obj.item_id,
+                        previous_status_zoho=prev.status,
+                        date_previous_status_zoho=prev.last_modified_time or prev.created_time,
+                        actual_status_zoho=new_obj.status,
+                        date_actual_status_zoho=new_obj.last_modified_time or new_obj.created_time,
+                        zoho_item=prev,   # referenciamos el existente
+                        senitron_item=senitron_item,
+                        text=f"{getattr(new_obj, 'sku', None) or '-'} status changed -> From {prev.status} to {new_obj.status}",
+                    )
+                )
             try:
                 if int(prev.stock_on_hand) != int(new_obj.stock_on_hand):
                     ch = "added" if new_obj.stock_on_hand > prev.stock_on_hand else "removed"
                     absv = abs(new_obj.stock_on_hand - prev.stock_on_hand)
-                    timelines.append(TimelineItem(
-                        item_number=new_obj.item_id,
-                        previous_stock_on_hand=prev.stock_on_hand,
-                        date_previous_stock_on_hand=prev.last_modified_time or prev.created_time,
-                        actual_stock_on_hand=new_obj.stock_on_hand,
-                        date_actual_stock_on_hand=new_obj.last_modified_time or new_obj.created_time,
-                        zoho_item=new_obj,
-                        senitron_item=senitron_item,
-                        text=f"{getattr(new_obj, 'sku', None) or '-'} : {int(absv)} unit(s) {ch} -> New stock on hand: {int(new_obj.stock_on_hand)}"
-                    ))
+                    timelines.append(
+                        TimelineItem(
+                            item_number=new_obj.item_id,
+                            previous_stock_on_hand=prev.stock_on_hand,
+                            date_previous_stock_on_hand=prev.last_modified_time or prev.created_time,
+                            actual_stock_on_hand=new_obj.stock_on_hand,
+                            date_actual_stock_on_hand=new_obj.last_modified_time or new_obj.created_time,
+                            zoho_item=prev,
+                            senitron_item=senitron_item,
+                            text=f"{getattr(new_obj, 'sku', None) or '-'} : {int(absv)} unit(s) {ch} -> New stock on hand: {int(new_obj.stock_on_hand)}",
+                        )
+                    )
             except Exception:
                 pass
+
+            # ==== Actualizamos el objeto existente con los nuevos valores ====
+            # aquí puedes copiar más campos si quieres mantener todo sincronizado:
+            prev.status = new_obj.status
+            prev.stock_on_hand = new_obj.stock_on_hand
+            prev.last_modified_time = new_obj.last_modified_time
+            # prev.sku = new_obj.sku
+            # prev.name = new_obj.name
+            # ...
+
+            to_update.append(prev)
         else:
-            timelines.append(TimelineItem(
-                item_number=new_obj.item_id,
-                actual_stock_on_hand=new_obj.stock_on_hand,
-                date_actual_stock_on_hand=new_obj.last_modified_time or new_obj.created_time,
-                actual_status_zoho=new_obj.status,
-                date_actual_status_zoho=new_obj.last_modified_time or new_obj.created_time,
-                zoho_item=new_obj,
-                senitron_item=senitron_item,
-                text=f"{getattr(new_obj, 'sku', None) or '-'} created -> On hand: {int(getattr(new_obj, 'stock_on_hand', 0))}, Status: {getattr(new_obj, 'status', '-')}"
-            ))
+            # Nuevo item
+            timelines.append(
+                TimelineItem(
+                    item_number=new_obj.item_id,
+                    actual_stock_on_hand=new_obj.stock_on_hand,
+                    date_actual_stock_on_hand=new_obj.last_modified_time or new_obj.created_time,
+                    actual_status_zoho=new_obj.status,
+                    date_actual_status_zoho=new_obj.last_modified_time or new_obj.created_time,
+                    zoho_item=new_obj,
+                    senitron_item=senitron_item,
+                    text=f"{getattr(new_obj, 'sku', None) or '-'} created -> On hand: {int(getattr(new_obj, 'stock_on_hand', 0))}, Status: {getattr(new_obj, 'status', '-')}",
+                )
+            )
+            to_create.append(new_obj)
 
     def _write_items():
         nonlocal changed
-        n = upsert_on_conflict(
-            ZohoInventoryItem,
-            objs_to_upsert,
-            unique_fields=["item_id"],
-            update_fields=["status", "stock_on_hand", "last_modified_time"],
-            batch_size=int(os.getenv("API_BATCH_SIZE_ITEMS", "100")),
-        )
-        if n:
+
+        if to_create:
+            ZohoInventoryItem.objects.bulk_create(
+                to_create,
+                batch_size=int(os.getenv("API_BATCH_SIZE_ITEMS", "100")),
+            )
+            changed = True
+
+        if to_update:
+            ZohoInventoryItem.objects.bulk_update(
+                to_update,
+                ["status", "stock_on_hand", "last_modified_time"],
+                batch_size=int(os.getenv("API_BATCH_SIZE_ITEMS", "100")),
+            )
             changed = True
 
         if timelines:
             TimelineItem.objects.bulk_create(
-                timelines, batch_size=int(os.getenv("API_BATCH_SIZE_TIMELINES", "200")), ignore_conflicts=True
+                timelines,
+                batch_size=int(os.getenv("API_BATCH_SIZE_TIMELINES", "200")),
+                ignore_conflicts=True,
             )
 
         JobsUpdatingTimes.objects.filter(last_updated__lt=timezone.now()).delete()
@@ -156,6 +189,7 @@ def sync_inventory_items(*, start_date: str | None = None, end_date: str | None 
         create_notification("items", "loaded new info from API Items", "load", username)
 
     return {"changed": changed, "max_ts": max_ts}
+
 
 # =========================================================
 #               SALES ORDERS (LISTA COMPLETA)
