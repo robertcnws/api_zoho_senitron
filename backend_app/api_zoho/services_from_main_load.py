@@ -46,27 +46,42 @@ logger = logging.getLogger(__name__)
 # =========================================================
 
 def sync_inventory_items(*, start_date: str | None = None, end_date: str | None = None, username=None):
-    url = getattr(settings, "MAIN_LOAD_API_ITEMS_URL", settings.MAIN_LOAD_ZOHO_INVENTORY_ITEMS_URL)
+    base_url = getattr(settings, "MAIN_LOAD_API_ITEMS_URL", settings.MAIN_LOAD_ZOHO_INVENTORY_ITEMS_URL)
     session = _session_with_retry()
 
     sd = _ensure_date_str(start_date)
     ed = _ensure_date_str(end_date)
 
-    params = {}
+    base_params = {}
     if sd:
-        params["start_last_modified_time"] = sd
+        base_params["start_last_modified_time"] = sd
     if ed:
-        params["end_last_modified_time"] = ed
+        base_params["end_last_modified_time"] = ed
 
-    logger.info(f"SYNC ITEMS PARAMS: {params}")
+    logger.info(f"SYNC ITEMS PARAMS: {base_params}")
+    
+    all_items = []
+    page = 1
+    while True:
+        params = {**base_params, "page": page, "page_size": 200}
+        r = api_get(session, base_url, params=params)
+        data = r.json()
 
-    r = api_get(session, url, params=params)
-    data = r.json()
-    items = data.get("items") or data.get("results") or data.get("data") or []
-    if not isinstance(items, list):
-        items = []
+        page_items = data.get("items") or data.get("results") or data.get("data") or []
+        if not isinstance(page_items, list):
+            page_items = []
 
-    logger.info(f"  -> fetched {len(items)} items from API")
+        logger.info(f"  -> page {page}: fetched {len(page_items)} items (count={data.get('count')})")
+        all_items.extend(page_items)
+        
+        next_url = data.get("next")
+        if not next_url:
+            break
+
+        page += 1
+
+    logger.info(f"TOTAL fetched {len(all_items)} items from API")
+    items = all_items
 
     item_ids = [it.get("item_id") or it.get("id") for it in items if (it.get("item_id") or it.get("id"))]
     existing_qs = ZohoInventoryItem.objects.filter(item_id__in=item_ids)
@@ -205,12 +220,29 @@ def sync_inventory_sales_orders(*, start_date: str, end_date: str | None = None,
     params = {"start_date": sd}
     if ed:
         params["end_date"] = ed
+        
+    all_items = []
+    page = 1
+    while True:
+        params = {**params, "page": page, "page_size": 200}
+        r = api_get(session, url, params=params)
+        data = r.json()
 
-    r = api_get(session, url, params)
-    js = r.json()
-    items = js.get("salesorders") or js.get("results") or js.get("data") or []
-    if not isinstance(items, list):
-        items = []
+        page_items = data.get("salesorders") or data.get("results") or data.get("data") or []
+        if not isinstance(page_items, list):
+            page_items = []
+
+        logger.info(f"  -> page {page}: fetched {len(page_items)} salesorders (count={data.get('count')})")
+        all_items.extend(page_items)
+        
+        next_url = data.get("next")
+        if not next_url:
+            break
+
+        page += 1
+
+    logger.info(f"TOTAL fetched {len(all_items)} salesorders from API")
+    items = all_items
 
     objs_to_upsert = []
     for it in items:
@@ -297,14 +329,28 @@ def sync_inventory_shipments(*, start_date: str | None, end_date: str | None, us
 
     logger.info(f"SYNC SHIPMENTS PARAMS: {params}")
 
-    # 1) Obtener shipments (ya completos)
-    r = api_get(session, url_ship, params=params)
-    js = r.json()
-    items = js.get("shipmentorders") or js.get("shipments") or js.get("results") or js.get("data") or []
-    if not isinstance(items, list):
-        items = []
+    all_items = []
+    page = 1
+    while True:
+        params = {**params, "page": page, "page_size": 200}
+        r = api_get(session, url_ship, params=params)
+        data = r.json()
+
+        page_items = data.get("shipmentorders") or data.get("results") or data.get("data") or []
+        if not isinstance(page_items, list):
+            page_items = []
+
+        logger.info(f"  -> page {page}: fetched {len(page_items)} shipmentorders (count={data.get('count')})")
+        all_items.extend(page_items)
         
-    logger.info(f"  -> fetched {len(items)} shipments from API")
+        next_url = data.get("next")
+        if not next_url:
+            break
+
+        page += 1
+
+    logger.info(f"TOTAL fetched {len(all_items)} shipmentorders from API")
+    items = all_items
 
     # 2) Filtrado adicional por updated_since (si lo usas)
     # if updated_since:
