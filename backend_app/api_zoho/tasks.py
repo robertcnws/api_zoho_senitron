@@ -78,7 +78,7 @@ def task_load_inventory_shipments(self, username=DEFAULT_SYSTEM_USERNAME):
         if not token_bucket("api:shipments", rate=API_SHIP_RATE_PER_MIN, per=60):
             raise self.retry(countdown=1)
 
-        difference = timedelta(days=settings.DIFF_DAYS_FOR_FULL_SYNC)
+        difference = timedelta(days=settings.DIFF_DAYS_FOR_FULL_SYNC_SHIPMENTS)
         start_date = (timezone.now() - difference).date().strftime("%Y-%m-%d")
         end_date = (timezone.now()).date().strftime("%Y-%m-%d")
         out = sync_inventory_shipments(start_date=start_date, end_date=end_date, updated_since=None, username=username)
