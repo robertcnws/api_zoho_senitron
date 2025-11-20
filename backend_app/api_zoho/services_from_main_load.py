@@ -161,7 +161,7 @@ def sync_inventory_items(*, start_date: str | None = None, end_date: str | None 
         if to_create:
             ZohoInventoryItem.objects.bulk_create(
                 to_create,
-                batch_size=int(os.getenv("API_BATCH_SIZE_ITEMS", "100")),
+                batch_size=int(os.getenv("API_BATCH_SIZE_ITEMS", "500")),
             )
             changed = True
 
@@ -169,7 +169,7 @@ def sync_inventory_items(*, start_date: str | None = None, end_date: str | None 
             ZohoInventoryItem.objects.bulk_update(
                 to_update,
                 ["status", "stock_on_hand", "last_modified_time"],
-                batch_size=int(os.getenv("API_BATCH_SIZE_ITEMS", "100")),
+                batch_size=int(os.getenv("API_BATCH_SIZE_ITEMS", "500")),
             )
             changed = True
 
