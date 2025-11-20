@@ -93,6 +93,7 @@ def sync_inventory_items(*, start_date: str | None = None, end_date: str | None 
 
     to_create: list[ZohoInventoryItem] = []
     to_update: list[ZohoInventoryItem] = []
+    seen_new_ids = set()
 
     for data_item in items:
         _sanitize_datetime_strings_inplace(data_item)
@@ -156,6 +157,10 @@ def sync_inventory_items(*, start_date: str | None = None, end_date: str | None 
             to_update.append(prev)
         else:
             # Nuevo item
+            if new_obj.item_id in seen_new_ids:
+            # opcional: log para debug
+                logger.debug(f"Duplicate new item_id in same batch, skipping: {new_obj.item_id}")
+                continue
             timelines.append(
                 TimelineItem(
                     item_number=new_obj.item_id,
@@ -169,6 +174,7 @@ def sync_inventory_items(*, start_date: str | None = None, end_date: str | None 
                 )
             )
             to_create.append(new_obj)
+            seen_new_ids.add(new_obj.item_id)
 
     def _write_items():
         nonlocal changed
@@ -177,6 +183,7 @@ def sync_inventory_items(*, start_date: str | None = None, end_date: str | None 
             ZohoInventoryItem.objects.bulk_create(
                 to_create,
                 batch_size=int(os.getenv("API_BATCH_SIZE_ITEMS", "500")),
+                ignore_conflicts=True,
             )
             changed = True
 
