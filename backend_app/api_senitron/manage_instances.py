@@ -2,22 +2,52 @@ from .models import SenitronItem, SenitronItemAsset, SenitronStatus, SenitronIte
 from django.db.utils import IntegrityError
 from django.utils import timezone
 from datetime import datetime
+from django.db import transaction
 
 def create_inventory_item_instance(logger, data):
-    item_number = data.get('item_number')
-    tags_count = data.get('tags_count')
-    qty = data.get('qty')
+    item_number = (data.get("item_number") or "").strip()
+    tags_count = data.get("tags_count")
+    qty = data.get("qty")
+
+    if not item_number:
+        if logger:
+            logger.warning("SenitronItem without item_number. Skipping.")
+        return None
+
+    defaults = {
+        "tags_count": tags_count,
+        "qty": qty,
+    }
+
     try:
-        item, _ = SenitronItem.objects.update_or_create(
-            item_number=item_number,
-            defaults={
-                'tags_count': tags_count,
-                'qty': qty
-            }
-        )
-        return item
-    except IntegrityError:
-        logger.error(f"Integrity error for item_number={item_number}. Skipping.")
+        with transaction.atomic():
+            qs = SenitronItem.objects.select_for_update().filter(item_number=item_number)
+
+            # Mantener 1 y borrar duplicados si existen
+            item = qs.order_by("-id").first()
+            if item:
+                dup_qs = qs.exclude(id=item.id)
+                if dup_qs.exists():
+                    # Si otros modelos dependen de SenitronItem, aquí es donde reasignas FKs si aplica
+                    dup_qs.delete()
+
+                # actualizar campos
+                for k, v in defaults.items():
+                    setattr(item, k, v)
+                item.save(update_fields=list(defaults.keys()))
+                return item
+
+            # No existe -> crear
+            item = SenitronItem.objects.create(item_number=item_number, **defaults)
+            return item
+
+    except IntegrityError as e:
+        if logger:
+            logger.error(f"Integrity error for item_number={item_number}: {e}. Skipping.")
+        return None
+    except Exception as e:
+        if logger:
+            logger.error(f"Unexpected error for item_number={item_number}: {e}")
         return None
     
 

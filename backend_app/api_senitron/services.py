@@ -1,9 +1,9 @@
 from django.conf import settings
-from django.db import transaction
 from django.utils import timezone
 from dateutil.parser import parse
 from django.db.models import Q
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from django.db import transaction, connection
 from uuid import uuid4
 
 from .models import (
@@ -123,8 +123,9 @@ def sync_senitron_inventory_item_assets(item_number=None, assets_hint=None):
     existing_statuses = SenitronStatus.objects.all()
     status_cache = {(s.name, s.senitron_id): s for s in existing_statuses}
 
+    # Si tienes assets_hint con item_numbers, úsalo para filtrar
     item_numbers = {it["item_number"] for it in data_assets_hint if "item_number" in it}
-    existing_items = SenitronItem.objects.filter(item_number__in=item_numbers)
+    existing_items = SenitronItem.objects.filter(item_number__in=item_numbers) if item_numbers else SenitronItem.objects.none()
     item_cache = {it.item_number: it for it in existing_items}
 
     url = settings.API_SENITRON_ASSETS_URL
@@ -136,132 +137,218 @@ def sync_senitron_inventory_item_assets(item_number=None, assets_hint=None):
         r = session.get(url, params=page_params, timeout=REQUEST_TIMEOUT)
         r.raise_for_status()
         items = r.json().get("assets", [])
-        if "item_number" in page_params and item_numbers:
+
+        # Si estás usando assets_hint para limitar, filtra aquí
+        if item_numbers:
             items = [it for it in items if it.get("item_number") in item_numbers]
+
         return items, len(items) > 0
-    
+
+    # Fetch concurrente por bloques de páginas
     page = 1
     has_more = True
     raw_assets = []
+
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as ex:
         while has_more:
             futures = {ex.submit(fetch_page, p): p for p in range(page, page + MAX_WORKERS)}
             has_more = False
+
             for f in as_completed(futures):
                 items, ok = f.result()
                 if items:
                     raw_assets.extend(items)
                 if ok:
                     has_more = True
+
             page += MAX_WORKERS
-    
-    key_list = []
+
+    # Construir objetos a insertar
     assets_to_insert = []
     for raw in raw_assets:
         obj = create_inventory_item_asset_instance(logger, raw, status_cache, item_cache)
         if not obj:
             continue
-        
+
         if getattr(obj, "location", None) and not getattr(obj, "last_zone", None):
             obj.last_zone = getattr(obj, "location")
-        
+
         if getattr(obj, "updated_time", None) and not getattr(obj, "updated_at", None):
             obj.updated_at = getattr(obj, "updated_time")
-        
+
         if getattr(obj, "read", None) is None:
             obj.read = False
 
-        key = (obj.serial_number, obj.item_number)
-        key_list.append(key)
         assets_to_insert.append(obj)
-    
-    existing_map = {}
-    
-    if key_list:
-        for i in range(0, len(key_list), BATCH_SIZE):
-            chunk = key_list[i:i + BATCH_SIZE]
-            cond = Q()
-            for sn, inum in chunk:
-                cond |= Q(serial_number=sn, item_number=inum)
-            for a in SenitronItemAsset.objects.filter(cond):
-                existing_map[(a.serial_number, a.item_number)] = a
 
-    to_create, to_update = [], []
-    
-    scope_item_numbers = {inum for _, inum in key_list if inum}
-
-    for obj in assets_to_insert:
-        k = (obj.serial_number, obj.item_number)
-        prev = existing_map.get(k)
-        if prev:
-            if getattr(obj, "status", None) is not None:
-                prev.status = obj.status
-            elif getattr(obj, "status_id", None) is not None:
-                prev.status_id = obj.status_id
-            
-            if getattr(obj, "last_zone", None) is not None:
-                prev.last_zone = obj.last_zone
-
-            if getattr(obj, "read", None) is not None:
-                prev.read = bool(obj.read)
-
-            if getattr(obj, "updated_at", None) is not None:
-                prev.updated_at = obj.updated_at
-
-            if getattr(obj, "date_read", None) is not None:
-                prev.date_read = obj.date_read
-                
-            for attr in ("first_seen", "last_seen", "last_seen_antenna", "epc", "alt_serial"):
-                if getattr(obj, attr, None) is not None:
-                    setattr(prev, attr, getattr(obj, attr))
-
-            to_update.append(prev)
-        else:
-            to_create.append(obj)
-
+    # === FULL REFRESH: borrar todo y resetear IDs a 1 ===
     with transaction.atomic():
-        if to_create:
-            SenitronItemAsset.objects.bulk_create(
-                to_create, batch_size=BATCH_SIZE, ignore_conflicts=True
-            )
+        table = SenitronItemAsset._meta.db_table
+        with connection.cursor() as cursor:
+            cursor.execute(f'TRUNCATE TABLE "{table}" RESTART IDENTITY CASCADE;')
 
-        if to_update:
-            SenitronItemAsset.objects.bulk_update(
-                to_update,
-                fields=[
-                    "status",          
-                    "last_zone",       
-                    "read",
-                    "updated_at",      
-                    "date_read",
-                    "first_seen",
-                    "last_seen",
-                    "last_seen_antenna",
-                    "epc",
-                    "alt_serial",
-                ],
+        if assets_to_insert:
+            SenitronItemAsset.objects.bulk_create(
+                assets_to_insert,
                 batch_size=BATCH_SIZE,
             )
-        
-        if key_list and scope_item_numbers:
-            keep_pairs = set(key_list)
-            
-            ids_to_delete = []
-            for inum in scope_item_numbers:
-                qs = SenitronItemAsset.objects.filter(item_number=inum).only("id", "serial_number", "item_number")
-                for a in qs:
-                    if (a.serial_number, a.item_number) not in keep_pairs:
-                        ids_to_delete.append(a.id)
-            
-            for i in range(0, len(ids_to_delete), BATCH_SIZE):
-                chunk = ids_to_delete[i:i + BATCH_SIZE]
-                SenitronItemAsset.objects.filter(id__in=chunk).delete()
 
         # housekeeping
         JobsUpdatingTimes.objects.filter(last_updated__lt=timezone.now()).delete()
         JobsUpdatingTimes.objects.create(last_updated=timezone.now())
 
-    return {"created": len(to_create), "updated": len(to_update), "total": len(key_list)}
+    return {"created": len(assets_to_insert), "updated": 0, "total": len(assets_to_insert)}
+
+
+# def sync_senitron_inventory_item_assets(item_number=None, assets_hint=None):
+#     data_assets_hint = assets_hint or []
+#     params = {"api_key": settings.API_KEY_SENITRON, "per_page": 250}
+#     if item_number:
+#         params["item_number"] = item_number
+
+#     # caches base
+#     existing_statuses = SenitronStatus.objects.all()
+#     status_cache = {(s.name, s.senitron_id): s for s in existing_statuses}
+
+#     item_numbers = {it["item_number"] for it in data_assets_hint if "item_number" in it}
+#     existing_items = SenitronItem.objects.filter(item_number__in=item_numbers)
+#     item_cache = {it.item_number: it for it in existing_items}
+
+#     url = settings.API_SENITRON_ASSETS_URL
+#     session = _create_session()
+
+#     def fetch_page(page):
+#         page_params = dict(params)
+#         page_params["page"] = page
+#         r = session.get(url, params=page_params, timeout=REQUEST_TIMEOUT)
+#         r.raise_for_status()
+#         items = r.json().get("assets", [])
+#         if "item_number" in page_params and item_numbers:
+#             items = [it for it in items if it.get("item_number") in item_numbers]
+#         return items, len(items) > 0
+    
+#     page = 1
+#     has_more = True
+#     raw_assets = []
+#     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as ex:
+#         while has_more:
+#             futures = {ex.submit(fetch_page, p): p for p in range(page, page + MAX_WORKERS)}
+#             has_more = False
+#             for f in as_completed(futures):
+#                 items, ok = f.result()
+#                 if items:
+#                     raw_assets.extend(items)
+#                 if ok:
+#                     has_more = True
+#             page += MAX_WORKERS
+    
+#     key_list = []
+#     assets_to_insert = []
+#     for raw in raw_assets:
+#         obj = create_inventory_item_asset_instance(logger, raw, status_cache, item_cache)
+#         if not obj:
+#             continue
+        
+#         if getattr(obj, "location", None) and not getattr(obj, "last_zone", None):
+#             obj.last_zone = getattr(obj, "location")
+        
+#         if getattr(obj, "updated_time", None) and not getattr(obj, "updated_at", None):
+#             obj.updated_at = getattr(obj, "updated_time")
+        
+#         if getattr(obj, "read", None) is None:
+#             obj.read = False
+
+#         key = (obj.serial_number, obj.item_number)
+#         key_list.append(key)
+#         assets_to_insert.append(obj)
+    
+#     existing_map = {}
+    
+#     if key_list:
+#         for i in range(0, len(key_list), BATCH_SIZE):
+#             chunk = key_list[i:i + BATCH_SIZE]
+#             cond = Q()
+#             for sn, inum in chunk:
+#                 cond |= Q(serial_number=sn, item_number=inum)
+#             for a in SenitronItemAsset.objects.filter(cond):
+#                 existing_map[(a.serial_number, a.item_number)] = a
+
+#     to_create, to_update = [], []
+    
+#     scope_item_numbers = {inum for _, inum in key_list if inum}
+
+#     for obj in assets_to_insert:
+#         k = (obj.serial_number, obj.item_number)
+#         prev = existing_map.get(k)
+#         if prev:
+#             if getattr(obj, "status", None) is not None:
+#                 prev.status = obj.status
+#             elif getattr(obj, "status_id", None) is not None:
+#                 prev.status_id = obj.status_id
+            
+#             if getattr(obj, "last_zone", None) is not None:
+#                 prev.last_zone = obj.last_zone
+
+#             if getattr(obj, "read", None) is not None:
+#                 prev.read = bool(obj.read)
+
+#             if getattr(obj, "updated_at", None) is not None:
+#                 prev.updated_at = obj.updated_at
+
+#             if getattr(obj, "date_read", None) is not None:
+#                 prev.date_read = obj.date_read
+                
+#             for attr in ("first_seen", "last_seen", "last_seen_antenna", "epc", "alt_serial"):
+#                 if getattr(obj, attr, None) is not None:
+#                     setattr(prev, attr, getattr(obj, attr))
+
+#             to_update.append(prev)
+#         else:
+#             to_create.append(obj)
+
+#     with transaction.atomic():
+#         if to_create:
+#             SenitronItemAsset.objects.bulk_create(
+#                 to_create, batch_size=BATCH_SIZE, ignore_conflicts=True
+#             )
+
+#         if to_update:
+#             SenitronItemAsset.objects.bulk_update(
+#                 to_update,
+#                 fields=[
+#                     "status",          
+#                     "last_zone",       
+#                     "read",
+#                     "updated_at",      
+#                     "date_read",
+#                     "first_seen",
+#                     "last_seen",
+#                     "last_seen_antenna",
+#                     "epc",
+#                     "alt_serial",
+#                 ],
+#                 batch_size=BATCH_SIZE,
+#             )
+        
+#         if key_list and scope_item_numbers:
+#             keep_pairs = set(key_list)
+            
+#             ids_to_delete = []
+#             for inum in scope_item_numbers:
+#                 qs = SenitronItemAsset.objects.filter(item_number=inum).only("id", "serial_number", "item_number")
+#                 for a in qs:
+#                     if (a.serial_number, a.item_number) not in keep_pairs:
+#                         ids_to_delete.append(a.id)
+            
+#             for i in range(0, len(ids_to_delete), BATCH_SIZE):
+#                 chunk = ids_to_delete[i:i + BATCH_SIZE]
+#                 SenitronItemAsset.objects.filter(id__in=chunk).delete()
+
+#         # housekeeping
+#         JobsUpdatingTimes.objects.filter(last_updated__lt=timezone.now()).delete()
+#         JobsUpdatingTimes.objects.create(last_updated=timezone.now())
+
+#     return {"created": len(to_create), "updated": len(to_update), "total": len(key_list)}
 
 
 def sync_senitron_inventory_item_assets_logs(item_number=None):

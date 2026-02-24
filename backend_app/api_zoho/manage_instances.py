@@ -10,6 +10,11 @@ from .models import (
     ZohoPackage,
     ZohoItemAssetsTrack,
 )
+from django.db import transaction
+
+from api_zoho.models import ZohoInventoryItem
+from api_senitron.models import TimelineItem  # ajusta si está en otro app
+
 
 import re
 
@@ -134,61 +139,87 @@ def _parse_date_any(v, logger=None):
 # CREATE ITEM INVENTORY INSTANCE
 # =========================================================
 
-def create_inventory_item_instance(logger, data):
-    current_timezone = timezone.get_current_timezone()
 
+def create_inventory_item_instance(logger, data):
     created_time = _parse_dt_any(data.get('created_time'), logger)
     last_modified_time = _parse_dt_any(data.get('last_modified_time'), logger)
 
-    item_id = data.get('item_id', '')
+    item_id = (data.get('item_id') or '').strip()
+    if not item_id:
+        _log(logger, 'warning', "Missing item_id. Skipping.")
+        return None
+
+    defaults = {
+        'group_id': data.get('group_id', 0),
+        'group_name': data.get('group_name', ''),
+        'name': data.get('name', ''),
+        'status': data.get('status', ''),
+        'source': data.get('source', ''),
+        'is_linked_with_zohocrm': data.get('is_linked_with_zohocrm', False),
+        'item_type': data.get('item_type', ''),
+        'description': data.get('description', ''),
+        'rate': data.get('rate', 0),
+        'is_taxable': data.get('is_taxable', False),
+        'tax_id': data.get('tax_id') if isinstance(data.get('tax_id'), (int, float)) else 0,
+        'tax_name': data.get('tax_name', ''),
+        'tax_percentage': data.get('tax_percentage', 0),
+        'purchase_description': data.get('purchase_description', ''),
+        'purchase_rate': data.get('purchase_rate', 0),
+        'is_combo_product': data.get('is_combo_product', False),
+        'product_type': data.get('product_type', ''),
+        'attribute_id1': data.get('attribute_id1') if isinstance(data.get('attribute_id1'), (int, float)) else 0,
+        'attribute_name1': data.get('attribute_name1', ''),
+        'reorder_level': data.get('reorder_level') if isinstance(data.get('reorder_level'), (int, float)) else 0,
+        'stock_on_hand': data.get('stock_on_hand', 0),
+        'available_stock': data.get('available_stock', 0),
+        'actual_available_stock': data.get('actual_available_stock', 0),
+        'sku': data.get('sku', ''),
+        'upc': data.get('upc') if isinstance(data.get('upc'), (int, float)) else 0,
+        'ean': data.get('ean') if isinstance(data.get('ean'), (int, float)) else 0,
+        'isbn': data.get('isbn') if isinstance(data.get('isbn'), (int, float)) else 0,
+        'part_number': data.get('part_number') if isinstance(data.get('part_number'), (int, float)) else 0,
+        'attribute_option_id1': data.get('attribute_option_id1') if isinstance(data.get('attribute_option_id1'), (int, float)) else 0,
+        'attribute_option_name1': data.get('attribute_option_name1', ''),
+        'image_name': data.get('image_name', ''),
+        'image_type': data.get('image_type', ''),
+        'created_time': created_time,
+        'last_modified_time': last_modified_time,
+        'hsn_or_sac': data.get('hsn_or_sac') if isinstance(data.get('hsn_or_sac'), (int, float)) else 0,
+        'sat_item_key_code': data.get('sat_item_key_code', ''),
+        'unitkey_code': data.get('unitkey_code', ''),
+        # 'synced_with_senitron': data.get('synced_with_senitron', False),
+    }
 
     try:
-        obj, _ = ZohoInventoryItem.objects.update_or_create(
-            item_id=item_id,
-            defaults={
-                'group_id': data.get('group_id', 0),
-                'group_name': data.get('group_name', ''),
-                'name': data.get('name', ''),
-                'status': data.get('status', ''),
-                'source': data.get('source', ''),
-                'is_linked_with_zohocrm': data.get('is_linked_with_zohocrm', False),
-                'item_type': data.get('item_type', ''),
-                'description': data.get('description', ''),
-                'rate': data.get('rate', 0),
-                'is_taxable': data.get('is_taxable', False),
-                'tax_id': data.get('tax_id') if isinstance(data.get('tax_id'), (int, float)) else 0,
-                'tax_name': data.get('tax_name', ''),
-                'tax_percentage': data.get('tax_percentage', 0),
-                'purchase_description': data.get('purchase_description', ''),
-                'purchase_rate': data.get('purchase_rate', 0),
-                'is_combo_product': data.get('is_combo_product', False),
-                'product_type': data.get('product_type', ''),
-                'attribute_id1': data.get('attribute_id1') if isinstance(data.get('attribute_id1'), (int, float)) else 0,
-                'attribute_name1': data.get('attribute_name1', ''),
-                'reorder_level': data.get('reorder_level') if isinstance(data.get('reorder_level'), (int, float)) else 0,
-                'stock_on_hand': data.get('stock_on_hand', 0),
-                'available_stock': data.get('available_stock', 0),
-                'actual_available_stock': data.get('actual_available_stock', 0),
-                'sku': data.get('sku', ''),
-                'upc': data.get('upc') if isinstance(data.get('upc'), (int, float)) else 0,
-                'ean': data.get('ean') if isinstance(data.get('ean'), (int, float)) else 0,
-                'isbn': data.get('isbn') if isinstance(data.get('isbn'), (int, float)) else 0,
-                'part_number': data.get('part_number') if isinstance(data.get('part_number'), (int, float)) else 0,
-                'attribute_option_id1': data.get('attribute_option_id1') if isinstance(data.get('attribute_option_id1'), (int, float)) else 0,
-                'attribute_option_name1': data.get('attribute_option_name1', ''),
-                'image_name': data.get('image_name', ''),
-                'image_type': data.get('image_type', ''),
-                'created_time': created_time,
-                'last_modified_time': last_modified_time,
-                'hsn_or_sac': data.get('hsn_or_sac') if isinstance(data.get('hsn_or_sac'), (int, float)) else 0,
-                'sat_item_key_code': data.get('sat_item_key_code', ''),
-                'unitkey_code': data.get('unitkey_code', ''),
-                # 'synced_with_senitron': data.get('synced_with_senitron', False),
-            }
-        )
-        return obj
-    except IntegrityError:
-        _log(logger, 'error', f"Integrity error for item_id={item_id}. Skipping.")
+        with transaction.atomic():
+            # 🔒 lock para evitar carreras concurrentes
+            qs = ZohoInventoryItem.objects.select_for_update().filter(item_id=item_id)
+
+            obj = qs.order_by("-id").first()
+
+            if obj:
+                # ✅ si hay duplicados, reasignar timelines y borrar extras
+                dup_qs = qs.exclude(id=obj.id)
+                if dup_qs.exists():
+                    TimelineItem.objects.filter(zoho_item__in=dup_qs).update(zoho_item=obj)
+                    dup_qs.delete()
+
+                # update fields
+                for k, v in defaults.items():
+                    setattr(obj, k, v)
+
+                obj.save(update_fields=list(defaults.keys()))
+                return obj
+
+            # create si no existe
+            obj = ZohoInventoryItem.objects.create(item_id=item_id, **defaults)
+            return obj
+
+    except IntegrityError as e:
+        _log(logger, 'error', f"Integrity error for item_id={item_id}: {e}. Skipping.")
+        return None
+    except Exception as e:
+        _log(logger, 'error', f"Unexpected error for item_id={item_id}: {e}")
         return None
 
 # =========================================================

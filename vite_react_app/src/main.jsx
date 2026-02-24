@@ -19,7 +19,7 @@ root.render(
           <LoadingProvider>
             <App />
           </LoadingProvider>
-        </Suspense>
+        </Suspense> 
       </BrowserRouter>
     </HelmetProvider>
   </StrictMode>

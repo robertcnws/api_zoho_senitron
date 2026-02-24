@@ -4,6 +4,8 @@ import os
 
 from django.conf import settings
 from django.utils import timezone
+from django.db import transaction
+from django.db.models import Count
 
 
 from .models import (
@@ -23,7 +25,6 @@ from .manage_instances import (
 
 from utils.rest_utils import (
     _session_with_retry,
-    api_get,
     _iso_to_aware,
     _sanitize_datetime_strings_inplace,
     _ensure_date_str,
@@ -40,10 +41,41 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
+REQUEST_TIMEOUT = getattr(settings, "REQUEST_TIMEOUT", 60)
+
+def set_auth_headers(headers):
+    token = getattr(settings, "MAIN_LOAD_BEARER_TOKEN", None)
+    if token and 'Authorization' not in headers:
+        headers['Authorization'] = f"Token {token}"
+    logger.info(f"Using headers for API call: {headers}")
+    return headers
+
+def api_get(session, url, params=None, headers=None, timeout=None):
+    headers = set_auth_headers(headers or {})
+    resp = session.get(url, params=params, headers=headers, timeout=timeout or REQUEST_TIMEOUT)
+    resp.raise_for_status()
+    return resp
+
+def api_post(session, url, json=None, data=None, params=None, headers=None, timeout=None):
+    """
+    POST real: body en JSON (o data), opcional params si el endpoint lo requiere.
+    """
+    headers = set_auth_headers(headers or {})
+    resp = session.post(
+        url,
+        params=params,
+        json=json,
+        data=data,
+        headers=headers,
+        timeout=timeout or REQUEST_TIMEOUT,
+    )
+    resp.raise_for_status()
+    return resp
 
 # =========================================================
 #                        ITEMS (LISTA COMPLETA)
 # =========================================================
+
 
 def sync_inventory_items(*, start_date: str | None = None, end_date: str | None = None, username=None):
     base_url = getattr(settings, "MAIN_LOAD_API_ITEMS_URL", settings.MAIN_LOAD_ZOHO_INVENTORY_ITEMS_URL)
@@ -59,7 +91,7 @@ def sync_inventory_items(*, start_date: str | None = None, end_date: str | None 
         base_params["end_last_modified_time"] = ed
 
     logger.info(f"SYNC ITEMS PARAMS: {base_params}")
-    
+
     all_items = []
     page = 1
     while True:
@@ -73,7 +105,7 @@ def sync_inventory_items(*, start_date: str | None = None, end_date: str | None 
 
         logger.info(f"  -> page {page}: fetched {len(page_items)} items (count={data.get('count')})")
         all_items.extend(page_items)
-        
+
         next_url = data.get("next")
         if not next_url:
             break
@@ -83,7 +115,30 @@ def sync_inventory_items(*, start_date: str | None = None, end_date: str | None 
     logger.info(f"TOTAL fetched {len(all_items)} items from API")
     items = all_items
 
+    # ====== IDs del API ======
     item_ids = [it.get("item_id") or it.get("id") for it in items if (it.get("item_id") or it.get("id"))]
+
+    existing_qs = ZohoInventoryItem.objects.filter(item_id__in=item_ids)
+
+    # ✅ FIX: dedupe en BD si hay duplicados por item_id
+    dup_keys = (
+        existing_qs.values("item_id")
+        .annotate(c=Count("id"))
+        .filter(c__gt=1)
+    )
+
+    if dup_keys.exists():
+        logger.warning(f"Found duplicated ZohoInventoryItem rows for {dup_keys.count()} item_id(s). Deduplicating...")
+
+        with transaction.atomic():
+            for row in dup_keys:
+                inum = row["item_id"]
+                qs = ZohoInventoryItem.objects.filter(item_id=inum).order_by("-id")
+
+                keep = qs.first()
+                qs.exclude(id=keep.id).delete()
+
+    # Re-consulta limpio para construir el mapa seguro
     existing_qs = ZohoInventoryItem.objects.filter(item_id__in=item_ids)
     existing_map = {it.item_id: it for it in existing_qs}
 
@@ -98,8 +153,9 @@ def sync_inventory_items(*, start_date: str | None = None, end_date: str | None 
     for data_item in items:
         _sanitize_datetime_strings_inplace(data_item)
 
-        # Creamos un "nuevo" objeto con los datos que vienen del API
         new_obj = create_inventory_item_instance(None, data_item)
+
+        # ⚠️ Nota: aquí estás usando item_id como item_number en Senitron (revísalo)
         senitron_item = SenitronItem.objects.filter(item_number=new_obj.item_id).first()
 
         lm = _iso_to_aware(
@@ -121,11 +177,12 @@ def sync_inventory_items(*, start_date: str | None = None, end_date: str | None 
                         date_previous_status_zoho=prev.last_modified_time or prev.created_time,
                         actual_status_zoho=new_obj.status,
                         date_actual_status_zoho=new_obj.last_modified_time or new_obj.created_time,
-                        zoho_item=prev,   # referenciamos el existente
+                        zoho_item=prev,
                         senitron_item=senitron_item,
                         text=f"{getattr(new_obj, 'sku', None) or '-'} status changed -> From {prev.status} to {new_obj.status}",
                     )
                 )
+
             try:
                 if int(prev.stock_on_hand) != int(new_obj.stock_on_hand):
                     ch = "added" if new_obj.stock_on_hand > prev.stock_on_hand else "removed"
@@ -145,22 +202,19 @@ def sync_inventory_items(*, start_date: str | None = None, end_date: str | None 
             except Exception:
                 pass
 
-            # ==== Actualizamos el objeto existente con los nuevos valores ====
-            # aquí puedes copiar más campos si quieres mantener todo sincronizado:
+            # ==== sync fields ====
             prev.status = new_obj.status
             prev.stock_on_hand = new_obj.stock_on_hand
             prev.last_modified_time = new_obj.last_modified_time
-            # prev.sku = new_obj.sku
-            # prev.name = new_obj.name
-            # ...
 
             to_update.append(prev)
+
         else:
             # Nuevo item
             if new_obj.item_id in seen_new_ids:
-            # opcional: log para debug
                 logger.debug(f"Duplicate new item_id in same batch, skipping: {new_obj.item_id}")
                 continue
+
             timelines.append(
                 TimelineItem(
                     item_number=new_obj.item_id,
@@ -173,6 +227,7 @@ def sync_inventory_items(*, start_date: str | None = None, end_date: str | None 
                     text=f"{getattr(new_obj, 'sku', None) or '-'} created -> On hand: {int(getattr(new_obj, 'stock_on_hand', 0))}, Status: {getattr(new_obj, 'status', '-')}",
                 )
             )
+
             to_create.append(new_obj)
             seen_new_ids.add(new_obj.item_id)
 
@@ -180,10 +235,10 @@ def sync_inventory_items(*, start_date: str | None = None, end_date: str | None 
         nonlocal changed
 
         if to_create:
+            # ✅ Recomendación: si no tienes UNIQUE en DB, no uses ignore_conflicts
             ZohoInventoryItem.objects.bulk_create(
                 to_create,
                 batch_size=int(os.getenv("API_BATCH_SIZE_ITEMS", "500")),
-                ignore_conflicts=True,
             )
             changed = True
 
@@ -211,6 +266,173 @@ def sync_inventory_items(*, start_date: str | None = None, end_date: str | None 
         create_notification("items", "loaded new info from API Items", "load", username)
 
     return {"changed": changed, "max_ts": max_ts}
+
+# def sync_inventory_items(*, start_date: str | None = None, end_date: str | None = None, username=None):
+#     base_url = getattr(settings, "MAIN_LOAD_API_ITEMS_URL", settings.MAIN_LOAD_ZOHO_INVENTORY_ITEMS_URL)
+#     session = _session_with_retry()
+
+#     sd = _ensure_date_str(start_date)
+#     ed = _ensure_date_str(end_date)
+
+#     base_params = {}
+#     if sd:
+#         base_params["start_last_modified_time"] = sd
+#     if ed:
+#         base_params["end_last_modified_time"] = ed
+
+#     logger.info(f"SYNC ITEMS PARAMS: {base_params}")
+    
+#     all_items = []
+#     page = 1
+#     while True:
+#         params = {**base_params, "page": page, "page_size": 200}
+#         r = api_get(session, base_url, params=params)
+#         data = r.json()
+
+#         page_items = data.get("items") or data.get("results") or data.get("data") or []
+#         if not isinstance(page_items, list):
+#             page_items = []
+
+#         logger.info(f"  -> page {page}: fetched {len(page_items)} items (count={data.get('count')})")
+#         all_items.extend(page_items)
+        
+#         next_url = data.get("next")
+#         if not next_url:
+#             break
+
+#         page += 1
+
+#     logger.info(f"TOTAL fetched {len(all_items)} items from API")
+#     items = all_items
+
+#     item_ids = [it.get("item_id") or it.get("id") for it in items if (it.get("item_id") or it.get("id"))]
+#     existing_qs = ZohoInventoryItem.objects.filter(item_id__in=item_ids)
+#     existing_map = {it.item_id: it for it in existing_qs}
+
+#     timelines = []
+#     changed = False
+#     max_ts = None
+
+#     to_create: list[ZohoInventoryItem] = []
+#     to_update: list[ZohoInventoryItem] = []
+#     seen_new_ids = set()
+
+#     for data_item in items:
+#         _sanitize_datetime_strings_inplace(data_item)
+
+#         # Creamos un "nuevo" objeto con los datos que vienen del API
+#         new_obj = create_inventory_item_instance(None, data_item)
+#         senitron_item = SenitronItem.objects.filter(item_number=new_obj.item_id).first()
+
+#         lm = _iso_to_aware(
+#             getattr(new_obj, "last_modified_time", None)
+#             or getattr(new_obj, "created_time", None)
+#         )
+#         if lm and (max_ts is None or lm > max_ts):
+#             max_ts = lm
+
+#         prev = existing_map.get(new_obj.item_id)
+
+#         if prev:
+#             # ==== Timelines ====
+#             if getattr(prev, "status", None) != getattr(new_obj, "status", None):
+#                 timelines.append(
+#                     TimelineItem(
+#                         item_number=new_obj.item_id,
+#                         previous_status_zoho=prev.status,
+#                         date_previous_status_zoho=prev.last_modified_time or prev.created_time,
+#                         actual_status_zoho=new_obj.status,
+#                         date_actual_status_zoho=new_obj.last_modified_time or new_obj.created_time,
+#                         zoho_item=prev,   # referenciamos el existente
+#                         senitron_item=senitron_item,
+#                         text=f"{getattr(new_obj, 'sku', None) or '-'} status changed -> From {prev.status} to {new_obj.status}",
+#                     )
+#                 )
+#             try:
+#                 if int(prev.stock_on_hand) != int(new_obj.stock_on_hand):
+#                     ch = "added" if new_obj.stock_on_hand > prev.stock_on_hand else "removed"
+#                     absv = abs(new_obj.stock_on_hand - prev.stock_on_hand)
+#                     timelines.append(
+#                         TimelineItem(
+#                             item_number=new_obj.item_id,
+#                             previous_stock_on_hand=prev.stock_on_hand,
+#                             date_previous_stock_on_hand=prev.last_modified_time or prev.created_time,
+#                             actual_stock_on_hand=new_obj.stock_on_hand,
+#                             date_actual_stock_on_hand=new_obj.last_modified_time or new_obj.created_time,
+#                             zoho_item=prev,
+#                             senitron_item=senitron_item,
+#                             text=f"{getattr(new_obj, 'sku', None) or '-'} : {int(absv)} unit(s) {ch} -> New stock on hand: {int(new_obj.stock_on_hand)}",
+#                         )
+#                     )
+#             except Exception:
+#                 pass
+
+#             # ==== Actualizamos el objeto existente con los nuevos valores ====
+#             # aquí puedes copiar más campos si quieres mantener todo sincronizado:
+#             prev.status = new_obj.status
+#             prev.stock_on_hand = new_obj.stock_on_hand
+#             prev.last_modified_time = new_obj.last_modified_time
+#             # prev.sku = new_obj.sku
+#             # prev.name = new_obj.name
+#             # ...
+
+#             to_update.append(prev)
+#         else:
+#             # Nuevo item
+#             if new_obj.item_id in seen_new_ids:
+#             # opcional: log para debug
+#                 logger.debug(f"Duplicate new item_id in same batch, skipping: {new_obj.item_id}")
+#                 continue
+#             timelines.append(
+#                 TimelineItem(
+#                     item_number=new_obj.item_id,
+#                     actual_stock_on_hand=new_obj.stock_on_hand,
+#                     date_actual_stock_on_hand=new_obj.last_modified_time or new_obj.created_time,
+#                     actual_status_zoho=new_obj.status,
+#                     date_actual_status_zoho=new_obj.last_modified_time or new_obj.created_time,
+#                     zoho_item=new_obj,
+#                     senitron_item=senitron_item,
+#                     text=f"{getattr(new_obj, 'sku', None) or '-'} created -> On hand: {int(getattr(new_obj, 'stock_on_hand', 0))}, Status: {getattr(new_obj, 'status', '-')}",
+#                 )
+#             )
+#             to_create.append(new_obj)
+#             seen_new_ids.add(new_obj.item_id)
+
+#     def _write_items():
+#         nonlocal changed
+
+#         if to_create:
+#             ZohoInventoryItem.objects.bulk_create(
+#                 to_create,
+#                 batch_size=int(os.getenv("API_BATCH_SIZE_ITEMS", "500")),
+#                 ignore_conflicts=True,
+#             )
+#             changed = True
+
+#         if to_update:
+#             ZohoInventoryItem.objects.bulk_update(
+#                 to_update,
+#                 ["status", "stock_on_hand", "last_modified_time"],
+#                 batch_size=int(os.getenv("API_BATCH_SIZE_ITEMS", "500")),
+#             )
+#             changed = True
+
+#         if timelines:
+#             TimelineItem.objects.bulk_create(
+#                 timelines,
+#                 batch_size=int(os.getenv("API_BATCH_SIZE_TIMELINES", "200")),
+#                 ignore_conflicts=True,
+#             )
+
+#         JobsUpdatingTimes.objects.filter(last_updated__lt=timezone.now()).delete()
+#         JobsUpdatingTimes.objects.create(last_updated=timezone.now())
+
+#     run_with_deadlock_retry(_write_items)
+
+#     if username and changed:
+#         create_notification("items", "loaded new info from API Items", "load", username)
+
+#     return {"changed": changed, "max_ts": max_ts}
 
 
 # =========================================================
@@ -292,32 +514,73 @@ def sync_inventory_sales_orders(*, start_date: str, end_date: str | None = None,
 #    SHIPMENTS (LISTA COMPLETA) + PACKAGES BULK POR IDs
 # =========================================================
 
+
+def _chunk_by_max_url(ids: list[str], base_url: str, param_name: str = "shipment_ids", max_url_len: int = 7000):
+    """
+    Crea chunks que no excedan un tamaño razonable de URL.
+    max_url_len=7000 suele ser seguro detrás de proxies (evita 414).
+    """
+    # Longitud aproximada de: base_url + "?shipment_ids=" + csv
+    prefix_len = len(base_url) + 1 + len(param_name) + 1  # ? + param + =
+    chunks = []
+    current = []
+    current_len = prefix_len
+
+    for _id in ids:
+        s = str(_id).strip()
+        if not s:
+            continue
+        add_len = len(s) + (1 if current else 0)  # coma si no es el primero
+
+        if current and (current_len + add_len) > max_url_len:
+            chunks.append(current)
+            current = [s]
+            current_len = prefix_len + len(s)
+        else:
+            current.append(s)
+            current_len += add_len
+
+    if current:
+        chunks.append(current)
+
+    return chunks
+
+
 def _fetch_packages_bulk_by_shipments(session, url_packages: str, shipment_ids) -> list[dict]:
     """
-    La API espera shipment_ids como string separado por comas.
-    Acepta:
-      - str: "id1,id2,id3"
-      - list/tuple/set: ["id1","id2","id3"]  -> se convierte a "id1,id2,id3"
-    Hace POST JSON (no GET).
+    MANTIENE GET (porque main-load-data no permite POST -> 405)
+    pero evita 414 haciendo múltiples GET en chunks.
     """
     if not shipment_ids:
         return []
 
-    # Normaliza a CSV string
+    # Normaliza a lista
     if isinstance(shipment_ids, (list, tuple, set)):
-        parts = [str(s).strip() for s in shipment_ids if s]
-        shipment_ids_csv = ",".join(sorted(set(parts)))
+        ids = [str(s).strip() for s in shipment_ids if s]
     else:
-        shipment_ids_csv = ",".join([s.strip() for s in str(shipment_ids).split(",") if s.strip()])
+        ids = [s.strip() for s in str(shipment_ids).split(",") if s.strip()]
 
-    if not shipment_ids_csv:
+    # dedupe preservando orden
+    ids = list(dict.fromkeys(ids))
+    if not ids:
         return []
 
-    payload = {"shipment_ids": shipment_ids_csv}
-    rp = api_get(session, url_packages, payload)  # << POST correcto
-    body = rp.json()
-    pkgs = body.get("packages") or body.get("results") or body.get("data") or []
-    return pkgs if isinstance(pkgs, list) else []
+    all_pkgs: list[dict] = []
+
+    # Divide por tamaño de URL
+    chunks = _chunk_by_max_url(ids, base_url=url_packages, param_name="shipment_ids", max_url_len=7000)
+
+    for chunk in chunks:
+        shipment_ids_csv = ",".join(chunk)
+        params = {"shipment_ids": shipment_ids_csv}
+
+        rp = api_get(session, url_packages, params=params)  # ✅ GET como exige main-load-data
+        body = rp.json()
+        pkgs = body.get("packages") or body.get("results") or body.get("data") or []
+        if isinstance(pkgs, list) and pkgs:
+            all_pkgs.extend(pkgs)
+
+    return all_pkgs
 
 def sync_inventory_shipments(*, start_date: str | None, end_date: str | None, username=None, updated_since=None):
     url_ship = getattr(settings, "MAIN_LOAD_API_SHIPMENTS_URL", settings.MAIN_LOAD_ZOHO_INVENTORY_SHIPMENTS_URL)
@@ -374,8 +637,8 @@ def sync_inventory_shipments(*, start_date: str | None, end_date: str | None, us
 
     # 3) Packages en bulk por shipment_ids
     shipment_ids = [d.get("shipment_id") for d in details if d.get("shipment_id")]
-    shipment_ids_csv = ",".join([sid.strip() for sid in shipment_ids if sid])  # -> CSV
-    pkgs_full = _fetch_packages_bulk_by_shipments(session, url_pkg, shipment_ids_csv)
+    pkgs_full = _fetch_packages_bulk_by_shipments(session, url_pkg, shipment_ids)
+    
     for p in pkgs_full:
         _sanitize_datetime_strings_inplace(p)
 

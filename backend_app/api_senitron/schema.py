@@ -239,23 +239,49 @@ class Query(graphene.ObjectType):
             lambda: result,
             ttl=180,
         )
-
+        
     def resolve_all_timeline_items(self, info, **kwargs):
         qs = (
             TimelineItem.objects
+            .select_related("zoho_item", "senitron_item", "previous_status_senitron", "actual_status_senitron")
             .filter(
                 Q(zoho_item__sku__isnull=False) & ~Q(zoho_item__sku="") &
                 (~Q(text__icontains="stock on hand") | Q(date_actual_stock_on_hand__isnull=False)) &
                 (~Q(text__icontains="status") | Q(date_actual_status_zoho__isnull=False))
             )
-            .annotate(order_date=Coalesce(F("date_actual_stock_on_hand"), F("date_actual_status_zoho"), F("date_actual_quantity"), F("date_actual_status_senitron")))
+            .annotate(
+                order_date=Coalesce(
+                    F("date_actual_stock_on_hand"),
+                    F("date_actual_status_zoho"),
+                    F("date_actual_quantity"),
+                    F("date_actual_status_senitron"),
+                )
+            )
             .order_by(F("order_date").desc(nulls_last=True))[:100]
         )
+
         return get_or_build_list(
             "gql:all_timeline_items:v2",
             lambda: fetch_all_streamed(qs, chunk_size=1000),
             ttl=180,
         )
+
+    # def resolve_all_timeline_items(self, info, **kwargs):
+    #     qs = (
+    #         TimelineItem.objects
+    #         .filter(
+    #             Q(zoho_item__sku__isnull=False) & ~Q(zoho_item__sku="") &
+    #             (~Q(text__icontains="stock on hand") | Q(date_actual_stock_on_hand__isnull=False)) &
+    #             (~Q(text__icontains="status") | Q(date_actual_status_zoho__isnull=False))
+    #         )
+    #         .annotate(order_date=Coalesce(F("date_actual_stock_on_hand"), F("date_actual_status_zoho"), F("date_actual_quantity"), F("date_actual_status_senitron")))
+    #         .order_by(F("order_date").desc(nulls_last=True))[:100]
+    #     )
+    #     return get_or_build_list(
+    #         "gql:all_timeline_items:v2",
+    #         lambda: fetch_all_streamed(qs, chunk_size=1000),
+    #         ttl=180,
+    #     )
 
     def resolve_all_jobs_updating_times(self, info, **kwargs):
         return JobsUpdatingTimes.objects.last()

@@ -1,6 +1,7 @@
 # model_serializer.py
 
 from typing import Optional, Dict, Any
+from .models import ZohoInventoryItem
 
 # Helpers
 def _iso(dt) -> Optional[str]:
@@ -88,7 +89,11 @@ def _timeline_item_to_message_dict(tl) -> Dict[str, Any]:
     prev_status = tl.previous_status_senitron
     act_status = tl.actual_status_senitron
     sen_item = tl.senitron_item
-    zoho_item = tl.zoho_item
+    zoho_item = None
+    try:
+        zoho_item = tl.zoho_item
+    except ZohoInventoryItem.DoesNotExist:
+        zoho_item = None
 
     return {
         "itemNumber": tl.item_number,

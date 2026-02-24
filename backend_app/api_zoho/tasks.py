@@ -81,7 +81,7 @@ def task_load_inventory_shipments(self, username=DEFAULT_SYSTEM_USERNAME):
         difference = timedelta(days=settings.DIFF_DAYS_FOR_FULL_SYNC_SHIPMENTS)
         start_date = (timezone.now() - difference).date().strftime("%Y-%m-%d")
         end_date = (timezone.now()).date().strftime("%Y-%m-%d")
-        out = sync_inventory_shipments(start_date=start_date, end_date=end_date, updated_since=None, username=username)
+        out = sync_inventory_shipments(start_date=start_date, end_date=end_date, username=username, updated_since=None)
         # if out.get("changed"):
         #     JobsUpdatingTimes.objects.create(last_updated=timezone.now())
 

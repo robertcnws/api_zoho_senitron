@@ -26,6 +26,7 @@ module.exports = {
    * 1 ~ 'warn'
    * 2 ~ 'error'
    */
+  
   rules: {
     'no-use-before-define': 0,
     'no-alert': 0,

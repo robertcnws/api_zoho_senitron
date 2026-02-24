@@ -49,5 +49,9 @@ const GET_TIMELINES_ITEMS = gql`
 export const useTimelineItemsQuery = () => {
   const { loading, error, data, refetch } = useQuery(GET_TIMELINES_ITEMS);
 
+  // console.log('Timeline Items Data:', data);
+  // console.log('Timeline Items Loading:', loading);
+  // console.log('Timeline Items Error:', error);
+
   return { loading, error, data: data?.allTimelineItems || [], refetch};
 };
