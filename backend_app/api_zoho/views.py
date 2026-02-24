@@ -986,7 +986,8 @@ def load_inventory_sales_orders(request):
 def load_inventory_shipments(request):
     data = json.loads(request.body)
     start_date = data.get('start_date')
-    end_date = data.get('end_date') if data.get('end_date') else start_date
+    now = timezone.now()
+    end_date = data.get('end_date') if data.get('end_date') else now.strftime('%Y-%m-%d')
     username = data.get('username')
     logger.debug(f"Start date: {start_date}, End date: {end_date}")
     out = sync_inventory_shipments(start_date=start_date, end_date=end_date, username=username, updated_since=None)
